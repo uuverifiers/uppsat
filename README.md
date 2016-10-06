@@ -1,2 +1,2 @@
-# uppsat
+# UppSat
 An approximating SMT solver
