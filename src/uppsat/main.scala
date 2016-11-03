@@ -1,5 +1,8 @@
 package uppsat;
 
+// Make AST
+// Introduce theory (e.g., first Boolean later Floats (maybe Int in between))
+// Hardcode formula (shouldn't be too hard)
 
 object main {
 
@@ -10,12 +13,14 @@ object main {
   }
 
   object FPFactory extends IndexedSortFactory {
+    // TODO: change case 
     class FPSort(eBits : Int, sBits : Int) extends IndexedSort {
       override def name = "Floating Point (" + eBits + ", " + sBits + ")"
       override def toSMTLib = "(_ FloatingPoint " + eBits + " " + sBits +")"
       override def getFactory = FPFactory
     }
 
+    // TODO: Remove override and change to val
     override def rank = 2
     override def apply(idx : Seq[Int]) = {
       val eBits = idx(0)
@@ -34,6 +39,11 @@ object main {
     override def sort = IntSort
   }
 
+
+  // TODO: Change to FPOpFactory ....
+  //       with anonymous inner class Symbol
+  //       val FPAddFactory = new FPOpFactory("fp.add", ...)
+  //       also containing unapply method
   object FPAddFactory extends SymbolFactory {
     class FPAddSymbol(sort_ : Sort) extends TypedSymbol {
       override def sort = sort_

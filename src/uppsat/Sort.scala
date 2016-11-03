@@ -1,6 +1,9 @@
 package uppsat;
 
-// Check out what abstract means
+
+
+// TODO: Check out what abstract means, remove?
+// TODO: toSMTLib use visitor pattern insteadb
 abstract trait Sort {
   def name : String
   def toSMTLib : String
@@ -14,11 +17,14 @@ trait IndexedSort extends ConcreteSort {
   def getFactory : IndexedSortFactory
 }
 
+// TODO: defs to val
 trait TypedSort extends ConcreteSort {
   def getFactory : TypedSortFactory
 }
 
-// Maybe this should extend Sort, maybe not?
+// TODO: We should use BigInt instead
+// TODO: Store what sort is prodcued (using generics?)
+//       type Sort <: IndexedSort
 trait IndexedSortFactory {
   def rank : Int
   def apply(idx : Seq[Int]) : IndexedSort

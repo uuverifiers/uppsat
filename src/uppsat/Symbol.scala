@@ -1,4 +1,5 @@
 package uppsat;
+// TODO:  Symbol -> Function
 
 trait Symbol {
   def name : String
@@ -11,16 +12,18 @@ trait ConcreteSymbol extends Symbol {
   def sort : Sort
 }
 
-// Should we call these polymorphic symbols?
+// TODO: Add IndexedSymbol and mimic Sort hierarchy
 trait TypedSymbol extends ConcreteSymbol {
   def getFactory : SymbolFactory
 }
 
-// Maybe this should extend Symbol, maybe not?
 trait SymbolFactory {
   def rank : Int
   def apply(idx : Seq[Sort]) : TypedSymbol
 }
+
+
+// TODO: Two notions of equality, one general and one per-theory (cf, object identity and -0 = +0)
 
 
 
