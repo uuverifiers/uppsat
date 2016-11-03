@@ -1,4 +1,3 @@
-// Make AST
 // Introduce theory (e.g., first Boolean later Floats (maybe Int in between))
 // Hardcode formula (shouldn't be too hard)
 
