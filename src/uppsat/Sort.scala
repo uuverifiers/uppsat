@@ -2,11 +2,9 @@ package uppsat;
 
 
 
-// TODO: Check out what abstract means, remove?
-// TODO: toSMTLib use visitor pattern insteadb
-abstract trait Sort {
-  def name : String
-  def toSMTLib : String
+trait Sort {
+  val name : String
+  val toSMTLib : String
   override def toString = name
 }
 
@@ -14,23 +12,21 @@ trait ConcreteSort extends Sort {
 }
 
 trait IndexedSort extends ConcreteSort {
-  def getFactory : IndexedSortFactory
+  val getFactory : IndexedSortFactory
 }
 
-// TODO: defs to val
-trait TypedSort extends ConcreteSort {
-  def getFactory : TypedSortFactory
+trait ConstructedSort extends ConcreteSort {
+  val getFactory : ConstructedSortFactory
 }
 
-// TODO: We should use BigInt instead
-// TODO: Store what sort is prodcued (using generics?)
-//       type Sort <: IndexedSort
 trait IndexedSortFactory {
-  def rank : Int
-  def apply(idx : Seq[Int]) : IndexedSort
+  type Sort <: IndexedSort
+  val rank : Int
+  def apply(idx : Seq[BigInt]) : IndexedSort
 }
 
-trait TypedSortFactory {
-  def rank : Int
-  def apply(idx : Seq[Sort]) : TypedSort
+trait ConstructedSortFactory {
+  type Sort <: ConstructedSort
+  val rank : Int
+  def apply(idx : Seq[Sort]) : ConstructedSort
 }

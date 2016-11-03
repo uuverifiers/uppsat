@@ -1,30 +1,26 @@
 package uppsat;
 
-// Make AST
-// Introduce theory (e.g., first Boolean later Floats (maybe Int in between))
-// Hardcode formula (shouldn't be too hard)
-
 object main {
 
   // Examples
   object IntSort extends ConcreteSort {
-    override def name = "Integer"
-    override def toSMTLib = "Int"
+    val name = "Integer"
+    val toSMTLib = "Int"
   }
+  
+  
 
-  object FPFactory extends IndexedSortFactory {
-    // TODO: change case 
-    class FPSort(eBits : Int, sBits : Int) extends IndexedSort {
-      override def name = "Floating Point (" + eBits + ", " + sBits + ")"
-      override def toSMTLib = "(_ FloatingPoint " + eBits + " " + sBits +")"
-      override def getFactory = FPFactory
+  object FPFactory extends IndexedSortFactory { 
+    case class FPSort(eBits : Int, sBits : Int) extends IndexedSort {
+      val name = "Floating Point (" + eBits + ", " + sBits + ")"
+      val toSMTLib = "(_ FloatingPoint " + eBits + " " + sBits +")"
+      val getFactory = FPFactory
     }
 
-    // TODO: Remove override and change to val
-    override def rank = 2
-    override def apply(idx : Seq[Int]) = {
-      val eBits = idx(0)
-      val sBits = idx(1)
+    val rank = 2
+    def apply(idx : Seq[BigInt]) = {
+      val eBits = idx(0).toInt
+      val sBits = idx(1).toInt
       // Anonymous class, notation!
       // Maybe use HashTable to store and re-use
       new FPSort(eBits, sBits)
@@ -32,34 +28,42 @@ object main {
   }
 
   // Singleton?
-  object IntAdd extends ConcreteSymbol {
-    override def name = "Integer Addition"
-    override def toSMTLib = "+"
-    override def args = List(IntSort, IntSort)
-    override def sort = IntSort
+  object IntAdd extends ConcreteFunctionSymbol {
+    val name = "Integer Addition"
+    val toSMTLib = "+"
+    val args = List(IntSort, IntSort)
+    val sort = IntSort
   }
 
-
-  // TODO: Change to FPOpFactory ....
-  //       with anonymous inner class Symbol
-  //       val FPAddFactory = new FPOpFactory("fp.add", ...)
-  //       also containing unapply method
-  object FPAddFactory extends SymbolFactory {
-    class FPAddSymbol(sort_ : Sort) extends TypedSymbol {
-      override def sort = sort_
-      override def name = "Floating Point Addition with " + sort
-      override def toSMTLib = "fp.add"
-      override def args = List(sort, sort)
-      override def getFactory = FPAddFactory
+  object RoundingModeSort extends ConcreteSort {
+    val name = "RoundingMode"
+    val toSMTLib = "RoundingMode"
+  }
+  
+  
+  class FPOpFactory(op : String) extends IndexedFunctionSymbolFactory {
+    val thisFactory = this
+    
+    // Ask Philipp: Should this be outside for purposes of pattern-matching?
+    case class FPAddFunctionSymbol(arg1 : Sort, arg2 : Sort, res : Sort) extends IndexedFunctionSymbol {
+      val sort = res
+      val name = "Floating Point Addition with " + sort
+      val toSMTLib = "fp.add"
+      val args = List(RoundingModeSort, arg1, arg2)
+      val getFactory = thisFactory
     }
 
-    override def rank = 1
+    val rank = 1
     override def apply(sorts : Seq[Sort]) = {
-      val sort = sorts.head
-      new FPAddSymbol(sort)
+      op match {
+        case "fp.add" => new FPAddFunctionSymbol(sorts(0), sorts(1), sorts(2)) 
+      }
+      
     }
-    def apply(sort : Sort) : TypedSymbol = apply(List(sort))
-
+    
+    // Ask Philipp: Should this be in the FPFunctionSymbol
+    // def unapply(FunctionSymbol : TypedFunctionSymbol) 
+    
   }
 
   def main(args : Array[String]) = {
@@ -67,7 +71,8 @@ object main {
 
     val fp2_2 = FPFactory(List(2, 2))
     println("fp2_2: (" + fp2_2.getClass + ") = " + fp2_2)
-    val fpAdd2_2 = FPAddFactory(List(fp2_2))
+    val fpAddFactory = new FPOpFactory("fp.add")
+    val fpAdd2_2 = fpAddFactory(List(fp2_2, fp2_2, fp2_2))
     println("fpAdd2_2: (" + fpAdd2_2.getClass + ") = " + fpAdd2_2)
   }
 }
