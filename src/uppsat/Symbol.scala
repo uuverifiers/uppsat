@@ -1,4 +1,4 @@
-package collab;
+package uppsat;
 
 trait Symbol {
   def name : String

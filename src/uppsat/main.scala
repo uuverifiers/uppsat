@@ -1,4 +1,4 @@
-package collab;
+package uppsat;
 
 
 object main {

@@ -1,4 +1,4 @@
-package collab;
+package uppsat;
 
 // Check out what abstract means
 abstract trait Sort {
