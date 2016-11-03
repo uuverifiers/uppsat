@@ -1,0 +1,7 @@
+// Make AST
+// Introduce theory (e.g., first Boolean later Floats (maybe Int in between))
+// Hardcode formula (shouldn't be too hard)
+
+// TODO: Two notions of equality, one general and one per-theory (cf, object identity and -0 = +0)
+
+// TODO: Symbol generation - use HashTable to store and re-use
