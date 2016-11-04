@@ -1,5 +1,7 @@
 package uppsat;
 
+import uppsat.main.FPFactory.FPSort
+
 object main {
 
   // Examples
@@ -26,7 +28,7 @@ object main {
       new FPSort(eBits, sBits)
     }
   }
-
+ 
   // Singleton?
   object IntAdd extends ConcreteFunctionSymbol {
     val name = "Integer Addition"
@@ -41,10 +43,11 @@ object main {
   }
   
   
+  // TODO: Change factory to something else?
   class FPOpFactory(op : String) extends IndexedFunctionSymbolFactory {
     val thisFactory = this
     
-    // Ask Philipp: Should this be outside for purposes of pattern-matching?
+    // TODO: This should only be Symbol, since each instance of the factory will have it's own instance of the class
     case class FPAddFunctionSymbol(arg1 : Sort, arg2 : Sort, res : Sort) extends IndexedFunctionSymbol {
       val sort = res
       val name = "Floating Point Addition with " + sort
@@ -56,12 +59,13 @@ object main {
     val rank = 1
     override def apply(sorts : Seq[Sort]) = {
       op match {
+        // TODO: Pass integers instead of sorts?
         case "fp.add" => new FPAddFunctionSymbol(sorts(0), sorts(1), sorts(2)) 
       }
       
     }
     
-    // Ask Philipp: Should this be in the FPFunctionSymbol
+    // TODO: Unapply should check if the argument symbol is of a instance fpfunctionsymbol and then pick it apart
     // def unapply(FunctionSymbol : TypedFunctionSymbol) 
     
   }
@@ -72,14 +76,15 @@ object main {
     // Symbol, consts, funs, variables
     
     
+    // TODO: Make function for generating these classes.
     
     //Sort
     object BooleanSort extends ConcreteSort {
       val name = "Boolean"
       val toSMTLib = "Bool"
     }
-    // Constants
     
+    // Constants   
     case object BoolTrue extends ConcreteFunctionSymbol {
       val name = "true"
       val toSMTLib = "true"  
@@ -102,6 +107,7 @@ object main {
       override val sort = BooleanSort
     }
     
+    // Make regular class; id is not support to be the identifier
     case class BoolVar(id : String) extends ConcreteFunctionSymbol {
       val name = id
       val toSMTLib = id
@@ -115,7 +121,8 @@ object main {
     val t = BoolTrue
     
     import uppsat.AST._
-    
+
+    // TODO: Make things nicer using infix operators and more.
     val C = LeafNode(c)
     val notC = InternalNode(BoolNegation, List(C))
     val T = LeafNode(t)

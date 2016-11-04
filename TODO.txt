@@ -1,6 +1,16 @@
 // Introduce theory (e.g., first Boolean later Floats (maybe Int in between))
+
 // Hardcode formula (shouldn't be too hard)
 
 // TODO: Two notions of equality, one general and one per-theory (cf, object identity and -0 = +0)
 
 // TODO: Symbol generation - use HashTable to store and re-use
+
+// TODO: Reimplement the IJCAR
+// TODO: At least as good as the z3-prototype.
+
+// TODO: Longer research paper with design decision.
+
+// Write down design decisions!
+
+// Model reconstruction
