@@ -4,7 +4,6 @@ package uppsat;
 
 trait Sort {
   val name : String
-  val toSMTLib : String
   override def toString = name
 }
 

@@ -79,49 +79,13 @@ object main {
     // TODO: Make function for generating these classes.
     
     //Sort
-    object BooleanSort extends ConcreteSort {
-      val name = "Boolean"
-      val toSMTLib = "Bool"
-    }
-    
-    // Constants   
-    case object BoolTrue extends ConcreteFunctionSymbol {
-      val name = "true"
-      val toSMTLib = "true"  
-      override val args = List()
-      override val sort = BooleanSort
-    }
-    
-    // Symbols, conjunction and negation
-    case object BoolConjunction extends ConcreteFunctionSymbol {
-      val name = "conjunction"
-      val toSMTLib = "and"  
-      override val args = List(BooleanSort, BooleanSort)
-      override val sort = BooleanSort
-    }
-    
-    case object BoolNegation extends ConcreteFunctionSymbol {
-      val name = "negation"
-      val toSMTLib = "not"  
-      override val args = List(BooleanSort)
-      override val sort = BooleanSort
-    }
-    
-    // Make regular class; id is not support to be the identifier
-    case class BoolVar(id : String) extends ConcreteFunctionSymbol {
-      val name = id
-      val toSMTLib = id
-      override val args = List()
-      override val sort = BooleanSort
-    }
+    import uppsat.BooleanTheory._
     
     val a = new BoolVar("a")
     val b = new BoolVar("b")
     val c = new BoolVar("c")
     val t = BoolTrue
     
-    import uppsat.AST._
-
     // TODO: Make things nicer using infix operators and more.
     val C = LeafNode(c)
     val notC = InternalNode(BoolNegation, List(C))
@@ -132,7 +96,10 @@ object main {
     val notBandTandC = InternalNode(BoolConjunction, List(notB, TandC))
     val A = LeafNode(a)
     val f = InternalNode(BoolConjunction, List(A, notBandTandC))
-    println(f)
+    
+    val translator = new SMTTranslator(BooleanTheory)
+    val SMT = translator.header + "\n" + translator.translate(f)
+    println(SMT)
   }
   
   def main(args : Array[String]) = {

@@ -2,7 +2,6 @@ package uppsat;
 
 trait FunctionSymbol {
   val name : String
-  val toSMTLib : String
   override def toString = name
 }
 

@@ -14,3 +14,9 @@
 // Write down design decisions!
 
 // Model reconstruction
+How do we deal with testing the hat-model. Testing and fixing every sub-formula could be expensive? (Loads of calls to the underlying solver). Maybe not a problem?
+
+Plan:
+1> Boolean theory, w. syntactic sugar and translator. half a day
+2> Integer theory, w. encoder and model reconstructor. two days
+3> Floating theory w. everything! seven days.
