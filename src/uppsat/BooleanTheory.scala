@@ -33,11 +33,8 @@ object BooleanTheory extends Theory {
   case object BoolNegation extends BooleanUnaryFunctionSymbol("negation")
 
   object BoolVar {
-    def unapply(symbol : FunctionSymbol) : Option[String] = {
-      if (symbol.isInstanceOf[BoolVar]) 
+    def unapply(symbol : BoolVar) : Option[String] = {
         Some(name)
-      else
-        None
     }  
   }
   
@@ -62,7 +59,7 @@ object BooleanTheory extends Theory {
       // TODO: Is this correct?
       case BoolImplication => "implies"
       case BoolNegation => "not"
-      case sym => if (sym.isInstanceOf[BoolVar]) sym.asInstanceOf[BoolVar].name else "ERRROR"
+      case BoolVar(name) => name
     }
   }
   
