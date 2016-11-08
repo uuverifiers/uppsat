@@ -70,35 +70,17 @@ object main {
     
   }
 
-  def boolean() = {
-    //Theory
-    // Sort
-    // Symbol, consts, funs, variables
-    
-    
-    // TODO: Make function for generating these classes.
-    
-    //Sort
+  def boolean() = {    
     import uppsat.BooleanTheory._
     
     val a = new BoolVar("a")
     val b = new BoolVar("b")
     val c = new BoolVar("c")
     val t = BoolTrue
-    
-    // TODO: Make things nicer using infix operators and more.
-    val C = LeafNode(c)
-    val notC = InternalNode(BoolNegation, List(C))
-    val T = LeafNode(t)
-    val TandC = InternalNode(BoolConjunction, List(T, notC))
-    val B = LeafNode(b)
-    val notB = InternalNode(BoolNegation, List(B))
-    val notBandTandC = InternalNode(BoolConjunction, List(notB, TandC))
-    val A = LeafNode(a)
-    val f = InternalNode(BoolConjunction, List(A, notBandTandC))
-    
+   
+    val f = a & (!b & (t & (!c)))
     val translator = new SMTTranslator(BooleanTheory)
-    val SMT = translator.header + "\n" + translator.translate(f)
+    val SMT = translator.translate(f)
     println(SMT)
   }
   

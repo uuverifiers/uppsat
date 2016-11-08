@@ -8,7 +8,8 @@ object BooleanTheory extends Theory {
       val name = "Boolean"
     }
   
-  class BooleanFunctionSymbol(val name :  String, val args : Seq[Sort], val sort : Sort) extends ConcreteFunctionSymbol {     
+  class BooleanFunctionSymbol(val name :  String, val args : Seq[Sort], val sort : Sort) extends ConcreteFunctionSymbol {   
+    
   }
   
   class BooleanBinaryFunctionSymbol(override val name :  String) extends BooleanFunctionSymbol(name, List(BooleanSort, BooleanSort), BooleanSort) {
@@ -36,6 +37,17 @@ object BooleanTheory extends Theory {
     def unapply(symbol : BoolVar) : Option[String] = {
         Some(name)
     }  
+  }
+  
+  implicit def BoolVarToNode(boolVar : BoolVar) = LeafNode(boolVar)
+  implicit def BoolFunctionToNode(boolConst : BooleanConstant) = LeafNode(boolConst)
+  
+  def boolAnd(left: Node, right: Node) = {
+    InternalNode(BoolConjunction, List(left, right))
+  }
+  
+  def boolNot(node: Node) = {
+    InternalNode(BoolNegation, List(node))
   }
   
   // Make regular class; id is not support to be the identifier
