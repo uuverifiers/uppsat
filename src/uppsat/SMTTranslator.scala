@@ -1,30 +1,30 @@
 package uppsat
 
-import scala.collection.mutable.MutableList
+import scala.collection.mutable.Set
 
 class SMTTranslator(theory : Theory) {
-  var definedSymbols = MutableList() : MutableList[ConcreteFunctionSymbol]
+  var definedSymbols = Set() : Set[ConcreteFunctionSymbol]
   
   def translateNode(node : Node) : String = {
      node match {
        case InternalNode(symbol, desc) => {
-           val fun = theory.toSMTLib(symbol) 
+           val fun = symbol.theory.toSMTLib(symbol) 
            val args = desc.map(translateNode)
            "(" + fun + " " + args.mkString(" ") + ")"
        }
        case LeafNode(symbol) => {
          // TODO: Refine this...
-         if (!(theory.symbols contains symbol)) {
+         if (!((theory.symbols ++ BooleanTheory.symbols) contains symbol)) {
            definedSymbols += symbol 
          }
-         theory.toSMTLib(symbol)
+         symbol.theory.toSMTLib(symbol)
        }
      }
   }
   
   def declarations(symbols : List[ConcreteFunctionSymbol]) = {
     (for (s <- symbols) yield
-      theory.declarationToSMTLib(s)).mkString("\n")
+      s.theory.declarationToSMTLib(s)).filter(_ != "").mkString("\n")
   }
   
   def translate(node : Node) : String = {
@@ -41,6 +41,6 @@ class SMTTranslator(theory : Theory) {
   }
   
   def footer = {
-    "(check-sat)"
+    "(check-sat)\n(get-model)"
   }
 }

@@ -8,8 +8,8 @@ object BooleanTheory extends Theory {
       val name = "Boolean"
     }
   
-  class BooleanFunctionSymbol(val name :  String, val args : Seq[ConcreteSort], val sort : ConcreteSort) extends ConcreteFunctionSymbol {   
-    
+  class BooleanFunctionSymbol(val name :  String, val args : Seq[ConcreteSort], val sort : ConcreteSort) extends ConcreteFunctionSymbol {
+    override val theory = BooleanTheory : Theory
   }
   
   class BooleanBinaryFunctionSymbol(override val name :  String) extends BooleanFunctionSymbol(name, List(BooleanSort, BooleanSort), BooleanSort) {
@@ -35,7 +35,7 @@ object BooleanTheory extends Theory {
 
   object BoolVar {
     def unapply(symbol : BoolVar) : Option[String] = {
-        Some(name)
+        Some(symbol.name)
     }  
   }
   

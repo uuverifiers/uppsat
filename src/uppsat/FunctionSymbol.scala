@@ -2,6 +2,7 @@ package uppsat;
 
 trait FunctionSymbol {
   val name : String
+  val theory : Theory
   override def toString = name
 }
 

@@ -1,47 +1,31 @@
 package uppsat;
 
-import uppsat.main.FPFactory.FPSort
-
 object main {
-
-  // Examples
-  object IntSort extends ConcreteSort {
-    val name = "Integer"
-    val toSMTLib = "Int"
-  }
   
-  
-
-  object FPFactory extends IndexedSortFactory { 
-    case class FPSort(eBits : Int, sBits : Int) extends IndexedSort {
-      val name = "Floating Point (" + eBits + ", " + sBits + ")"
-      val toSMTLib = "(_ FloatingPoint " + eBits + " " + sBits +")"
-      val getFactory = FPFactory
-    }
-
-    val rank = 2
-    def apply(idx : Seq[BigInt]) = {
-      val eBits = idx(0).toInt
-      val sBits = idx(1).toInt
-      // Anonymous class, notation!
-      // Maybe use HashTable to store and re-use
-      new FPSort(eBits, sBits)
-    }
-  }
- 
-  // Singleton?
-  object IntAdd extends ConcreteFunctionSymbol {
-    val name = "Integer Addition"
-    val toSMTLib = "+"
-    val args = List(IntSort, IntSort)
-    val sort = IntSort
-  }
-
-  object RoundingModeSort extends ConcreteSort {
-    val name = "RoundingMode"
-    val toSMTLib = "RoundingMode"
-  }
-  
+//
+//  object FPFactory extends IndexedSortFactory { 
+//    case class FPSort(eBits : Int, sBits : Int) extends IndexedSort {
+//      val name = "Floating Point (" + eBits + ", " + sBits + ")"
+//      val toSMTLib = "(_ FloatingPoint " + eBits + " " + sBits +")"
+//      val getFactory = FPFactory
+//    }
+//
+//    val rank = 2
+//    def apply(idx : Seq[BigInt]) = {
+//      val eBits = idx(0).toInt
+//      val sBits = idx(1).toInt
+//      // Anonymous class, notation!
+//      // Maybe use HashTable to store and re-use
+//      new FPSort(eBits, sBits)
+//    }
+//  }
+// 
+//
+//  object RoundingModeSort extends ConcreteSort {
+//    val name = "RoundingMode"
+//    val toSMTLib = "RoundingMode"
+//  }
+//  
   
   // TODO: Change factory to something else?
 //  class FPOpFactory(op : String) extends IndexedFunctionSymbolFactory {
@@ -92,15 +76,13 @@ object main {
     val x = new IntVar("x")
     val y = new IntVar("y")
     
-    val f = (x === ( y - 4)) 
+    val f = (x === ( y - 4)) & ( (x + y) === 6)
     val translator = new SMTTranslator(IntegerTheory)
     val SMT = translator.translate(f)
     println(SMT)
     
   }
   def main(args : Array[String]) = {
-    println("Testing")
-    
     integer()
     
     
