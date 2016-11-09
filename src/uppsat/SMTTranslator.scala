@@ -41,6 +41,8 @@ class SMTTranslator(theory : Theory) {
   }
   
   def footer = {
-    "(check-sat)\n(get-model)"
+    "(check-sat)"
   }
+  
+  def getDefinedSymbols = definedSymbols.toSet
 }

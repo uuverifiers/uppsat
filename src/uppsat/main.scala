@@ -69,7 +69,7 @@ object main {
   }
   
   
-  def integer() = {
+  def integer() : (String, Set[ConcreteFunctionSymbol]) = {
     import uppsat.IntegerTheory._
     import uppsat.BooleanTheory._
     
@@ -79,17 +79,24 @@ object main {
     val f = (x === ( y - 4)) & ( (x + y) === 6)
     val translator = new SMTTranslator(IntegerTheory)
     val SMT = translator.translate(f)
-    println(SMT)
-    
+    (SMT, translator.getDefinedSymbols)
   }
   def main(args : Array[String]) = {
-    integer()
-    
+    val (formula, defSyms) = integer()
+    val extractSymbols = defSyms.map(_.toString).toList
+    println("<<<SMT Formula>>>")
+    println(formula)
+    val result = Z3Solver.solve(formula, extractSymbols)
+    if (result.isDefined)
+      println("Model found: " + result.get)
+    else
+      println("No model...")
     
 //    val fp2_2 = FPFactory(List(2, 2))
 //    println("fp2_2: (" + fp2_2.getClass + ") = " + fp2_2)
 //    val fpAddFactory = new FPOpFactory("fp.add")
 //    val fpAdd2_2 = fpAddFactory(List(fp2_2, fp2_2, fp2_2))
 //    println("fpAdd2_2: (" + fpAdd2_2.getClass + ") = " + fpAdd2_2)
+  ()
   }
 }
