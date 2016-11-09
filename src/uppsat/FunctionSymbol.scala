@@ -6,8 +6,8 @@ trait FunctionSymbol {
 }
 
 trait ConcreteFunctionSymbol extends FunctionSymbol {
-  val args : Seq[Sort]
-  val sort : Sort
+  val args : Seq[ConcreteSort]
+  val sort : ConcreteSort
 }
 
 // TODO: Add IndexedFunctionSymbol and mimic Sort hierarchy

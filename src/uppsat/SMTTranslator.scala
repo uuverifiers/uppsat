@@ -3,7 +3,7 @@ package uppsat
 import scala.collection.mutable.MutableList
 
 class SMTTranslator(theory : Theory) {
-  var definedSymbols = MutableList() : MutableList[FunctionSymbol]
+  var definedSymbols = MutableList() : MutableList[ConcreteFunctionSymbol]
   
   def translateNode(node : Node) : String = {
      node match {
@@ -22,7 +22,7 @@ class SMTTranslator(theory : Theory) {
      }
   }
   
-  def declarations(symbols : List[FunctionSymbol]) = {
+  def declarations(symbols : List[ConcreteFunctionSymbol]) = {
     (for (s <- symbols) yield
       theory.declarationToSMTLib(s)).mkString("\n")
   }

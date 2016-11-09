@@ -10,7 +10,7 @@ trait Theory {
     
     
     def SMTHeader : String
-    def toSMTLib(symbol : FunctionSymbol) : String
-    def toSMTLib(sort : Sort) : String
-    def declarationToSMTLib(symbol : FunctionSymbol) : String
+    def toSMTLib(symbol : ConcreteFunctionSymbol) : String
+    def toSMTLib(sort : ConcreteSort) : String
+    def declarationToSMTLib(symbol : ConcreteFunctionSymbol) : String
 }

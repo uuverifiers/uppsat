@@ -8,7 +8,7 @@ object BooleanTheory extends Theory {
       val name = "Boolean"
     }
   
-  class BooleanFunctionSymbol(val name :  String, val args : Seq[Sort], val sort : Sort) extends ConcreteFunctionSymbol {   
+  class BooleanFunctionSymbol(val name :  String, val args : Seq[ConcreteSort], val sort : ConcreteSort) extends ConcreteFunctionSymbol {   
     
   }
   
@@ -62,7 +62,7 @@ object BooleanTheory extends Theory {
   }
   
   //TODO: Fix type-checking
-  def toSMTLib(symbol : FunctionSymbol) = {
+  def toSMTLib(symbol : ConcreteFunctionSymbol) = {
     symbol match {
       case BoolTrue => "true"
       case BoolFalse => "false"
@@ -75,14 +75,14 @@ object BooleanTheory extends Theory {
     }
   }
   
-  def toSMTLib(sort : Sort) = {
+  def toSMTLib(sort : ConcreteSort) = {
     sort match {
       case BooleanSort => "Bool"
     }
   }
   
   // TODO: Fix pattern-matching
-  def declarationToSMTLib(sym : FunctionSymbol) : String = {
+  def declarationToSMTLib(sym : ConcreteFunctionSymbol) : String = {
     if (sym.isInstanceOf[BoolVar]) {
       "(declare-fun " + sym.asInstanceOf[BoolVar].name + " () " + toSMTLib(sym.asInstanceOf[BoolVar].sort) + ")"
     } else {

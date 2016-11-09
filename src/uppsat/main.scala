@@ -44,31 +44,31 @@ object main {
   
   
   // TODO: Change factory to something else?
-  class FPOpFactory(op : String) extends IndexedFunctionSymbolFactory {
-    val thisFactory = this
-    
-    // TODO: This should only be Symbol, since each instance of the factory will have it's own instance of the class
-    case class FPAddFunctionSymbol(arg1 : Sort, arg2 : Sort, res : Sort) extends IndexedFunctionSymbol {
-      val sort = res
-      val name = "Floating Point Addition with " + sort
-      val toSMTLib = "fp.add"
-      val args = List(RoundingModeSort, arg1, arg2)
-      val getFactory = thisFactory
-    }
-
-    val rank = 1
-    override def apply(sorts : Seq[Sort]) = {
-      op match {
-        // TODO: Pass integers instead of sorts?
-        case "fp.add" => new FPAddFunctionSymbol(sorts(0), sorts(1), sorts(2)) 
-      }
-      
-    }
-    
-    // TODO: Unapply should check if the argument symbol is of a instance fpfunctionsymbol and then pick it apart
-    // def unapply(FunctionSymbol : TypedFunctionSymbol) 
-    
-  }
+//  class FPOpFactory(op : String) extends IndexedFunctionSymbolFactory {
+//    val thisFactory = this
+//    
+//    // TODO: This should only be Symbol, since each instance of the factory will have it's own instance of the class
+//    case class FPAddFunctionSymbol(arg1 : Sort, arg2 : Sort, res : Sort) extends IndexedFunctionSymbol {
+//      val sort = res
+//      val name = "Floating Point Addition with " + sort
+//      val toSMTLib = "fp.add"
+//      val args = List(RoundingModeSort, arg1, arg2)
+//      val getFactory = thisFactory
+//    }
+//
+//    val rank = 1
+//    override def apply(sorts : Seq[Sort]) = {
+//      op match {
+//        // TODO: Pass integers instead of sorts?
+//        case "fp.add" => new FPAddFunctionSymbol(sorts(0), sorts(1), sorts(2)) 
+//      }
+//      
+//    }
+//    
+//    // TODO: Unapply should check if the argument symbol is of a instance fpfunctionsymbol and then pick it apart
+//    // def unapply(FunctionSymbol : TypedFunctionSymbol) 
+//    
+//  }
 
   def boolean() = {    
     import uppsat.BooleanTheory._
@@ -84,14 +84,30 @@ object main {
     println(SMT)
   }
   
+  
+  def integer() = {
+    import uppsat.IntegerTheory._
+    import uppsat.BooleanTheory._
+    
+    val x = new IntVar("x")
+    val y = new IntVar("y")
+    
+    val f = (x === ( y - 4)) 
+    val translator = new SMTTranslator(IntegerTheory)
+    val SMT = translator.translate(f)
+    println(SMT)
+    
+  }
   def main(args : Array[String]) = {
     println("Testing")
     
-    boolean()
-    val fp2_2 = FPFactory(List(2, 2))
-    println("fp2_2: (" + fp2_2.getClass + ") = " + fp2_2)
-    val fpAddFactory = new FPOpFactory("fp.add")
-    val fpAdd2_2 = fpAddFactory(List(fp2_2, fp2_2, fp2_2))
-    println("fpAdd2_2: (" + fpAdd2_2.getClass + ") = " + fpAdd2_2)
+    integer()
+    
+    
+//    val fp2_2 = FPFactory(List(2, 2))
+//    println("fp2_2: (" + fp2_2.getClass + ") = " + fp2_2)
+//    val fpAddFactory = new FPOpFactory("fp.add")
+//    val fpAdd2_2 = fpAddFactory(List(fp2_2, fp2_2, fp2_2))
+//    println("fpAdd2_2: (" + fpAdd2_2.getClass + ") = " + fpAdd2_2)
   }
 }
