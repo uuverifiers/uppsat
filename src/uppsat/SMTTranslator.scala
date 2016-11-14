@@ -14,7 +14,7 @@ class SMTTranslator(theory : Theory) {
        }
        case LeafNode(symbol) => {
          // TODO: Refine this...
-         if (!((theory.symbols ++ BooleanTheory.symbols) contains symbol)) {
+         if (!BooleanTheory.isDefinedLiteral(symbol) || !theory.isDefinedLiteral(symbol)) {
            definedSymbols += symbol 
          }
          symbol.theory.toSMTLib(symbol)
@@ -28,6 +28,7 @@ class SMTTranslator(theory : Theory) {
   }
   
   def translate(node : Node) : String = {
+    definedSymbols = Set()
     val assertions = "(assert " + translateNode(node) + ")"
 
     header + "\n" +

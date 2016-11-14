@@ -78,6 +78,13 @@ object IntegerTheory extends Theory {
   val sorts = List(IntegerSort)
   val symbols = List(IntZero, IntAddition, IntSubstraction, IntLessThanOrEqual, IntEquality)
   
+  def isDefinedLiteral(symbol : ConcreteFunctionSymbol) = {
+    symbol match {
+      case IntVar(_) => false
+      case _ => true
+    }
+  }
+  
   val SMTHeader = {
     "(set-logic QF_LIA)" //TODO: Check the actual logic
   }

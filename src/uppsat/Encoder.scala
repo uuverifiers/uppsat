@@ -11,7 +11,6 @@ class Encoder[T] {
     def encodeAddition( symbol : ConcreteFunctionSymbol, desc : Seq[Node], precision : T) : Node = {
       val cond = new InternalNode(symbol, desc) <= precisionToInt(precision)
       val newNode = InternalNode(IntITE, List(cond, new InternalNode(symbol, desc), precisionToInt(precision)))
-      println (symbol + " / " + newNode)
       newNode
     }
     

@@ -34,21 +34,39 @@ object main {
     println("<<<SMT Formula>>>")
     val enc = new Encoder[Int]
     val pmap = new PrecisionMap[Int]
-    for ( n <- formula.nodes)
-      pmap.update(n, 100)
-    val encFormula = enc.encode(formula, pmap)
+    def setPrecMap(p : Int) = {
+      for ( n <- formula.nodes)
+        pmap.update(n, p)      
+    }
+
+    setPrecMap(1)
     
+    val encFormula = enc.encode(formula, pmap)
     val translator = new SMTTranslator(IntegerTheory)
     val SMT = translator.translate(formula)
     println(SMT)
     println("<<<Encoded SMT Formula>>>")
     val SMT2 = translator.translate(encFormula)
     println(SMT2)
-//    val result = Z3Solver.solve(formula, extractSymbols)
-//    if (result.isDefined)
-//      println("Model found: " + result.get)
-//    else
-//      println("No model...")
-  ()
+    
+
+//    var precision = 0
+//    var result = false
+//    while (!result && precision < 10) {
+//      precision += 1
+//      setPrecMap(precision)
+//      println("Trying precision " + precision)
+//      val pFormula = enc.encode(formula, pmap)
+//      val pSMT = translator.translate(pFormula)
+//      result = Z3Solver.solve(pSMT)
+//    }
+//    
+//    if (result) {
+//      val pFormula = enc.encode(formula, pmap)
+//      val pSMT = translator.translate(pFormula)      
+//      println("Model found: " + Z3Solver.getModel(pSMT, translator.getDefinedSymbols.toList.map(_.toString)))
+//    } else {
+//      println("No model found...")
+//    }
   }
 }

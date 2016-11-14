@@ -57,6 +57,13 @@ object BooleanTheory extends Theory {
   val sorts = List(BooleanSort)
   val symbols = List(BoolTrue, BoolFalse, BoolConjunction, BoolDisjunction, BoolNegation)
   
+  def isDefinedLiteral(symbol : ConcreteFunctionSymbol) = {
+    symbol match {
+      case BoolVar(_) => false
+      case _ => true
+    }
+  }
+  
   val SMTHeader = {
     "(set-info :source Boolean logic needs no theory)"
   }

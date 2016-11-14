@@ -16,6 +16,10 @@ object PolymorphicTheory extends Theory {
   
   val sorts = List()
   val symbols = List()
+
+  def isDefinedLiteral(symbol : ConcreteFunctionSymbol) = {
+    false
+  }
   
   val SMTHeader = {
     "(set-info :source Poly logic needs no theory)"

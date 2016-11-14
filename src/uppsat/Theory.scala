@@ -8,7 +8,7 @@ trait Theory {
     val sorts : Seq[Sort]
     val symbols : Seq[FunctionSymbol]
     
-    
+    def isDefinedLiteral(symbol : ConcreteFunctionSymbol) : Boolean
     def SMTHeader : String
     def toSMTLib(symbol : ConcreteFunctionSymbol) : String
     def toSMTLib(sort : ConcreteSort) : String
