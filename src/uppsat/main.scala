@@ -50,23 +50,27 @@ object main {
     println(SMT2)
     
 
-//    var precision = 0
-//    var result = false
-//    while (!result && precision < 10) {
-//      precision += 1
-//      setPrecMap(precision)
-//      println("Trying precision " + precision)
-//      val pFormula = enc.encode(formula, pmap)
-//      val pSMT = translator.translate(pFormula)
-//      result = Z3Solver.solve(pSMT)
-//    }
-//    
-//    if (result) {
-//      val pFormula = enc.encode(formula, pmap)
-//      val pSMT = translator.translate(pFormula)      
-//      println("Model found: " + Z3Solver.getModel(pSMT, translator.getDefinedSymbols.toList.map(_.toString)))
-//    } else {
-//      println("No model found...")
-//    }
+    def tryZ3() = {
+      var precision = 0
+      var result = false
+      while (!result && precision < 10) {
+        precision += 1
+        setPrecMap(precision)
+        println("Trying precision " + precision)
+        val pFormula = enc.encode(formula, pmap)
+        val pSMT = translator.translate(pFormula)
+        result = Z3Solver.solve(pSMT)
+      }
+      
+      if (result) {
+        val pFormula = enc.encode(formula, pmap)
+        val pSMT = translator.translate(pFormula)      
+        println("Model found: " + Z3Solver.getModel(pSMT, translator.getDefinedSymbols.toList.map(_.toString)))
+      } else {
+        println("No model found...")
+      }
+    }  
+
+//    tryZ3()
   }
 }
