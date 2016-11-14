@@ -16,28 +16,39 @@ object main {
   }
   
   
-  def integer() : (String, Set[ConcreteFunctionSymbol]) = {
+  def integer() = {
     import uppsat.IntegerTheory._
     import uppsat.BooleanTheory._
     
     val x = new IntVar("x")
     val y = new IntVar("y")
     
-    val f = (x === ( y - 4)) & ( (x + y) === 6)
-    val translator = new SMTTranslator(IntegerTheory)
-    val SMT = translator.translate(f)
-    (SMT, translator.getDefinedSymbols)
+    (x === ( y - 4)) & ( (x + y) === 6)
+    
   }
+  
+  
   def main(args : Array[String]) = {
-    val (formula, defSyms) = integer()
-    val extractSymbols = defSyms.map(_.toString).toList
+    val formula= integer()
+    //val extractSymbols = defSyms.map(_.toString).toList
     println("<<<SMT Formula>>>")
-    println(formula)
-    val result = Z3Solver.solve(formula, extractSymbols)
-    if (result.isDefined)
-      println("Model found: " + result.get)
-    else
-      println("No model...")
+    val enc = new Encoder[Int]
+    val pmap = new PrecisionMap[Int]
+    for ( n <- formula.nodes)
+      pmap.update(n, 100)
+    val encFormula = enc.encode(formula, pmap)
+    
+    val translator = new SMTTranslator(IntegerTheory)
+    val SMT = translator.translate(formula)
+    println(SMT)
+    println("<<<Encoded SMT Formula>>>")
+    val SMT2 = translator.translate(encFormula)
+    println(SMT2)
+//    val result = Z3Solver.solve(formula, extractSymbols)
+//    if (result.isDefined)
+//      println("Model found: " + result.get)
+//    else
+//      println("No model...")
   ()
   }
 }

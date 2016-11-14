@@ -12,6 +12,21 @@ import IntegerTheory._
 //     2) Typing the AST messed up matching with Node (e.g., in translator)
 abstract class Node(val symbol : ConcreteFunctionSymbol) {
   
+  def symbols : Set[ConcreteFunctionSymbol]= {
+      this match {
+        case InternalNode(symbol, desc) => desc.foldLeft (Set(symbol)) ((s1,s2) => s1 ++ s2.symbols)
+        case LeafNode(symbol) => Set(symbol)
+      }
+  }
+  
+  def nodes : Set[Node]= {
+      this match {
+        case InternalNode(symbol, desc) => desc.foldLeft (Set(this)) ((s1,s2) => s1 ++ s2.nodes)
+        case LeafNode(symbol) => Set(this)
+      }
+  }
+  
+  //Syntactic sugar
   def &(that : Node) = {
      (this.symbol.sort, that.symbol.sort) match {
        case (BooleanSort, BooleanSort) => boolAnd(this, that)
@@ -40,6 +55,12 @@ abstract class Node(val symbol : ConcreteFunctionSymbol) {
   def ===(that : Node) = {
     (this.symbol.sort, that.symbol.sort) match {
        case (IntegerSort, IntegerSort) => intEquality(this, that)
+     }
+  }
+  
+  def <=(that : Node) = {
+    (this.symbol.sort, that.symbol.sort) match {
+       case (IntegerSort, IntegerSort) => intLessThanOrEqual(this, that)
      }
   }
 }

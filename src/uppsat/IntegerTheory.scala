@@ -1,6 +1,7 @@
 package uppsat
 
 import uppsat.BooleanTheory._
+import uppsat.PolymorphicTheory.PolyITE
 
 object IntegerTheory extends Theory {
   val name = "IntegerTheory"
@@ -40,7 +41,8 @@ object IntegerTheory extends Theory {
   case object IntAddition extends IntegerBinaryFunctionSymbol("addition")   
   case object IntSubstraction extends IntegerBinaryFunctionSymbol("substraction")  
   case object IntEquality extends IntegerPredicateSymbol("integer-equality", List(IntegerSort, IntegerSort))
-  
+  case object IntLessThanOrEqual extends IntegerPredicateSymbol("integer-leq", List(IntegerSort, IntegerSort))
+  case object IntITE extends PolyITE("integer-ite", IntegerSort)
   
   implicit def IntToNode(int : Int) = LeafNode(new IntLiteral(int))
   implicit def IntVarToNode(intVar : IntVar) = LeafNode(intVar)
@@ -58,7 +60,9 @@ object IntegerTheory extends Theory {
     InternalNode(IntEquality, List(left, right))
   }
   
-  
+  def intLessThanOrEqual(left: Node, right: Node) = {
+    InternalNode(IntLessThanOrEqual, List(left, right))
+  }
   
   
   
@@ -72,7 +76,7 @@ object IntegerTheory extends Theory {
   }
 
   val sorts = List(IntegerSort)
-  val symbols = List(IntZero, IntAddition, IntSubstraction)
+  val symbols = List(IntZero, IntAddition, IntSubstraction, IntLessThanOrEqual, IntEquality)
   
   val SMTHeader = {
     "(set-logic QF_LIA)" //TODO: Check the actual logic
@@ -84,6 +88,7 @@ object IntegerTheory extends Theory {
       case IntAddition => "+"
       case IntSubstraction => "-"
       case IntEquality => "="
+      case IntLessThanOrEqual => "<="
       case IntLiteral(value) => value.toString()
       case IntVar(name) => name
     }
