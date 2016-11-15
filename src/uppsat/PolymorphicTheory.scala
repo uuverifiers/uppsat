@@ -17,6 +17,9 @@ object PolymorphicTheory extends Theory {
   val sorts = List()
   val symbols = List()
 
+  def parseLiteral(lit : String) = 
+    throw new Exception("Parsing in polymorphic theory!")
+  
   def isDefinedLiteral(symbol : ConcreteFunctionSymbol) = {
     false
   }

@@ -23,7 +23,7 @@ object Z3Solver extends SMTSolver {
   def getModel(formula : String, extractSymbols : List[String]) = {
     val extendedFormula = formula + (extractSymbols.map("(eval " + _ + ")").mkString("\n", "\n", ""))
     val result = runSolver(extendedFormula)
-    parseOutput(result, extractSymbols)    
+    parseOutput(result, extractSymbols).get    
   }
   
   def solve(formula : String) : Boolean = {

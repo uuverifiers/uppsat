@@ -3,7 +3,8 @@ package uppsat
 import uppsat.IntegerTheory._
 
 class Encoder[T] {
-
+  var nodeMap = Map() : Map[Node, Node]
+  
     def precisionToInt(p : T) = {
       p.asInstanceOf[Int]      
     }
@@ -20,15 +21,21 @@ class Encoder[T] {
         case symbol : IntegerFunctionSymbol =>  encodeAddition(symbol, desc, precision)
         case symbol : IntegerPredicateSymbol => new InternalNode(symbol, desc)        
         case symbol => new InternalNode(symbol, desc)
-        
-      }
-      
+      }    
     }
       
-    def encode(ast : Node, pmap : PrecisionMap[T]) : Node = {
-      ast match {
-        case InternalNode(symbol, desc) => encodeSymbol(symbol, desc.map(encode(_,pmap)), pmap(ast))
-        case LeafNode(symbol) => encodeSymbol(symbol, List.empty, pmap(ast))
-      }
+    def encodeAux(ast : Node, pmap : PrecisionMap[T]) : Node = {
+      val newNode = 
+        ast match {
+          case InternalNode(symbol, desc) => encodeSymbol(symbol, desc.map(encodeAux(_,pmap)), pmap(ast))
+          case LeafNode(symbol) => encodeSymbol(symbol, List.empty, pmap(ast))
+        }
+      nodeMap += ast -> newNode
+      newNode
+    }
+    
+    def encode(ast : Node, pmap : PrecisionMap[T]) : (Node, Map[Node, Node]) = {
+      val newAst = encodeAux(ast, pmap)
+      (newAst, nodeMap)
     }
 }

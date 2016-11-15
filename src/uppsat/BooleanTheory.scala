@@ -6,6 +6,7 @@ object BooleanTheory extends Theory {
   
   object BooleanSort extends ConcreteSort {
       val name = "Boolean"
+      val theory = BooleanTheory : Theory
     }
   
   class BooleanFunctionSymbol(val name :  String, val args : Seq[ConcreteSort], val sort : ConcreteSort) extends ConcreteFunctionSymbol {
@@ -56,6 +57,15 @@ object BooleanTheory extends Theory {
 
   val sorts = List(BooleanSort)
   val symbols = List(BoolTrue, BoolFalse, BoolConjunction, BoolDisjunction, BoolNegation)
+  
+  
+  def parseLiteral(lit : String) = {
+    lit match {
+      case "true" => BoolTrue
+      case "false" => BoolFalse
+      case _ => throw new Exception("Couldn't parse (Boolean) literal: " + lit)
+    }
+  }
   
   def isDefinedLiteral(symbol : ConcreteFunctionSymbol) = {
     symbol match {

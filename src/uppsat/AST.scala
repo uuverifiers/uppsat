@@ -64,5 +64,10 @@ abstract class Node(val symbol : ConcreteFunctionSymbol) {
      }
   }
 }
-case class InternalNode(override val symbol : ConcreteFunctionSymbol, desc : Seq[Node]) extends Node(symbol)
-case class LeafNode(override val symbol : ConcreteFunctionSymbol) extends Node(symbol)
+case class InternalNode(override val symbol : ConcreteFunctionSymbol, desc : Seq[Node]) extends Node(symbol) {
+  override def toString = symbol.toString + "(" + desc.map(_.toString).mkString(", ") + ")"
+}
+
+case class LeafNode(override val symbol : ConcreteFunctionSymbol) extends Node(symbol) {
+  override def toString = symbol.toString
+}

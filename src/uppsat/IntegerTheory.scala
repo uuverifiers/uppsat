@@ -9,6 +9,7 @@ object IntegerTheory extends Theory {
   
   object IntegerSort extends ConcreteSort {
       val name = "Integer"
+      val theory = IntegerTheory : Theory
     }
   
   class IntegerFunctionSymbol(val name :  String, val args : Seq[ConcreteSort], val sort : ConcreteSort) extends ConcreteFunctionSymbol {   
@@ -64,6 +65,9 @@ object IntegerTheory extends Theory {
     InternalNode(IntLessThanOrEqual, List(left, right))
   }
   
+  def parseLiteral(lit : String) = {
+    IntLiteral(lit.toInt)
+  }
   
   
   object IntVar {
@@ -100,6 +104,8 @@ object IntegerTheory extends Theory {
       case IntVar(name) => name
     }
   }
+  
+  
   
   def toSMTLib(sort : ConcreteSort) = {
     sort match {

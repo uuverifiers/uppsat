@@ -4,6 +4,7 @@ package uppsat;
 
 trait Sort {
   val name : String
+  val theory : Theory
   override def toString = name
 }
 
