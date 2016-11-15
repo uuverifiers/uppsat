@@ -12,7 +12,7 @@ object Z3Solver extends SMTSolver {
   
   def parseOutput(output : String, extractSymbols : List[String]) : Option[Map[String, String]] = {
     val lines = output.split("\n")
-    val result = lines.head
+    val result = lines.head.trim()
     if (result != "sat")
       throw new Exception("Trying to get model from non-sat result (" + result + ")")
     
@@ -28,11 +28,11 @@ object Z3Solver extends SMTSolver {
   
   def solve(formula : String) : Boolean = {
     val result = runSolver(formula)  
-    val retVal = result.split("\n").head
+    val retVal = result.split("\n").head.trim()
     retVal match {
       case "sat" => true
       case "unsat" => false
-      case str => throw new Exception("Unexptected sat/unsat result: " + str)
+      case str => throw new Exception("Unexpected sat/unsat result: " + str)
     }
   }
 

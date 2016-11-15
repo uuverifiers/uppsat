@@ -71,6 +71,6 @@ object main {
       }
     }  
 
-//    tryZ3()
+    tryZ3()
   }
 }
