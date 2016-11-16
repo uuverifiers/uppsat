@@ -118,7 +118,7 @@ def translateNoAssert(node : Node) : String = {
   def getNodeModel(model : scala.collection.immutable.Map[String, String]) : scala.collection.immutable.Map[Node, Node] = {
     (for ((k, v) <- model) yield {
       val node = IdToNode(k)
-      val valNode = node.symbol.sort.theory.parseLiteral(v)
+      val valNode = node.symbol.sort.theory.parseLiteral(v.trim()) //AZ: Should the trim call go elsewhere?
       node -> valNode
     }).toMap
   }
