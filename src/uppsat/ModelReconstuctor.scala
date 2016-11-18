@@ -1,26 +1,28 @@
 package uppsat
 
+import uppsat.PrecisionMap.Path
+
 class ModelReconstuctor[T](approximation : Approximation[T]) {
-  type Model = Map[Node, Node]
+  type Model = Map[AST, AST]
   
   var constructedModel = None : Option[Model]
   var updatedPrecisionMap = None : Option[PrecisionMap[T]]
   // TODO: should we do this?
   var failed = false
   
-  def validateNode(node : InternalNode, model : Model, currentModel : Model, nodeMap : Map[Node, Node]) : Option[Model] = {
-    // Which approximate node does the original node correspond to?
-    // nodeMap has the answer
-    val approximateValue = model(nodeMap(node))
-    val realDesc = node.desc.map(x => currentModel(nodeMap(x)))
-    val newNode = InternalNode(node.symbol, realDesc)
+  def validateAST(ast : AST, model : Model, currentModel : Model, sourceToEncoding : Map[AST, AST]) : Option[Model] = {
+    // Which approximate ast does the original ast correspond to?
+    // sourceToEncoding has the answer
+    val approximateValue = model(sourceToEncoding(ast))
+    val realDesc = ast.children.map(x => currentModel(sourceToEncoding(x)))
+    val newAST = AST(ast.symbol, realDesc)
     val translator = new SMTTranslator(approximation.outputTheory)
-    val nodeSMT = translator.translateNoAssert(newNode)
+    val astSMT = translator.translateNoAssert(newAST)
     
-    val result = Z3Solver.solve(nodeSMT)
-    val smtModel = Z3Solver.getModel(nodeSMT, translator.getDefinedSymbols.toList)
-    val exactModel = translator.getNodeModel(smtModel)
-    val exactValue = exactModel(newNode)
+    val result = Z3Solver.solve(astSMT)
+    val smtModel = Z3Solver.getModel(astSMT, translator.getDefinedSymbols.toList)
+    val exactModel = translator.getASTModel(smtModel)
+    val exactValue = exactModel(newAST)
     
     if (approximateValue == exactValue) {
       Some(currentModel)
@@ -30,23 +32,31 @@ class ModelReconstuctor[T](approximation : Approximation[T]) {
   }
   
   // TODO: Do we want the type partialModel / partialPrecisionMap
-  def reconstructNode(node : Node, model : Model, nodeMap : Map[Node, Node], pmap : PrecisionMap[T]) : (Model, PrecisionMap[T]) = {
-    node match {
-      case intNode @ InternalNode(symbol, desc) => {
+  def reconstructAST(ast : AST, prefix : Path, model : Model, sourceToEncoding : Map[AST, AST], pmap : PrecisionMap[T]) : (Model, PrecisionMap[T]) = {
+    ast match {
+      case leafAST @ AST(symbol, List()) => {
+        if (symbol.theory.isDefinedLiteral(symbol)) {
+          (Map(leafAST -> leafAST), PrecisionMap[T]())
+        } else {
+          (Map(leafAST -> model(leafAST)), PrecisionMap[T]())
+        }
+      }
+      
+      case intAST @ AST(symbol, children) => {
         var currentModel = model
         var currentPmap = PrecisionMap[T]()
-        for (d <- desc) {
-          val (newModel, newPmap) = reconstructNode(d, model, nodeMap, pmap)
+        for ((c,i) <- children zip children.indices) {
+          val (newModel, newPmap) = reconstructAST(c, i :: prefix, model, sourceToEncoding, pmap)
           
           // TODO: fix when doing patching
           currentModel = currentModel ++ newModel
           currentPmap = currentPmap.merge(newPmap)
         }
         
-        validateNode(intNode, model, currentModel, nodeMap) match {
+        validateAST(intAST, model, currentModel, sourceToEncoding) match {
           case None => {
             failed = true
-            currentPmap = currentPmap.update(node, approximation.refine(pmap(node)))
+            currentPmap = currentPmap.update(prefix, approximation.refine(pmap(prefix)))
           }
           case Some(newModel) => // update Model
         }
@@ -54,19 +64,13 @@ class ModelReconstuctor[T](approximation : Approximation[T]) {
         (currentModel, currentPmap)
       }
       
-      case leafNode @ LeafNode(symbol) => {
-        if (symbol.theory.isDefinedLiteral(symbol)) {
-          (Map(leafNode -> leafNode), PrecisionMap[T]())
-        } else {
-          (Map(leafNode -> model(leafNode)), PrecisionMap[T]())
-        }
-      }
+      
     }
   }
   
-  def reconstruct(node : Node, model : Model, nodeMap : Map[Node, Node], pmap : PrecisionMap[T]) : Boolean = {
+  def reconstruct(ast : AST, model : Model, sourceToEncoding : Map[AST, AST], pmap : PrecisionMap[T]) : Boolean = {
       failed = false
-      val (currentModel, currentPmap) = reconstructNode(node, model, nodeMap, pmap)
+      val (currentModel, currentPmap) = reconstructAST(ast, List(), model, sourceToEncoding, pmap)
       if (failed) {
         updatedPrecisionMap = Some(pmap.merge(currentPmap))
         false

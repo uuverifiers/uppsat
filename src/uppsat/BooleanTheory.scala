@@ -33,22 +33,22 @@ object BooleanTheory extends Theory {
   case object BoolDisjunction extends BooleanBinaryFunctionSymbol("disjunction")  
   case object BoolImplication extends BooleanBinaryFunctionSymbol("implication")  
   case object BoolNegation extends BooleanUnaryFunctionSymbol("negation")
-
+  
   object BoolVar {
     def unapply(symbol : BoolVar) : Option[String] = {
         Some(symbol.name)
     }  
   }
   
-  implicit def BoolVarToNode(boolVar : BoolVar) = LeafNode(boolVar)
-  implicit def BoolFunctionToNode(boolConst : BooleanConstant) = LeafNode(boolConst)
+  implicit def BoolVarToAST(boolVar : BoolVar) = AST(boolVar)
+  implicit def BoolFunctionToAST(boolConst : BooleanConstant) = AST(boolConst)
   
-  def boolAnd(left: Node, right: Node) = {
-    InternalNode(BoolConjunction, List(left, right))
+  def boolAnd(left: AST, right: AST) = {
+    AST(BoolConjunction, List(left, right))
   }
   
-  def boolNot(node: Node) = {
-    InternalNode(BoolNegation, List(node))
+  def boolNot(ast: AST) = {
+    AST(BoolNegation, List(ast))
   }
   
   // Make regular class; id is not support to be the identifier

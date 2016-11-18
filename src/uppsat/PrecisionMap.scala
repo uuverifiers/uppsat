@@ -1,15 +1,42 @@
 package uppsat
 
 object PrecisionMap {
-  def apply[T]() = new PrecisionMap[T](Map.empty[Node, T])
+  type Path = List[Int]
+  
+  def apply[T]() = new PrecisionMap[T](Map.empty[Path, T])
 }
 
-// TODO: make map private
-class PrecisionMap[T](val map : Map[Node, T]) {
+import PrecisionMap._
 
-    
-  def update(node : Node, newP : T) = {
-    new PrecisionMap[T](map + (node -> newP)) //TODO: Check for maximum precision
+// TODO: make map private
+class PrecisionMap[T](val map : Map[Path, T]) {  
+  
+  def update(path : Path, newP : T) = {
+    new PrecisionMap[T](map + (path -> newP)) //TODO: Check for maximum precision
+  }
+  
+  def cascadingIncrease(prefix : Path, ast : AST) : PrecisionMap[T]= {
+    ast match {
+      case AST(_, List()) => update(prefix, ((this(prefix)).asInstanceOf[Int] + 1).asInstanceOf[T])
+      case AST(_, children) => {
+         var pmap = this
+         for ( i <- children.indices)
+           pmap = pmap.cascadingIncrease(i :: prefix, children(i))
+         pmap.update(prefix, ((pmap(prefix)).asInstanceOf[Int] + 1).asInstanceOf[T])
+      }      
+    }
+  }
+  
+  def cascadingUpdate(prefix : Path, ast : AST, newPrecision : T) : PrecisionMap[T]= {
+    ast match {
+      case AST(_, List()) => update(prefix, newPrecision)
+      case AST(_, children) => {
+         var pmap = this
+         for ( i <- children.indices)
+           pmap = pmap.cascadingUpdate(i :: prefix, children(i), newPrecision)
+         pmap.update(prefix, newPrecision)
+      }      
+    }
   }
   
   // Takes the maximum precision of the two
@@ -19,7 +46,7 @@ class PrecisionMap[T](val map : Map[Node, T]) {
     new PrecisionMap[T](map ++ newMappings)
   }
   
-  def apply(node : Node) = map(node) //TODO: getorelse
+  def apply(path : Path) = map(path) //TODO: getorelse
   
   override def toString() = {
     map.toList.map(x => x match { case (k, v) => k + " => " + v }).mkString("\n")

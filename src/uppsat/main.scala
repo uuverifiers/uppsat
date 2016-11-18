@@ -35,26 +35,16 @@ object main {
     println("<<<SMT Formula>>>")
     val enc = new Encoder[Int]
     var pmap = PrecisionMap[Int]()
-    def addPrecMap(p : Int) = {
-      for (n <- formula.nodes)
-        pmap = pmap.update(n, pmap(n) + p)      
-    }
     
-    def setPrecMap(p : Int) = {
-      for ( n <- formula.nodes)
-        pmap = pmap.update(n, p)      
-    }    
-
-    setPrecMap(1)
-    
+    pmap = pmap.cascadingUpdate(List(), formula, 1)    
     val translator = new SMTTranslator(IntegerTheory)
     // TODO: How do we solve this logistically
-    var nodeMap = Map() : Map[Node, Node]
+    var sourceToEncoding = Map() : Map[AST, AST]
     
     def tryZ3() = {
       var iterations = 0
       
-      var finalModel = None : Option[Map[Node, Node]]
+      var finalModel = None : Option[Map[AST, AST]]
       var haveAnAnswer = false
       var pSMT = ""
       while (!haveAnAnswer && iterations < 100) {
@@ -64,25 +54,26 @@ object main {
         while (!haveApproxModel && iterations < 100) {
           iterations += 1
           println("Starting iteration " + iterations)
-          val (pFormula, newNodeMap) = enc.encode(formula, pmap)
-          nodeMap = newNodeMap
+          val (pFormula, newASTMap) = enc.encode(formula, pmap)          
+          sourceToEncoding = newASTMap
           pSMT = translator.translate(pFormula)
+          println(pSMT)
           val result = Z3Solver.solve(pSMT)
           if (result) {
             haveApproxModel= true
           } else {
             println("Increasing all precisions")
             // TODO: Unsat core reasoning
-            addPrecMap(1)
+            pmap = pmap.cascadingIncrease(List(), formula)
           }
         }
   
         if (haveApproxModel) {   
           val model = Z3Solver.getModel(pSMT, translator.getDefinedSymbols.toList)
-          val nodeModel = translator.getNodeModel(model)
+          val nodeModel = translator.getASTModel(model)
           
           val reconstructor = new ModelReconstuctor[Int](IntApproximation)
-          val recVal = reconstructor.reconstruct(formula, nodeModel, nodeMap, pmap)
+          val recVal = reconstructor.reconstruct(formula, nodeModel, sourceToEncoding, pmap)
           if (recVal) {
             haveAnAnswer = true
             finalModel = reconstructor.constructedModel

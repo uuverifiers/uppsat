@@ -6,50 +6,52 @@ class SMTTranslator(theory : Theory) {
   //var definedSymbols = Set() : Set[ConcreteFunctionSymbol]
   
   // TODO: HACK
-  //val symbolToNode = Map() : Map[ConcreteFunctionSymbol, Node]
-  var nextNode = 0
-  val nodeToId = Map() : Map[Node, String]
-  val IdToNode = Map() : Map[String, Node]
-  val nodeSymbols = Set() : Set[(String, String)]
+  //val symbolToAST = Map() : Map[ConcreteFunctionSymbol, AST]
+  var nextAST = 0
+  val astToId = Map() : Map[AST, String]
+  val IdToAST = Map() : Map[String, AST]
+  val astSymbols = Set() : Set[(String, String)]
   val symbolAssertions = MutableList() : MutableList[String]
   
-  def translateNode(node : Node) : String = {
+  def translateAST(ast : AST) : String = {
      // TODO: Make this proper?  
-     node match {
-       case InternalNode(symbol, desc) => {
-           val fun = symbol.theory.toSMTLib(symbol) 
-           val args = desc.map(translateNode)
-           val thisNode = "(" + fun + " " + args.mkString(" ") + ")"
+     ast match {
+       case AST(symbol, List()) => {
+         // TODO: Refine this...
+         val thisAST = symbol.theory.toSMTLib(symbol)
+         if (!BooleanTheory.isDefinedLiteral(symbol) || !theory.isDefinedLiteral(symbol)) {           
+           val astId = thisAST
+           astToId += ast -> astId
+           IdToAST += astId -> ast
            
-           // Create extra-symbol that contains the value of this node
-           val nodeId = node.symbol.toString + nextNode.toString
-           nodeToId += node -> nodeId
-           IdToNode += nodeId -> node
-           nextNode += 1             
-           
-           val newSymbol = nodeId
+           val newSymbol = thisAST
            val newSort  = symbol.sort.theory.toSMTLib(symbol.sort)
-           val symbolAssertion = "(= " + newSymbol + " " + thisNode + ")" 
-           nodeSymbols += ((newSymbol, newSort))
+           val symbolAssertion = "(= " + newSymbol + " " + thisAST + ")"    
+           astSymbols += ((newSymbol, newSort))           
+         }
+         thisAST
+       }
+       
+       case AST(symbol, desc) => {
+           val fun = symbol.theory.toSMTLib(symbol) 
+           val args = desc.map(translateAST)
+           val thisAST = "(" + fun + " " + args.mkString(" ") + ")"
+           
+           // Create extra-symbol that contains the value of this ast
+           val astId = ast.symbol.toString + nextAST.toString
+           astToId += ast -> astId
+           IdToAST += astId -> ast
+           nextAST += 1             
+           
+           val newSymbol = astId
+           val newSort  = symbol.sort.theory.toSMTLib(symbol.sort)
+           val symbolAssertion = "(= " + newSymbol + " " + thisAST + ")" 
+           astSymbols += ((newSymbol, newSort))
            symbolAssertions += symbolAssertion
            
-           thisNode
+           thisAST
        }
-       case LeafNode(symbol) => {
-         // TODO: Refine this...
-         val thisNode = symbol.theory.toSMTLib(symbol)
-         if (!BooleanTheory.isDefinedLiteral(symbol) || !theory.isDefinedLiteral(symbol)) {           
-           val nodeId = thisNode
-           nodeToId += node -> nodeId
-           IdToNode += nodeId -> node
-           
-           val newSymbol = thisNode
-           val newSort  = symbol.sort.theory.toSMTLib(symbol.sort)
-           val symbolAssertion = "(= " + newSymbol + " " + thisNode + ")"    
-           nodeSymbols += ((newSymbol, newSort))           
-         }
-         thisNode
-       }
+       
      }
   }
   
@@ -59,22 +61,22 @@ class SMTTranslator(theory : Theory) {
   }
   
   def symDecs= {
-    nodeSymbols.toList.map(x => x match { case (sym, sort) => "(declare-fun " + sym + " () " + sort + ")"}).mkString("\n")
+    astSymbols.toList.map(x => x match { case (sym, sort) => "(declare-fun " + sym + " () " + sort + ")"}).mkString("\n")
   }
   
   def symAsserts= {
     symbolAssertions.map("(assert " + _ + ")").mkString("\n")
   }
   
-  def translate(node : Node) : String = {
+  def translate(ast : AST) : String = {
 //    definedSymbols.clear()
-    nextNode = 0
-    nodeToId.clear()
-//    symbolToNode.clear()
-    nodeSymbols.clear()
+    nextAST = 0
+    astToId.clear()
+//    symbolToAST.clear()
+    astSymbols.clear()
     symbolAssertions.clear()
     
-    val assertions = "(assert " + translateNode(node) + ")"
+    val assertions = "(assert " + translateAST(ast) + ")"
     
     header + "\n" +
 //    declarations(definedSymbols.toList) + "\n" +
@@ -84,16 +86,16 @@ class SMTTranslator(theory : Theory) {
     footer
   }
   
-// TODO: What is a meaningful way to do this (sometimes we want to assert root node, sometimes don't)  
-def translateNoAssert(node : Node) : String = {
+// TODO: What is a meaningful way to do this (sometimes we want to assert root ast, sometimes don't)  
+def translateNoAssert(ast : AST) : String = {
 //    definedSymbols.clear()
-    nextNode = 0
-    nodeToId.clear()
-//    symbolToNode.clear()
-    nodeSymbols.clear()
+    nextAST = 0
+    astToId.clear()
+//    symbolToAST.clear()
+    astSymbols.clear()
     symbolAssertions.clear()
     
-   val assertions = "(assert " + translateNode(node) + ")"
+   val assertions = "(assert " + translateAST(ast) + ")"
 
     
     header + "\n" +
@@ -111,15 +113,15 @@ def translateNoAssert(node : Node) : String = {
     "(check-sat)"
   }
   
-  //    def getDefinedSymbols = definedSymbols.toSet ++ nodeSymbols.map(_._1)
-  def getDefinedSymbols = nodeSymbols.map(_._1)  
+  //    def getDefinedSymbols = definedSymbols.toSet ++ astSymbols.map(_._1)
+  def getDefinedSymbols = astSymbols.map(_._1)  
 
   // TODO: Change ...mutable.Map to MMap
-  def getNodeModel(model : scala.collection.immutable.Map[String, String]) : scala.collection.immutable.Map[Node, Node] = {
+  def getASTModel(model : scala.collection.immutable.Map[String, String]) : scala.collection.immutable.Map[AST, AST] = {
     (for ((k, v) <- model) yield {
-      val node = IdToNode(k)
-      val valNode = node.symbol.sort.theory.parseLiteral(v.trim()) //AZ: Should the trim call go elsewhere?
-      node -> valNode
+      val ast = IdToAST(k)
+      val valAST = ast.symbol.sort.theory.parseLiteral(v.trim()) //AZ: Should the trim call go elsewhere?
+      ast -> valAST
     }).toMap
   }
 }

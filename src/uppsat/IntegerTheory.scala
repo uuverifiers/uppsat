@@ -45,24 +45,24 @@ object IntegerTheory extends Theory {
   case object IntLessThanOrEqual extends IntegerPredicateSymbol("integer-leq", List(IntegerSort, IntegerSort))
   case object IntITE extends PolyITE("integer-ite", IntegerSort)
   
-  implicit def IntToNode(int : Int) = LeafNode(new IntLiteral(int))
-  implicit def IntVarToNode(intVar : IntVar) = LeafNode(intVar)
-  implicit def IntFunctionToNode(intConst : IntegerConstant) = LeafNode(intConst)
+  implicit def IntToAST(int : Int) = AST(new IntLiteral(int))
+  implicit def IntVarToAST(intVar : IntVar) = AST(intVar)
+  implicit def IntFunctionToAST(intConst : IntegerConstant) = AST(intConst)
   
-  def intAddition(left: Node, right: Node) = {
-    InternalNode(IntAddition, List(left, right))
+  def intAddition(left: AST, right: AST) = {
+    AST(IntAddition, List(left, right))
   }
   
-  def intSubstraction(left: Node, right: Node) = {
-    InternalNode(IntSubstraction, List(left, right))
+  def intSubstraction(left: AST, right: AST) = {
+    AST(IntSubstraction, List(left, right))
   }
   
-  def intEquality(left: Node, right: Node) = {
-    InternalNode(IntEquality, List(left, right))
+  def intEquality(left: AST, right: AST) = {
+    AST(IntEquality, List(left, right))
   }
   
-  def intLessThanOrEqual(left: Node, right: Node) = {
-    InternalNode(IntLessThanOrEqual, List(left, right))
+  def intLessThanOrEqual(left: AST, right: AST) = {
+    AST(IntLessThanOrEqual, List(left, right))
   }
   
   def parseLiteral(lit : String) = {
