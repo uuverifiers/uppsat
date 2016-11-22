@@ -33,7 +33,7 @@ object main {
     //val extractSymbols = defSyms.map(_.toString).toList
     println(formula)
     println("<<<SMT Formula>>>")
-    val enc = new Encoder[Int]
+    val enc = new Encoder[Int](IntApproximation)
     var pmap = PrecisionMap[Int]()
     
     pmap = pmap.cascadingUpdate(List(), formula, 1)    
