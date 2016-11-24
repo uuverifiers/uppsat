@@ -6,8 +6,8 @@ import uppsat.PrecisionMap.Path
 object IntApproximation extends Approximation[Int] {
   val inputTheory = IntegerTheory
   val outputTheory = IntegerTheory
-  def refine(precision : Int) = precision + 1
-  
+  def satRefine(precision : Int) = precision + 1 
+  def unsatRefine(precision : Int) = precision + 1
   
   def encodeIntegerSymbol( symbol : ConcreteFunctionSymbol, children : List[AST], precision : Int) : AST = {
       val cond = new AST(symbol, children) <= precision
