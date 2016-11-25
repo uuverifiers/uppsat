@@ -4,6 +4,13 @@ import BooleanTheory._
 import IntegerTheory._
 import scala.collection.mutable.ArrayStack
 
+object Leaf {
+  def apply(d : ConcreteFunctionSymbol) = AST(d, List())
+  def unapply(t : AST) : Option[ConcreteFunctionSymbol] = t match {
+    case AST(d, List()) => Some(d)
+    case _ => None
+  }
+} 
 
 object AST {
   def apply(symbol : ConcreteFunctionSymbol) = new AST(symbol, List())

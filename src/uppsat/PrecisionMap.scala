@@ -24,7 +24,7 @@ class PrecisionMap[T](val map : Map[Path, T]) {
   
   def cascadingIncrease(prefix : Path, ast : AST) : PrecisionMap[T]= {
     ast match {
-      case AST(_, List()) => update(prefix, ((this(prefix)).asInstanceOf[Int] + 1).asInstanceOf[T])
+      case Leaf(_) => update(prefix, ((this(prefix)).asInstanceOf[Int] + 1).asInstanceOf[T])
       case AST(_, children) => {
          var pmap = this
          for ( i <- children.indices)
@@ -36,7 +36,7 @@ class PrecisionMap[T](val map : Map[Path, T]) {
   
   def cascadingUpdate(prefix : Path, ast : AST, newPrecision : T) : PrecisionMap[T]= {
     ast match {
-      case AST(_, List()) => update(prefix, newPrecision)
+      case Leaf(_) => update(prefix, newPrecision)
       case AST(_, children) => {
          var pmap = this
          for ( i <- children.indices)

@@ -16,7 +16,7 @@ class SMTTranslator(theory : Theory) {
   def translateAST(ast : AST) : String = {
      // TODO: Make this proper?  
      ast match {
-       case AST(symbol, List()) => {
+       case Leaf(symbol) => {
          // TODO: Refine this...
          val thisAST = symbol.theory.toSMTLib(symbol)
          if (!BooleanTheory.isDefinedLiteral(symbol) || !theory.isDefinedLiteral(symbol)) {           

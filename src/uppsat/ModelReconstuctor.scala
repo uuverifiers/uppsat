@@ -34,7 +34,7 @@ class ModelReconstuctor[T](approximation : Approximation[T]) {
   // TODO: Do we want the type partialModel / partialPrecisionMap
   def reconstructAST(ast : AST, prefix : Path, model : Model, sourceToEncoding : Map[AST, AST], pmap : PrecisionMap[T]) : (Model, PrecisionMap[T]) = {
     ast match {
-      case leafAST @ AST(symbol, List()) => {
+      case leafAST @ Leaf(symbol) => {
         if (symbol.theory.isDefinedLiteral(symbol)) {
           (Map(leafAST -> leafAST), PrecisionMap[T]())
         } else {
