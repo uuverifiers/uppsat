@@ -17,7 +17,5 @@ trait Approximation[T] {
   //castingFunction (sort, precision, precision)
   //refinementFunctions for SAT/UNSAT cases
   //errorFunction
-  //satRefine(node, appModel, candidateModel, precision : T) : T = 
-  //unsatRefine() 
-}
+ }
 

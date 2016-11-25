@@ -120,5 +120,3 @@ case class AST(val symbol : ConcreteFunctionSymbol, val children : List[AST]) {
 // TODO: We can use implicit conversion
 
 // ASKPC: Is this a good way? (syntactic sugar)
-// DD: 1) "Cannot" inherit case classes
-//     2) Typing the AST messed up matching with AST (e.g., in translator)

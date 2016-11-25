@@ -72,7 +72,7 @@ object main {
           } else {
             println("No approximative model found> updating precisions")
             // TODO: Unsat core reasoning
-            pmap = pmap.cascadingIncrease(List(), formula)
+            pmap = IntApproximation.unsatRefine(formula, List(), pmap)
           }
         }
 

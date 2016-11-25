@@ -1,6 +1,6 @@
 package uppsat
 
-import scala.collection.mutable.{Set, Map, MutableList}
+import scala.collection.mutable.{Set, Map => MMap, MutableList}
 import uppsat.PrecisionMap.Path
 import uppsat.ModelReconstructor.Model
 
@@ -10,8 +10,8 @@ class SMTTranslator(theory : Theory) {
   // TODO: HACK
   //val symbolToAST = Map() : Map[ConcreteFunctionSymbol, AST]
   var nextAST = 0
-  val pathToId = Map() : Map[Path, String]
-  val IdToPaths = Map() : Map[String, List[Path]]
+  val pathToId = MMap() : MMap[Path, String]
+  val IdToPaths = MMap() : MMap[String, List[Path]]
   val astSymbols = Set() : Set[(String, String)]
   val symbolAssertions = MutableList() : MutableList[String]
   
@@ -121,12 +121,11 @@ def translateNoAssert(ast : AST) : String = {
   def getDefinedSymbols = astSymbols.map(_._1)  
 
   // TODO: Change ...mutable.Map to MMap
-  def getASTModel(ast : AST, stringModel : scala.collection.immutable.Map[String, String]) : Model = {
+  def getASTModel(ast : AST, stringModel : Map[String, String]) : Model = {
     (for ((k, v) <- stringModel) yield {
       val paths = IdToPaths(k)
       // TODO: only one path to check?
       val valAST = ast(paths.head).symbol.sort.theory.parseLiteral(v.trim()) //AZ: Should the trim call go elsewhere?
-//      println("getASTModel..." + k + " ... " + paths.mkString(", ") + " -> " + valAST)
       val newMappings = (for (p <- paths) yield p -> valAST)
       newMappings
     }).flatten.toMap
