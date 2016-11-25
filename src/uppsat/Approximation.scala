@@ -6,7 +6,6 @@ trait Approximation[T] {
   
   val inputTheory : Theory
   val outputTheory : Theory
-  def refine()  
   def satRefine(ast : AST, appModel : Model, failedModel : Model, pmap : PrecisionMap[T]) : PrecisionMap[T]  
   def unsatRefine(ast : AST, core : List[AST], pmap : PrecisionMap[T]) : PrecisionMap[T]
   def encode(ast : AST, pmap : PrecisionMap[T]) : (AST, Map[AST, AST]) 

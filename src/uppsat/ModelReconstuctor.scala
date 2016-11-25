@@ -56,7 +56,7 @@ class ModelReconstuctor[T](approximation : Approximation[T]) {
         validateAST(intAST, model, currentModel, sourceToEncoding) match {
           case None => {
             failed = true
-            currentPmap = currentPmap.update(prefix, approximation.refine(pmap(prefix)))
+            currentPmap = approximation.unsatRefine(ast, List(), pmap)
           }
           case Some(newModel) => // update Model
         }

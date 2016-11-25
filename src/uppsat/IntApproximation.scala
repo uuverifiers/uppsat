@@ -6,8 +6,13 @@ import uppsat.PrecisionMap.Path
 object IntApproximation extends Approximation[Int] {
   val inputTheory = IntegerTheory
   val outputTheory = IntegerTheory
-  def satRefine(precision : Int) = precision + 1 
-  def unsatRefine(precision : Int) = precision + 1
+  def satRefine(ast : AST, appModel : Model, failedModel : Model, pmap : PrecisionMap[Int]) : PrecisionMap[Int] = {
+    pmap.map(_ + 1)
+  }
+//  def unsatRefine(precision : Int) = precision + 1
+  def unsatRefine(ast : AST, core : List[AST], pmap : PrecisionMap[Int]) : PrecisionMap[Int] = {
+    pmap.map(_ + 1)
+  }
   
   def encodeIntegerSymbol( symbol : ConcreteFunctionSymbol, children : List[AST], precision : Int) : AST = {
       val cond = new AST(symbol, children) <= precision
@@ -40,5 +45,9 @@ object IntApproximation extends Approximation[Int] {
     
     def encode(ast : AST, pmap : PrecisionMap[Int]) : (AST, Map[AST, AST]) = {
       encodeAux(ast, List(), pmap, Map())
+    }
+    
+    def reconstruct(ast : AST, appModel : Model) : Model = {
+      appModel
     }
 }
