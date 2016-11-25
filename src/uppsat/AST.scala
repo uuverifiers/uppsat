@@ -3,6 +3,7 @@ package uppsat
 import BooleanTheory._
 import IntegerTheory._
 import scala.collection.mutable.ArrayStack
+import uppsat.PrecisionMap.Path
 
 object Leaf {
   def apply(d : ConcreteFunctionSymbol) = AST(d, List())
@@ -22,6 +23,18 @@ case class AST(val symbol : ConcreteFunctionSymbol, val children : List[AST]) {
   
   // Copied TREE, some of these functions might not make sense when we introduce more kinds of nodes
   // i.e., Quantifiers...
+  
+  def getPath(path : Path) = {
+    def getPathAux(ast : AST, p : Path) : AST = {
+      p match {
+        case Nil => ast
+        case h :: t => getPathAux(ast.children(h), p.tail) 
+      }
+    }
+    getPathAux(this, path.reverse)
+  }
+  
+  def apply(path : Path) : AST = getPath(path)
   
   def map(f : ConcreteFunctionSymbol => ConcreteFunctionSymbol) : AST = {
       AST(f(symbol), children map (_ map f))

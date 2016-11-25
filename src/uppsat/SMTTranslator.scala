@@ -1,6 +1,8 @@
 package uppsat
 
 import scala.collection.mutable.{Set, Map, MutableList}
+import uppsat.PrecisionMap.Path
+import uppsat.ModelReconstructor.Model
 
 class SMTTranslator(theory : Theory) {
   //var definedSymbols = Set() : Set[ConcreteFunctionSymbol]
@@ -8,12 +10,12 @@ class SMTTranslator(theory : Theory) {
   // TODO: HACK
   //val symbolToAST = Map() : Map[ConcreteFunctionSymbol, AST]
   var nextAST = 0
-  val astToId = Map() : Map[AST, String]
-  val IdToAST = Map() : Map[String, AST]
+  val pathToId = Map() : Map[Path, String]
+  val IdToPaths = Map() : Map[String, List[Path]]
   val astSymbols = Set() : Set[(String, String)]
   val symbolAssertions = MutableList() : MutableList[String]
   
-  def translateAST(ast : AST) : String = {
+  def translateASTaux(ast : AST, path : Path) : String = {
      // TODO: Make this proper?  
      ast match {
        case Leaf(symbol) => {
@@ -21,8 +23,8 @@ class SMTTranslator(theory : Theory) {
          val thisAST = symbol.theory.toSMTLib(symbol)
          if (!BooleanTheory.isDefinedLiteral(symbol) || !theory.isDefinedLiteral(symbol)) {           
            val astId = thisAST
-           astToId += ast -> astId
-           IdToAST += astId -> ast
+           pathToId += path -> astId
+           IdToPaths += astId -> (path :: (IdToPaths.getOrElse(astId, List())))
            
            val newSymbol = thisAST
            val newSort  = symbol.sort.theory.toSMTLib(symbol.sort)
@@ -32,15 +34,15 @@ class SMTTranslator(theory : Theory) {
          thisAST
        }
        
-       case AST(symbol, desc) => {
+       case AST(symbol, children) => {
            val fun = symbol.theory.toSMTLib(symbol) 
-           val args = desc.map(translateAST)
+           val args = for ((c, i) <- children zip children.indices) yield translateASTaux(c, i :: path)
            val thisAST = "(" + fun + " " + args.mkString(" ") + ")"
            
            // Create extra-symbol that contains the value of this ast
            val astId = ast.symbol.toString + nextAST.toString
-           astToId += ast -> astId
-           IdToAST += astId -> ast
+           pathToId += path -> astId
+           IdToPaths += astId -> (path :: (IdToPaths.getOrElse(astId, List())))
            nextAST += 1             
            
            val newSymbol = astId
@@ -54,6 +56,8 @@ class SMTTranslator(theory : Theory) {
        
      }
   }
+  
+  def translateAST(ast : AST) = translateASTaux(ast, List())
   
   def declarations(symbols : List[ConcreteFunctionSymbol]) = {
     (for (s <- symbols) yield
@@ -71,8 +75,8 @@ class SMTTranslator(theory : Theory) {
   def translate(ast : AST) : String = {
 //    definedSymbols.clear()
     nextAST = 0
-    astToId.clear()
-//    symbolToAST.clear()
+    pathToId.clear()
+    IdToPaths.clear()
     astSymbols.clear()
     symbolAssertions.clear()
     
@@ -90,8 +94,8 @@ class SMTTranslator(theory : Theory) {
 def translateNoAssert(ast : AST) : String = {
 //    definedSymbols.clear()
     nextAST = 0
-    astToId.clear()
-//    symbolToAST.clear()
+    pathToId.clear()
+    IdToPaths.clear()
     astSymbols.clear()
     symbolAssertions.clear()
     
@@ -117,11 +121,14 @@ def translateNoAssert(ast : AST) : String = {
   def getDefinedSymbols = astSymbols.map(_._1)  
 
   // TODO: Change ...mutable.Map to MMap
-  def getASTModel(model : scala.collection.immutable.Map[String, String]) : scala.collection.immutable.Map[AST, AST] = {
-    (for ((k, v) <- model) yield {
-      val ast = IdToAST(k)
-      val valAST = ast.symbol.sort.theory.parseLiteral(v.trim()) //AZ: Should the trim call go elsewhere?
-      ast -> valAST
-    }).toMap
+  def getASTModel(ast : AST, stringModel : scala.collection.immutable.Map[String, String]) : Model = {
+    (for ((k, v) <- stringModel) yield {
+      val paths = IdToPaths(k)
+      // TODO: only one path to check?
+      val valAST = ast(paths.head).symbol.sort.theory.parseLiteral(v.trim()) //AZ: Should the trim call go elsewhere?
+//      println("getASTModel..." + k + " ... " + paths.mkString(", ") + " -> " + valAST)
+      val newMappings = (for (p <- paths) yield p -> valAST)
+      newMappings
+    }).flatten.toMap
   }
 }
