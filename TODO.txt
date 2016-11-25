@@ -83,3 +83,39 @@ OLD CODE:
 //    val fpAddFactory = new FPOpFactory("fp.add")
 //    val fpAdd2_2 = fpAddFactory(List(fp2_2, fp2_2, fp2_2))
 //    println("fpAdd2_2: (" + fpAdd2_2.getClass + ") = " + fpAdd2_2)
+
+
+
+OLD TREE CODE:
+    def mapUpDown(f : D => D) : Tree[D] = {
+      val newD = f(d)
+      val newChildren = children map (_ map f)
+      Tree(f(newD), newChildren)
+    }
+    
+    
+    def zip[E](t : Tree[E]) : Tree[(D, E)] = t match {
+      case Tree(e, children2) =>
+        Tree((d, e),
+             for ((c1, c2) <- children zip children2)
+             yield (c1 zip c2))
+    }
+    def unzip[D1, D2](implicit asPair: D => (D1, D2)): (Tree[D1], Tree[D2]) = {
+      val (children1, children2) = (for (c <- children) yield c.unzip).unzip
+      val (d1, d2) = asPair(d)
+      (Tree(d1, children1), Tree(d2, children2))
+    }
+    
+        def subtrees : Tree[Tree[D]] =
+      Tree(this, for (c <- children) yield c.subtrees)
+    def toList : List[D] = iterator.toList
+    def toSeq = toList
+    
+    
+object Leaf {
+  def apply[D](d : D) = Tree(d, List())
+  def unapply[D](t : Tree[D]) : Option[D] = t match {
+    case Tree(d, List()) => Some(d)
+    case _ => None
+  }
+}    
