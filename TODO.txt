@@ -23,6 +23,9 @@ Plan:
 
 APC: What about Equality? Special EqualityNode subclassed by each theory
 
+APC: Multi-layered approximations: 
+	1) Support them directly.
+	2) Call the framework as a back-end.
 
 
 OLD CODE:
