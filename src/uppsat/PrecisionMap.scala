@@ -15,21 +15,16 @@ class PrecisionMap[T](val map : Map[Path, T]) {
     new PrecisionMap[T](map + (path -> newP)) //TODO: Check for maximum precision
   }
   
-  def cascadingIncrease(prefix : Path, ast : AST) : PrecisionMap[T]= {
-    ast match {
-      case AST(_, List()) => update(prefix, ((this(prefix)).asInstanceOf[Int] + 1).asInstanceOf[T])
-      case AST(_, children) => {
-         var pmap = this
-         for ( i <- children.indices)
-           pmap = pmap.cascadingIncrease(i :: prefix, children(i))
-         pmap.update(prefix, ((pmap(prefix)).asInstanceOf[Int] + 1).asInstanceOf[T])
-      }      
-    }
+  def map(f : T => T) : PrecisionMap[T] = {
+    new PrecisionMap[T](map.map(x => {
+      val (k, v) = x
+      (k, f(v))
+      }))
   }
   
   def cascadingUpdate(prefix : Path, ast : AST, newPrecision : T) : PrecisionMap[T]= {
     ast match {
-      case AST(_, List()) => update(prefix, newPrecision)
+      case Leaf(_) => update(prefix, newPrecision)
       case AST(_, children) => {
          var pmap = this
          for ( i <- children.indices)

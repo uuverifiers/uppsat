@@ -3,80 +3,72 @@ package uppsat
 import BooleanTheory._
 import IntegerTheory._
 import scala.collection.mutable.ArrayStack
+import uppsat.PrecisionMap.Path
 
 object Leaf {
-  def apply[D](d : D) = Tree(d, List())
-  def unapply[D](t : Tree[D]) : Option[D] = t match {
-    case Tree(d, List()) => Some(d)
+  def apply(d : ConcreteFunctionSymbol) = AST(d, List())
+  def unapply(t : AST) : Option[ConcreteFunctionSymbol] = t match {
+    case AST(d, List()) => Some(d)
     case _ => None
   }
+} 
+
+object AST {
+  def apply(symbol : ConcreteFunctionSymbol) = new AST(symbol, List())
 }
 
-case class Tree[D](d : D, children : List[Tree[D]]) {
-  def map[E](f : D => E) : Tree[E] = {
-    val newD = f(d)
-    Tree(newD, children map (_ map f))
+case class AST(val symbol : ConcreteFunctionSymbol, val children : List[AST]) {
+  
+  // Copied TREE, some of these functions might not make sense when we introduce more kinds of nodes
+  // i.e., Quantifiers...
+  
+  def getPath(path : Path) = {
+    def getPathAux(ast : AST, p : Path) : AST = {
+      p match {
+        case Nil => ast
+        case h :: t => getPathAux(ast.children(h), p.tail) 
+      }
+    }
+    getPathAux(this, path.reverse)
   }
-  def mapUpDown(f : D => D) : Tree[D] = {
-    val newD = f(d)
-    val newChildren = children map (_ map f)
-    Tree(f(newD), newChildren)
-  }
-  def foreach[U](f : D => U) : Unit = {
-    f(d)
+  
+  def apply(path : Path) : AST = getPath(path)
+  
+  def map(f : ConcreteFunctionSymbol => ConcreteFunctionSymbol) : AST = {
+      AST(f(symbol), children map (_ map f))
+    }
+
+  def foreach[U](f : ConcreteFunctionSymbol => U) : Unit = {
+    f(symbol)
     for (c <- children) c foreach f
   }
-  def zip[E](t : Tree[E]) : Tree[(D, E)] = t match {
-    case Tree(e, children2) =>
-      Tree((d, e),
-           for ((c1, c2) <- children zip children2)
-           yield (c1 zip c2))
-  }
-  def unzip[D1, D2](implicit asPair: D => (D1, D2)): (Tree[D1], Tree[D2]) = {
-    val (children1, children2) = (for (c <- children) yield c.unzip).unzip
-    val (d1, d2) = asPair(d)
-    (Tree(d1, children1), Tree(d2, children2))
-  }
-  def subtrees : Tree[Tree[D]] =
-    Tree(this, for (c <- children) yield c.subtrees)
-  def toList : List[D] = iterator.toList
-  def toSeq = toList
-  def toSet = iterator.toSet
-  def iterator = new Iterator[D] {
-    val todo = new ArrayStack[Tree[D]]
-    todo push Tree.this
+  
+  def iterator = new Iterator[ConcreteFunctionSymbol] {
+    val todo = new ArrayStack[AST]
+    todo push AST.this
     def hasNext = !todo.isEmpty
     def next = {
-      val Tree(data, children) = todo.pop
+      val AST(data, children) = todo.pop
       todo ++= children
       data
     }
   }
-
+  
+  
+  def toSet = iterator.toSet 
+    
   def prettyPrint : Unit =
     prettyPrint("")
-
+  
   def prettyPrint(indent : String) : Unit = {
     val newIndent = indent + "   "
-    println(indent + d)
+    println(indent + symbol)
     for (c <- children) (c prettyPrint newIndent)
   }
-
-  def size = iterator.size
-}
-
-
-object AST {
-  def apply(symbol : ConcreteFunctionSymbol, children : List[AST]) = new AST(symbol, children)
-  def apply(symbol : ConcreteFunctionSymbol) = new AST(symbol, List())
+  
+  def size = iterator.size  
   
   
-  def unapply(t : AST) : Option[(ConcreteFunctionSymbol, List[AST])] = 
-    Some((t.symbol, t.children))
-}
-
-class AST(val symbol : ConcreteFunctionSymbol, override val children : List[AST]) extends Tree[ConcreteFunctionSymbol](symbol, children) {
-
   def symbols : Set[ConcreteFunctionSymbol]= this.toSet    
   
   //Syntactic sugar
@@ -126,5 +118,3 @@ class AST(val symbol : ConcreteFunctionSymbol, override val children : List[AST]
 // TODO: We can use implicit conversion
 
 // ASKPC: Is this a good way? (syntactic sugar)
-// DD: 1) "Cannot" inherit case classes
-//     2) Typing the AST messed up matching with AST (e.g., in translator)
