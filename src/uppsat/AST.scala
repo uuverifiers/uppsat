@@ -15,11 +15,9 @@ object Leaf {
 
 object AST {
   def apply(symbol : ConcreteFunctionSymbol) = new AST(symbol, List())
-
 }
 
 case class AST(val symbol : ConcreteFunctionSymbol, val children : List[AST]) {
-
   
   // Copied TREE, some of these functions might not make sense when we introduce more kinds of nodes
   // i.e., Quantifiers...
