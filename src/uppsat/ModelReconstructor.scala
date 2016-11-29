@@ -11,9 +11,6 @@ object ModelReconstructor {
 class ModelReconstructor[T](approximation : Approximation[T]) {
   var constructedModel = None : Option[Model]
   var updatedPrecisionMap = None : Option[PrecisionMap[T]]
-  // TODO: should we do this?
-  var failed = false
-  
  
   // TODO: Do we want the type partialModel / partialPrecisionMap
   def reconstructAST(ast : AST, path : Path, appModel : Model, sourceToEncoding : PathMap, pmap : PrecisionMap[T]) : Model = {
@@ -42,4 +39,6 @@ class ModelReconstructor[T](approximation : Approximation[T]) {
   def reconstruct(ast : AST, model : Model, sourceToEncoding : PathMap, pmap : PrecisionMap[T]) : Model = {
     reconstructAST(ast, List(), model, sourceToEncoding, pmap)
   }
+  
+  //TODO: move validation here
 }
