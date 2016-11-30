@@ -10,7 +10,7 @@ object Encoder {
 }
 
 class Encoder[T](approximation : Approximation[T]) {
-  def encode(ast : AST, pmap : PrecisionMap[T]) : (AST, PathMap) = {
-    approximation.encode(ast, pmap)
+  def encode(ast : AST, pmap : PrecisionMap[T]) : AST = {
+    approximation.encodeFormula(ast, pmap)
   }
 }

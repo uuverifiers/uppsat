@@ -25,7 +25,7 @@ class PrecisionMap[T](val map : Map[Path, T]) {
   def cascadingUpdate(prefix : Path, ast : AST, newPrecision : T) : PrecisionMap[T]= {
     ast match {
       case Leaf(_) => update(prefix, newPrecision)
-      case AST(_, children) => {
+      case AST(_, _, children) => {
          var pmap = this
          for ( i <- children.indices)
            pmap = pmap.cascadingUpdate(i :: prefix, children(i), newPrecision)

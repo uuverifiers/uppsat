@@ -40,8 +40,8 @@ object BooleanTheory extends Theory {
     }  
   }
   
-  implicit def BoolVarToAST(boolVar : BoolVar) = AST(boolVar)
-  implicit def BoolFunctionToAST(boolConst : BooleanConstant) = AST(boolConst)
+  implicit def BoolVarToAST(boolVar : BoolVar) = Leaf(boolVar)
+  implicit def BoolFunctionToAST(boolConst : BooleanConstant) = Leaf(boolConst)
   
   def boolAnd(left: AST, right: AST) = {
     AST(BoolConjunction, List(left, right))

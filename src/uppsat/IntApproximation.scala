@@ -4,6 +4,7 @@ import uppsat.IntegerTheory._
 import uppsat.ModelReconstructor.Model
 import uppsat.PrecisionMap.Path
 import uppsat.Encoder.PathMap
+import uppsat.AST.Label
 
 object IntApproximation extends Approximation[Int] {
   val inputTheory = IntegerTheory
@@ -16,52 +17,38 @@ object IntApproximation extends Approximation[Int] {
     pmap.map(_ + 1)
   }
   
-  def encodeIntegerSymbol( symbol : ConcreteFunctionSymbol, children : List[AST], precision : Int) : AST = {
-      val cond = new AST(symbol, children) <= precision
-      val newAST = AST(IntITE, List(cond, new AST(symbol, children), precision))
+  def encodeIntegerSymbol( symbol : ConcreteFunctionSymbol, path : Path, children : List[AST], precision : Int) : AST = {
+      val cond =  AST(symbol, children) <= precision
+      val newAST = AST(IntITE, path, List(cond, AST(symbol, children), precision))
       newAST
     }
       
-  def encodeSymbol(symbol : ConcreteFunctionSymbol, children : List[AST], precision : Int) : AST = {
+  def encodeSymbol(symbol : ConcreteFunctionSymbol, path : Path, children : List[AST], precision : Int) : AST = {
     symbol match {
-      case _ if children.isEmpty => AST(symbol)
-      case symbol : IntegerFunctionSymbol =>  encodeIntegerSymbol(symbol, children, precision)
-      case symbol : IntegerPredicateSymbol => new AST(symbol, children)        
-      case symbol => new AST(symbol, children)
+      case _ if children.isEmpty => Leaf(symbol, path)
+      case symbol : IntegerFunctionSymbol =>  encodeIntegerSymbol(symbol, path, children, precision)
+      case symbol : IntegerPredicateSymbol => AST(symbol, path, children)        
+      case symbol => AST(symbol, path, children)
     }    
   }
     
-  // TODO: HACK, how do we construct the paths in an intelligent manner.
-  def encodeIntegerSymbolPath(children : List[AST]) : List[Path] = {
-    children.indices.map(List(_, 1)).toList
-  }
-     
-  def encodeSymbolPath(symbol : ConcreteFunctionSymbol, children : List[AST], precision : Int) : List[Path] = {
-    symbol match {
-      case _ if children.isEmpty => List()
-      case symbol : IntegerFunctionSymbol =>  encodeIntegerSymbolPath(children)
-      case _ => children.indices.map(List(_)).toList   
-    }    
-  }    
-      
-  def encodeAux(ast : AST, path : Path, appPath : Path, pmap : PrecisionMap[Int], sourceToEncoding : PathMap) : (AST, PathMap) = {
-    val AST(symbol, children) = ast
-    val childrenPaths = encodeSymbolPath(symbol, children, pmap(path))
-    val recCalls = 
+  def encodeAux(ast : AST, path : Path, pmap : PrecisionMap[Int]) : AST = {
+    val AST(symbol, label, children) = ast
+    val newChildren = 
       for ((c, i) <- children zip children.indices) yield {
-        encodeAux( c, i :: path, childrenPaths(i) ++ path, pmap, sourceToEncoding)
-      }
-    
-    val newAST = encodeSymbol(symbol, recCalls.map(_._1), pmap(path))
-    val newSTE = recCalls.map(_._2).foldLeft(sourceToEncoding + (path -> appPath))((x, y) => x ++ y)
-    (newAST, newSTE)
+        encodeAux( c, i :: path, pmap)
+      }    
+    encodeSymbol(symbol, path, newChildren, pmap(path))    
   }
   
-  def encode(ast : AST, pmap : PrecisionMap[Int]) : (AST, PathMap) = {
-    encodeAux(ast, List(), List(), pmap, Map())     
+  def encodeFormula(ast : AST, pmap : PrecisionMap[Int]) : AST = {
+    encodeAux(ast, List(0), pmap)
   }
   
-  def reconstruct(ast : AST, appModel : Model) : Model = {
+  def decodeModel(ast : AST, appModel : Model, pmap : PrecisionMap[Int]) = {
     appModel
+  }
+  def reconstruct(ast : AST, decodedModel : Model) : Model = {
+    decodedModel
   }
 }

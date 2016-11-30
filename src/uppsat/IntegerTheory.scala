@@ -45,9 +45,9 @@ object IntegerTheory extends Theory {
   case object IntLessThanOrEqual extends IntegerPredicateSymbol("integer-leq", List(IntegerSort, IntegerSort))
   case object IntITE extends PolyITE("integer-ite", IntegerSort)
   
-  implicit def IntToAST(int : Int) = AST(new IntLiteral(int))
-  implicit def IntVarToAST(intVar : IntVar) = AST(intVar)
-  implicit def IntFunctionToAST(intConst : IntegerConstant) = AST(intConst)
+  implicit def IntToAST(int : Int) = Leaf(new IntLiteral(int))
+  implicit def IntVarToAST(intVar : IntVar) = Leaf(intVar)
+  implicit def IntFunctionToAST(intConst : IntegerConstant) = Leaf(intConst)
   
   def intAddition(left: AST, right: AST) = {
     AST(IntAddition, List(left, right))

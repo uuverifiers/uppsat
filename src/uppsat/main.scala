@@ -33,7 +33,7 @@ object main {
     val enc = new Encoder[Int](IntApproximation)
     var pmap = PrecisionMap[Int]()
 
-    pmap = pmap.cascadingUpdate(List(), formula, 1)
+    pmap = pmap.cascadingUpdate(List(0), formula, 1)
 
     val translator = new SMTTranslator(IntegerTheory)
     // TODO: How do we solve this logistically
@@ -46,11 +46,10 @@ object main {
 
       var iterations = 0
 
-      var finalModel = None: Option[Model]
-      var sourceToEncoding = Map(): PathMap
+      var finalModel = None: Option[Map[ConcreteFunctionSymbol, String]]
       var haveAnAnswer = false
-      var pFormula = formula
-      var pSMT = ""
+      var encodedFormula = formula
+      var encodedSMT = ""
 
       while (!haveAnAnswer && iterations < 10) {
         var haveApproxModel = false
@@ -60,12 +59,10 @@ object main {
           iterations += 1
           println("Starting iteration " + iterations)
           
-          val (newpFormula, newASTMap) = enc.encode(formula, pmap)
-          pFormula = newpFormula
-          sourceToEncoding = newASTMap
-          pSMT = translator.translate(pFormula)
+          encodedFormula = enc.encode(formula, pmap)   
+          encodedSMT = translator.translate(encodedFormula)
 
-          val result = Z3Solver.solve(pSMT)
+          val result = Z3Solver.solve(encodedSMT)
 
           if (result) {
             haveApproxModel = true
@@ -77,87 +74,45 @@ object main {
         }
 
         if (haveApproxModel) {
-          val model = Z3Solver.getModel(pSMT, translator.getDefinedSymbols.toList)
-          val nodeModel = translator.getASTModel(pFormula, model)
-          val reconstructor = new ModelReconstructor[Int](IntApproximation)
-          val exactModel = reconstructor.reconstruct(formula, nodeModel, sourceToEncoding, pmap)
-
-          def createGroundASTaux(ast : AST, path : Path, exactModel : Model) : AST = {
-            ast match {
-              case Leaf(symbol) => exactModel(path)
-              case AST(symbol, children) => {
-                val newChildren = 
-                  for ((c, i) <- children zip children.indices) yield createGroundASTaux(c, i::path, exactModel)
-                  AST(symbol, newChildren)
-              }
-            }
-          }
+          val stringModel = Z3Solver.getModel(encodedSMT, translator.getDefinedSymbols.toList)
+          val appModel = translator.getASTModel(formula, stringModel)
+          val reconstructor = new ModelReconstructor[Int](IntApproximation)          
+          // TODO:  Insert decode
+          val reconstructedModel = reconstructor.reconstruct(formula, appModel)
           
-          def groundAST(ast : AST, exactModel : Model) = {
-            createGroundASTaux(ast, List(), exactModel)
-          }
-          
-          def valAST(ast: AST, exactModel: Model): Boolean = {
+          def valAST(ast: AST, assignments: List[(String, String)]): Boolean = {
             // Which approximate ast does the original ast correspond to?
             // sourceToEncoding has the answer
 
             //val exactDescValues = ast.children.indices.map(x => exactModel(List(x))).toList
             //val newAST = AST(ast.symbol, exactDescValues)
-            val newAST = groundAST(ast, exactModel)
             val translator = new SMTTranslator(IntApproximation.outputTheory)
-            val astSMT = translator.translateNoAssert(newAST)
-            val result = Z3Solver.solve(astSMT)
-            val smtModel = Z3Solver.getModel(astSMT, translator.getDefinedSymbols.toList)
-            val astModel = translator.getASTModel(newAST, smtModel)
-            val exactValue = astModel(List())
-           
-            exactValue.symbol match {
-              case BooleanTheory.BoolFalse => false
-              case BooleanTheory.BoolTrue  => true
-            }
+            val smtVal = translator.validateModel(ast, assignments)
+            Z3Solver.solve(smtVal)            
+            
           }
-
-          if (valAST(formula, exactModel)) {
+          
+          val assignments = for ((symbol, label) <- formula.iterator if (!symbol.theory.isDefinedLiteral(symbol))) yield {
+            (symbol.toString(), reconstructedModel(label).symbol.toString())
+          }
+          if (valAST(formula, assignments.toList)) {
             haveAnAnswer = true
-            finalModel = Some(exactModel)
+            finalModel = Some((for ((symbol, label) <- formula.iterator if (!symbol.theory.isDefinedLiteral(symbol))) yield {
+              (symbol, reconstructedModel(label).toString())
+            }).toMap)
+            
           } else {
             println("Model reconstruction failed> updating precisions")
-            val newPmap = IntApproximation.satRefine(formula, nodeModel, exactModel, pmap)
+            val newPmap = IntApproximation.satRefine(formula, appModel, reconstructedModel, pmap)
             pmap = pmap.merge(newPmap)
           }
         }
       }
 
       if (haveAnAnswer == true) {
-        println("Found model")
-        
-        def extractVariables(ast : AST, vars : List[ConcreteFunctionSymbol], model : Model) = {
-          def eV(ast : AST, path : Path, vars : List[ConcreteFunctionSymbol]) : List[(ConcreteFunctionSymbol, AST)] = {
-            if (vars.isEmpty) {
-              List()
-            } else {
-              val AST(symbol, children) = ast
-              val recursive = 
-                (for ((c, i) <- children zip children.indices) yield {
-                  eV(c, i :: path, vars)
-                }).flatten
-              if (vars contains symbol) {
-                val newMapping = (symbol -> model(path))
-                newMapping :: recursive
-              } else {
-                recursive
-              }
-            }
-          }
-          eV(ast, List(), vars).toSet.toMap
-        }
-        
-        for ((k, v) <- extractVariables(formula, vars, finalModel.get)) {
-          println(k + "\t" + v + "\t (" + v.getClass + ")")          
-        }
-        //          for (v <- vars)
-
-      } else {
+        println("Found model")        
+        println(finalModel.get)
+       } else {
         println("No model found...")
       }
     }
