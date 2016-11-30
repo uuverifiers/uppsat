@@ -80,22 +80,12 @@ object main {
           // TODO:  Insert decode
           val reconstructedModel = reconstructor.reconstruct(formula, appModel)
           
-          def valAST(ast: AST, assignments: List[(String, String)]): Boolean = {
-            // Which approximate ast does the original ast correspond to?
-            // sourceToEncoding has the answer
-
-            //val exactDescValues = ast.children.indices.map(x => exactModel(List(x))).toList
-            //val newAST = AST(ast.symbol, exactDescValues)
-            val translator = new SMTTranslator(IntApproximation.outputTheory)
-            val smtVal = translator.validateModel(ast, assignments)
-            Z3Solver.solve(smtVal)            
-            
-          }
+          
           
           val assignments = for ((symbol, label) <- formula.iterator if (!symbol.theory.isDefinedLiteral(symbol))) yield {
             (symbol.toString(), reconstructedModel(label).symbol.toString())
           }
-          if (valAST(formula, assignments.toList)) {
+          if (ModelReconstructor.valAST(formula, assignments.toList, IntApproximation.inputTheory, Z3Solver)) {
             haveAnAnswer = true
             finalModel = Some((for ((symbol, label) <- formula.iterator if (!symbol.theory.isDefinedLiteral(symbol))) yield {
               (symbol, reconstructedModel(label).toString())
