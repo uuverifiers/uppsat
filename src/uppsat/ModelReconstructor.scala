@@ -9,7 +9,7 @@ object ModelReconstructor {
   
   def valAST(ast: AST, assignments: List[(String, String)], theory : Theory, solver : SMTSolver): Boolean = {
     val translator = new SMTTranslator(theory)
-    val smtVal = translator.validateModel(ast, assignments)
+    val smtVal = translator.translate(ast, assignments)
     solver.solve(smtVal)    
   }
 }

@@ -7,7 +7,6 @@ import uppsat.ModelReconstructor.Model
 class SMTTranslator(theory : Theory) {
   // TODO: Should we make this immutable?  
   var nextAST = 0
-  val pathToId = MMap() : MMap[Path, String]
   val IdToPaths = MMap() : MMap[String, List[Path]]
   val astSymbols = Set() : Set[(String, String)]
   val symbolAssertions = MutableList() : MutableList[String]
@@ -20,7 +19,6 @@ class SMTTranslator(theory : Theory) {
          val smtSymbol = symbol.theory.toSMTLib(symbol)         
 
          if (!BooleanTheory.isDefinedLiteral(symbol) || !theory.isDefinedLiteral(symbol)) {  
-           pathToId += label -> smtSymbol
            IdToPaths += smtSymbol -> (label :: (IdToPaths.getOrElse(smtSymbol, List())))
            astSymbols += ((smtSymbol, smtSort))
          }
@@ -35,7 +33,6 @@ class SMTTranslator(theory : Theory) {
            
            // Create extra-symbol that contains the value of this ast
            val newSymbol = ast.symbol.toString + nextAST.toString
-           pathToId += label -> newSymbol
            IdToPaths += newSymbol -> (label :: (IdToPaths.getOrElse(newSymbol, List())))
            nextAST += 1             
            
@@ -61,30 +58,8 @@ class SMTTranslator(theory : Theory) {
   def symAsserts =
     symbolAssertions.map("(assert " + _ + ")").mkString("\n")
   
-  def translate(ast : AST, noAssert : Boolean = false) : String = {
+  def translate(ast : AST, assignments : List[(String, String)] = List()) : String = {
     nextAST = 0
-    pathToId.clear()
-    IdToPaths.clear()
-    astSymbols.clear()
-    symbolAssertions.clear()
-    
-    val astFormula = translateAST(ast)
-    val assertions = 
-      if (noAssert) 
-        ""
-      else
-        "(assert " + astFormula + ")"
-    
-    header + "\n" +
-    symDecs + "\n" +
-    symAsserts + "\n" + 
-    assertions + "\n" +
-    footer
-  }
-  
-  def validateModel(ast : AST, assignments : List[(String, String)]) : String = {
-    nextAST = 0
-    pathToId.clear()
     IdToPaths.clear()
     astSymbols.clear()
     symbolAssertions.clear()
@@ -104,17 +79,13 @@ class SMTTranslator(theory : Theory) {
     footer
   }
   
-  // TODO: What is a meaningful way to do this (sometimes we want to assert root ast, sometimes don't)
-  def translateNoAssert(ast : AST) : String = translate(ast, true)  
-  
-  
   def header = theory.SMTHeader
   
   def footer = "(check-sat)"
   
   def getDefinedSymbols = astSymbols.map(_._1)  
 
-  def getASTModel(ast : AST, stringModel : Map[String, String]) : Model = {
+  def getModel(ast : AST, stringModel : Map[String, String]) : Model = {
     (for ((k, v) <- stringModel) yield {
       val paths = IdToPaths(k).filter(!_.isEmpty)
       // TODO: only one path to check?
