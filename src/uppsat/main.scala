@@ -32,7 +32,8 @@ object main {
     formula.prettyPrint
     
     val enc = new Encoder[Int](IntApproximation)
-    var pmap = PrecisionMap[Int]()
+    val myIntOrdering = new IntPrecisionOrdering(10)
+    var pmap = PrecisionMap[Int](myIntOrdering)
     pmap = pmap.cascadingUpdate(List(0), formula, 1)
     val translator = new SMTTranslator(IntegerTheory)
 
@@ -46,15 +47,19 @@ object main {
     var haveAnAnswer = false
     var encodedFormula = formula
     var encodedSMT = ""
+    var maxPrecisionTried = false
 
-    while (!haveAnAnswer && iterations < 10) {
+    // TODO: Make this check the maximum precision...
+    while (!haveAnAnswer && !maxPrecisionTried) {
       var haveApproxModel = false
 
       // TODO: fix maximal pmap
-      while (!haveApproxModel && iterations < 10) {
+      while (!haveApproxModel && !maxPrecisionTried) {
         iterations += 1
         println("Starting iteration " + iterations)
         
+        if (pmap.isMaximal)
+          maxPrecisionTried = true
         encodedFormula = enc.encode(formula, pmap)   
         encodedSMT = translator.translate(encodedFormula)
         val result = Z3Solver.solve(encodedSMT)
@@ -95,8 +100,10 @@ object main {
     if (haveAnAnswer == true) {
       println("Found model")        
       println(finalModel.get)
-     } else {
-      println("No model found...")
+     } else if (pmap.isMaximal) {
+      println("Precision maximal...")
+    } else{
+      println("Why did we stop trying?")
     }
   }
 }

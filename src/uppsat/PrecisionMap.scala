@@ -3,17 +3,20 @@ package uppsat
 object PrecisionMap {
   type Path = List[Int]
   
-  def apply[T]() = new PrecisionMap[T](Map.empty[Path, T])
+  def apply[T](implicit precisionOrdering : PrecisionOrdering[T]) = new PrecisionMap[T](Map.empty[Path, T])
 }
 
 import PrecisionMap._
 
 // TODO: make map private
-class PrecisionMap[T](val map : Map[Path, T]) {  
+class PrecisionMap[T](val map : Map[Path, T])(implicit val precisionOrdering : PrecisionOrdering[T]) {  
   
   def update(path : Path, newP : T) = {
     new PrecisionMap[T](map + (path -> newP)) //TODO: Check for maximum precision
   }
+  
+  
+  def isMaximal = map.values.find(x => precisionOrdering.lt(x, precisionOrdering.max)).isEmpty
   
   def map(f : T => T) : PrecisionMap[T] = {
     new PrecisionMap[T](map.map(x => {
