@@ -18,7 +18,7 @@ trait ConstructedFunctionSymbol extends ConcreteFunctionSymbol {
 
 trait ConstructedFunctionSymbolFactory {
   val rank : Int
-  def apply(idx : Seq[Sort]) : ConstructedFunctionSymbol
+  def apply(idx : Seq[ConcreteSort]) : ConstructedFunctionSymbol
 }
 
 trait IndexedFunctionSymbol extends ConcreteFunctionSymbol {
@@ -27,7 +27,7 @@ trait IndexedFunctionSymbol extends ConcreteFunctionSymbol {
 
 trait IndexedFunctionSymbolFactory {
   val rank : Int
-  def apply(idx : Seq[Sort]) : IndexedFunctionSymbol
+  def apply(idx : Seq[ConcreteSort]) : IndexedFunctionSymbol
 }
 
 
