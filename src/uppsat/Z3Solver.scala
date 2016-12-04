@@ -6,7 +6,7 @@ object Z3Solver extends SMTSolver {
   def runSolver(formula : String) = {
     import sys.process._
     val is = new ByteArrayInputStream(formula.getBytes("UTF-8"))
-    ("z3 -in -smt2" #< is) !!
+    ("z3 -in -smt2" #< is) !! 
   }
  
   

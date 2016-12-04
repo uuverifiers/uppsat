@@ -26,8 +26,26 @@ object main {
 
   }
   
+  def floatingpoint() = {
+    import uppsat.FloatingPointTheory._
+    
+    
+    val rm = Leaf(RoundToZero)
+    val FP_3_3 = FPSortFactory(List(3,3))
+    val x = new FPVar("x", FP_3_3)
+    val y = new FPVar("y", FP_3_3)
+    val FPAdd = FPAdditionFactory(List(FP_3_3))
+    val xNode = Leaf(x)
+    val yNode = Leaf(y)
+    val addNode = AST(FPAdd, List(rm, xNode, yNode))
+    val FPEq = FPEqualityFactory(List(FP_3_3))    
+    val rootNode = AST(FPEq, List(addNode, xNode))
+    
+    (rootNode, List(x, y))
+  }
+  
   def main(args: Array[String]) = {
-    val (formula, vars) = integer()
+    val (formula, vars) = floatingpoint()
     println("<<<Formula>>>")
     formula.prettyPrint
     
@@ -35,7 +53,7 @@ object main {
     val myIntOrdering = new IntPrecisionOrdering(10)
     var pmap = PrecisionMap[Int](myIntOrdering)
     pmap = pmap.cascadingUpdate(List(0), formula, 1)
-    val translator = new SMTTranslator(IntegerTheory)
+    val translator = new SMTTranslator(FloatingPointTheory)
 
     import uppsat.PrecisionMap.Path
     import uppsat.Encoder.PathMap
@@ -48,8 +66,6 @@ object main {
     var encodedFormula = formula
     var encodedSMT = ""
     var maxPrecisionTried = false
-
-    // TODO: Make this check the maximum precision...
     while (!haveAnAnswer && !maxPrecisionTried) {
       var haveApproxModel = false
 
@@ -62,6 +78,7 @@ object main {
           maxPrecisionTried = true
         encodedFormula = enc.encode(formula, pmap)   
         encodedSMT = translator.translate(encodedFormula)
+        encodedFormula.prettyPrint
         val result = Z3Solver.solve(encodedSMT)
 
         if (result) {
@@ -83,7 +100,7 @@ object main {
         val assignments = for ((symbol, label) <- formula.iterator if (!symbol.theory.isDefinedLiteral(symbol))) yield
           (symbol.toString(), decodedModel(label).symbol.toString())
 
-        if (ModelReconstructor.valAST(formula, assignments.toList, IntApproximation.inputTheory, Z3Solver)) {
+        if (ModelReconstructor.valAST(formula, assignments.toList, FloatingPointTheory, Z3Solver)) {
           haveAnAnswer = true
           finalModel = Some((for ((symbol, label) <- formula.iterator if (!symbol.theory.isDefinedLiteral(symbol))) yield {
             (symbol, decodedModel(label).toString())

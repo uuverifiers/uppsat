@@ -93,8 +93,7 @@ class SMTTranslator(theory : Theory) {
         List()
       } else {
         val valAST = ast(paths.head).symbol.sort.theory.parseLiteral(v.trim()) //AZ: Should the trim call go elsewhere?
-        val newMappings = (for (p <- paths) yield p -> valAST)
-        newMappings
+        (for (p <- paths) yield p -> valAST)
       }
     }).flatten.toMap
   }
