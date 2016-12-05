@@ -24,7 +24,7 @@ object FloatingPointTheory extends Theory {
     }
   }
   
-  class FPOperatorSymbolFactory(symbolName : String, isRounding : Boolean, fpArity : Int) extends IndexedFunctionSymbolFactory {
+  case class FPOperatorSymbolFactory(symbolName : String, isRounding : Boolean, fpArity : Int) extends IndexedFunctionSymbolFactory {
     val thisFactory = this
     
     // TODO: This should only be Symbol, since each instance of the factory will have it's own instance of the class
@@ -41,10 +41,9 @@ object FloatingPointTheory extends Theory {
     }
   }
 
-  class FPPredicateSymbolFactory(symbolName : String, fpArity : Int) extends IndexedFunctionSymbolFactory {
+  case class FPPredicateSymbolFactory(symbolName : String, fpArity : Int) extends IndexedFunctionSymbolFactory {
     val thisFactory = this
     
-    // TODO: This should only be Symbol, since each instance of the factory will have it's own instance of the class
     case class FPPredicateSymbol( val argSort : ConcreteSort) extends IndexedFunctionSymbol {   
       val theory = FloatingPointTheory
       val getFactory = thisFactory
@@ -74,17 +73,12 @@ object FloatingPointTheory extends Theory {
     val name = "RoundToZero"
   }
   
-//   class FPPredicateSymbol(override val name : String, args : Seq[ConcreteSort]) extends BooleanFunctionSymbol(name, args, BooleanSort) {
-//    override val theory = FloatingPointTheory
-//  }
-  
-  
-  class FPConstantFactory(sign : Int, eBits : List[Int], sBits : List[Int]) extends IndexedFunctionSymbolFactory {
+  case class FPConstantFactory(sign : Int, eBits : List[Int], sBits : List[Int]) extends IndexedFunctionSymbolFactory {
     val thisFactory = this
     
     case class FPConstantSymbol(val sort : ConcreteSort) extends IndexedFunctionSymbol {
       // TODO: Does name have to be SMT-appliant, not nice!
-      val name = "(fp #b" + sign + " #b" + eBits.mkString("") + " #b" + sBits.mkString("") + ")"
+      val name = fpToFloat(sign, eBits, sBits).toString() 
       val theory = FloatingPointTheory
       val getFactory = thisFactory
       val args = List()
@@ -106,7 +100,7 @@ object FloatingPointTheory extends Theory {
   // Concrete sorts
   val FPSort_3_3 = FPSortFactory(List(3, 3))
   
-  // Constants
+  // Constants, signed zeroes, NaN, infinities
   val FPZero = {
     val zeroFactory = new FPConstantFactory(0, List(0, 0, 0), List(0, 0))
     zeroFactory(List(FPSort_3_3))
@@ -201,17 +195,15 @@ object FloatingPointTheory extends Theory {
   //TODO: Fix type-checking
   def toSMTLib(symbol : ConcreteFunctionSymbol) = { 
     symbol match {
-  //    case FPLiteral(value, _) => value.toString()
       case FPVar(name, _) => name
       case RoundToZero => "RTZ"
-      case _ => {      
-        symbol.name match {
-          case "addition" => "fp.add"
-          case "subtraction" => "fp.sub"
-          case "fp-equality" => "="
+      case idxSym : IndexedFunctionSymbol => {      
+        idxSym.getFactory match {
+          case FPAdditionFactory => "fp.add"
+          case FPSubtractionFactory => "fp.sub" 
+          case FPEqualityFactory => "="
+          case FPConstantFactory(sign, eBits, sBits) => "(fp #b" + sign + " #b" + eBits.mkString("") + " #b" + sBits.mkString("") + ")" 
           case str => throw new Exception("Unsupported FP symbol: " + str)
-//          case FPEquality(_) => "="
-//          case FPLessThanOrEqual(_) => "<="
         }
       }
     }
@@ -226,13 +218,9 @@ object FloatingPointTheory extends Theory {
     }
   }
   
-  // TODO: Fix floatLiteral never called
-
   def declarationToSMTLib(sym : ConcreteFunctionSymbol) : String = {
     sym match {
       case FPVar(name) => "(declare-fun " + name + " () " + toSMTLib(sym.sort) + ")"
-//      case FPConstantFactory.FPConsant
-//      case FPLiteral(_, _) => ""
       case _ => throw new Exception("Not instance of FPVar : " + sym.getClass)
     }
   }

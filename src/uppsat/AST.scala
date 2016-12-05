@@ -65,7 +65,7 @@ case class AST(val symbol : ConcreteFunctionSymbol, val label : Label, val child
     
   def prettyPrint(indent : String) : Unit = {
     val newIndent = indent + "   "
-    println(indent + symbol + "(" + label.mkString(",") + ")")
+    println(indent + symbol + " [" + label.mkString(",") + "]")
     for (c <- children) (c prettyPrint newIndent)
   }
   

@@ -78,7 +78,6 @@ object main {
           maxPrecisionTried = true
         encodedFormula = enc.encode(formula, pmap)   
         encodedSMT = translator.translate(encodedFormula)
-        encodedFormula.prettyPrint
         val result = Z3Solver.solve(encodedSMT)
 
         if (result) {
@@ -97,8 +96,10 @@ object main {
         val reconstructedModel = reconstructor.reconstruct(formula, appModel) 
         val decodedModel = IntApproximation.decodeModel(formula, reconstructedModel, pmap)
         
-        val assignments = for ((symbol, label) <- formula.iterator if (!symbol.theory.isDefinedLiteral(symbol))) yield
-          (symbol.toString(), decodedModel(label).symbol.toString())
+        val assignments = for ((symbol, label) <- formula.iterator if (!symbol.theory.isDefinedLiteral(symbol))) yield {
+          val value = decodedModel(label)
+          (symbol.toString(), value.symbol.theory.toSMTLib(value.symbol) )
+        }
 
         if (ModelReconstructor.valAST(formula, assignments.toList, FloatingPointTheory, Z3Solver)) {
           haveAnAnswer = true
