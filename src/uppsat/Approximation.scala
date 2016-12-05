@@ -8,6 +8,7 @@ trait Approximation[T] {
   
   val inputTheory : Theory
   val outputTheory : Theory
+  val precisionOrdering : PrecisionOrdering[T]
   def satRefine(ast : AST, decodedModel : Model, failedModel : Model, pmap : PrecisionMap[T]) : PrecisionMap[T]  
   def unsatRefine(ast : AST, core : List[AST], pmap : PrecisionMap[T]) : PrecisionMap[T]
   def encodeFormula(ast : AST, pmap : PrecisionMap[T]) : AST

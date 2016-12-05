@@ -22,8 +22,8 @@ object main {
     val x = new IntVar("x")
     val y = new IntVar("y")
 
-    ((x === (y - 4)) & ((x + y) === 6), List(x, y))
-
+    val rootNode = (x === (y - 4)) & ((x + y) === 6)
+    (rootNode, List(x, y), new SMTTranslator(IntegerTheory), IntApproximation)
   }
   
   def floatingpoint() = {
@@ -41,19 +41,19 @@ object main {
     val FPEq = FPEqualityFactory(List(FP_3_3))    
     val rootNode = AST(FPEq, List(addNode, xNode))
     
-    (rootNode, List(x, y))
+    (rootNode, List(x, y), new SMTTranslator(FloatingPointTheory), EmptyApproximation)
   }
   
   def main(args: Array[String]) = {
-    val (formula, vars) = floatingpoint()
+    val (formula, vars, translator, approximation) = floatingpoint()
     println("<<<Formula>>>")
     formula.prettyPrint
     
-    val enc = new Encoder[Int](IntApproximation)
-    val myIntOrdering = new IntPrecisionOrdering(10)
-    var pmap = PrecisionMap[Int](myIntOrdering)
-    pmap = pmap.cascadingUpdate(List(0), formula, 1)
-    val translator = new SMTTranslator(FloatingPointTheory)
+    //TODO:  Request it from approximation
+    type P = approximation.precisionOrdering.P
+    val enc = new Encoder[P](approximation)    
+    var pmap = PrecisionMap[P](approximation.precisionOrdering)
+    pmap = pmap.cascadingUpdate(List(0), formula, 1) 
 
     import uppsat.PrecisionMap.Path
     import uppsat.Encoder.PathMap
@@ -85,23 +85,23 @@ object main {
         } else {
           println("No approximative model found> updating precisions")
           // TODO: Unsat core reasoning
-          pmap = IntApproximation.unsatRefine(formula, List(), pmap)
+          pmap = approximation.unsatRefine(formula, List(), pmap)
         }
       }
 
       if (haveApproxModel) {
         val stringModel = Z3Solver.getModel(encodedSMT, translator.getDefinedSymbols.toList)
         val appModel = translator.getModel(formula, stringModel)
-        val reconstructor = new ModelReconstructor[Int](IntApproximation)         
+        val reconstructor = new ModelReconstructor[P](approximation)         
         val reconstructedModel = reconstructor.reconstruct(formula, appModel) 
-        val decodedModel = IntApproximation.decodeModel(formula, reconstructedModel, pmap)
+        val decodedModel = approximation.decodeModel(formula, reconstructedModel, pmap)
         
         val assignments = for ((symbol, label) <- formula.iterator if (!symbol.theory.isDefinedLiteral(symbol))) yield {
           val value = decodedModel(label)
           (symbol.toString(), value.symbol.theory.toSMTLib(value.symbol) )
         }
 
-        if (ModelReconstructor.valAST(formula, assignments.toList, FloatingPointTheory, Z3Solver)) {
+        if (ModelReconstructor.valAST(formula, assignments.toList, approximation.inputTheory, Z3Solver)) {
           haveAnAnswer = true
           finalModel = Some((for ((symbol, label) <- formula.iterator if (!symbol.theory.isDefinedLiteral(symbol))) yield {
             (symbol, decodedModel(label).toString())
@@ -109,7 +109,7 @@ object main {
           
         } else {
           println("Model reconstruction failed> updating precisions")
-          val newPmap = IntApproximation.satRefine(formula, appModel, decodedModel, pmap)
+          val newPmap = approximation.satRefine(formula, appModel, decodedModel, pmap)
           pmap = pmap.merge(newPmap)
         }
       }
