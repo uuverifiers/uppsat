@@ -1,12 +1,14 @@
-package uppsat
+package uppsat.precision
+
+import PrecisionMap._
+import uppsat.ast.AST
+import uppsat.ast.Leaf
 
 object PrecisionMap {
   type Path = List[Int]
   
   def apply[T](implicit precisionOrdering : PrecisionOrdering[T]) = new PrecisionMap[T](Map.empty[Path, T])
 }
-
-import PrecisionMap._
 
 // TODO: make map private
 class PrecisionMap[T](val map : Map[Path, T])(implicit val precisionOrdering : PrecisionOrdering[T]) {  

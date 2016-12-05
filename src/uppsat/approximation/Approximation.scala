@@ -1,8 +1,10 @@
-package uppsat
+package uppsat.approximation
 
-import uppsat.PrecisionMap.Path
-import uppsat.Encoder.PathMap
 import uppsat.ModelReconstructor.Model
+import uppsat.precision.PrecisionMap
+import uppsat.precision.PrecisionOrdering
+import uppsat.ast.AST
+import uppsat.theory.Theory
 
 trait Approximation[T] {
   

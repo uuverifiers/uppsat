@@ -1,10 +1,10 @@
-package uppsat
+package uppsat.ast
 
-import BooleanTheory._
-import IntegerTheory._
+import uppsat.theory.BooleanTheory._
 import scala.collection.mutable.ArrayStack
-import uppsat.PrecisionMap.Path
-import uppsat.AST.Label
+import uppsat.precision.PrecisionMap.Path
+import uppsat.theory.IntegerTheory._
+import uppsat.ast.AST._
 
 object Leaf {
   def apply(symbol : ConcreteFunctionSymbol) = new AST(symbol, List(), List())

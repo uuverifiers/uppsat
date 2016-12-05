@@ -1,4 +1,6 @@
-package uppsat
+package uppsat.theory
+
+import uppsat.ast._
 
 trait Theory {
     // Sort

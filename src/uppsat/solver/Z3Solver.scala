@@ -1,6 +1,8 @@
-package uppsat;
+package uppsat.solver;
 
 import java.io.ByteArrayInputStream;
+import scala.sys.process.stringToProcess
+import uppsat.solver._
 
 object Z3Solver extends SMTSolver {
   def runSolver(formula : String) = {

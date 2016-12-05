@@ -1,6 +1,7 @@
-package uppsat
+package uppsat.theory
 
-import uppsat.BooleanTheory._
+import uppsat.theory.BooleanTheory._
+import uppsat.ast._
 
 object PolymorphicTheory extends Theory {
   val name = "Polymorphic"

@@ -1,11 +1,18 @@
 package uppsat
 
-import uppsat.FloatingPointTheory._
+import uppsat.theory.FloatingPointTheory._
+
 import uppsat.ModelReconstructor.Model
-import uppsat.PrecisionMap.Path
+import uppsat.precision.PrecisionMap.Path
 import uppsat.Encoder.PathMap
-import uppsat.AST.Label
-import uppsat.FloatingPointTheory.FPSortFactory.FPSort
+import uppsat.theory.FloatingPointTheory.FPSortFactory.FPSort
+import uppsat.precision.IntPrecisionOrdering
+import uppsat.precision.PrecisionMap
+import uppsat.theory.FloatingPointTheory
+import uppsat.approximation.Approximation
+import ast.AST
+import ast.ConcreteFunctionSymbol
+import ast.Sort
 
 object SmallFloatsApproximation extends Approximation[Int] {
   val inputTheory = FloatingPointTheory

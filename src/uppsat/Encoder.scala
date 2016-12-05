@@ -1,11 +1,13 @@
 package uppsat
 
-import uppsat.IntegerTheory._
-import uppsat.PrecisionMap.Path
+import uppsat.precision.PrecisionMap
+import uppsat.precision.PrecisionMap.Path
 import uppsat.Encoder.PathMap
+import uppsat.ast.AST
+import uppsat.approximation.Approximation
 
 object Encoder {
-  import uppsat.PrecisionMap.Path
+
   type PathMap = Map[Path, Path]
 }
 

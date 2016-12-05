@@ -1,8 +1,11 @@
-package uppsat
+package uppsat.solver
 
 import scala.collection.mutable.{Set, Map => MMap, MutableList}
-import uppsat.PrecisionMap.Path
+import uppsat.precision.PrecisionMap.Path
 import uppsat.ModelReconstructor.Model
+import scala.collection.mutable.{Map => MMap}
+import uppsat.ast._
+import uppsat.theory._
 
 class SMTTranslator(theory : Theory) {
   // TODO: Should we make this immutable?  

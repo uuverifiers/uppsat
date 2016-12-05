@@ -1,8 +1,17 @@
 package uppsat;
 
+import uppsat.precision.PrecisionMap
+import uppsat.theory.BooleanTheory._
+import uppsat.theory._
+import uppsat.ast._
+import uppsat.theory.FloatingPointTheory._
+import uppsat.theory.IntegerTheory._
+import uppsat.solver._
+import uppsat.approximation._
+
+
 object main {
   def boolean() = {
-    import uppsat.BooleanTheory._
 
     val a = new BoolVar("a")
     val b = new BoolVar("b")
@@ -16,8 +25,6 @@ object main {
   }
 
   def integer() = {
-    import uppsat.IntegerTheory._
-    import uppsat.BooleanTheory._
 
     val x = new IntVar("x")
     val y = new IntVar("y")
@@ -27,8 +34,6 @@ object main {
   }
   
   def floatingpoint() = {
-    import uppsat.FloatingPointTheory._
-    
     
     val rm = Leaf(RoundToZero)
     val FP_3_3 = FPSortFactory(List(3,3))
@@ -55,7 +60,7 @@ object main {
     var pmap = PrecisionMap[P](approximation.precisionOrdering)
     pmap = pmap.cascadingUpdate(List(0), formula, 1) 
 
-    import uppsat.PrecisionMap.Path
+    import uppsat.precision.PrecisionMap.Path
     import uppsat.Encoder.PathMap
     import uppsat.ModelReconstructor.Model
 

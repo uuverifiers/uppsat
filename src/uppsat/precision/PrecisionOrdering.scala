@@ -1,4 +1,4 @@
-package uppsat
+package uppsat.precision
 
 trait PrecisionOrdering[P] {
   val order : PartialOrdering[P]

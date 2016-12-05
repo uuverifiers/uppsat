@@ -1,4 +1,4 @@
-package uppsat;
+package uppsat.solver;
 
 trait SMTSolver {
   def solve(formula : String) : Boolean

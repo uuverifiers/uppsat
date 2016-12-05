@@ -1,10 +1,15 @@
-package uppsat
+package uppsat.approximation
 
-import uppsat.IntegerTheory._
+import uppsat.theory.IntegerTheory._
 import uppsat.ModelReconstructor.Model
-import uppsat.PrecisionMap.Path
-import uppsat.Encoder.PathMap
-import uppsat.AST.Label
+import uppsat.precision.PrecisionMap.Path
+import uppsat.precision.PrecisionMap
+import uppsat.ast.AST._
+import uppsat.ast.ConcreteFunctionSymbol
+import uppsat.ast.AST
+import uppsat.theory.IntegerTheory
+import uppsat.precision._
+import uppsat.ast.Leaf
 
 object IntApproximation extends Approximation[Int] {
   val inputTheory = IntegerTheory

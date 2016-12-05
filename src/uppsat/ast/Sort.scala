@@ -1,4 +1,6 @@
-package uppsat;
+package uppsat.ast;
+
+import uppsat.theory.Theory
 
 
 

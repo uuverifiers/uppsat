@@ -1,9 +1,10 @@
-package uppsat
+package uppsat.theory
 
-import uppsat.BooleanTheory._
-import uppsat.PolymorphicTheory.PolyITE
-import java.math.RoundingMode
-import uppsat.FloatingPointTheory.FPSortFactory.FPSort
+import uppsat.theory.BooleanTheory._
+import scala.math.BigInt.int2bigInt
+import uppsat.ast._
+import FloatingPointTheory.FPSortFactory.FPSort
+
 object FloatingPointTheory extends Theory {
   val name = "FPTheory"
   
@@ -66,9 +67,6 @@ object FloatingPointTheory extends Theory {
       FPPredicateSymbol(sort.head)  
     }
   }
-  
-  
-  import uppsat.FloatingPointTheory.FPSortFactory.FPSort
   
   object RoundingModeSort extends ConcreteSort {
     val name = "RoundingMode"
@@ -155,6 +153,7 @@ object FloatingPointTheory extends Theory {
         case Nil => ack
         case 0 :: tail => bti(tail, exp*2, ack)
         case 1 :: tail => bti(tail, exp*2, ack+exp)
+        case _ => throw new Exception("List contains non-binary digit: " + bs)
       }
     }
     bti(bits.reverse, 1, 0)

@@ -1,7 +1,9 @@
-package uppsat
+package uppsat.theory
 
-import uppsat.BooleanTheory._
-import uppsat.PolymorphicTheory.PolyITE
+import uppsat.theory.BooleanTheory._
+import uppsat.theory.PolymorphicTheory.PolyITE
+import scala.math.BigInt.int2bigInt
+import uppsat.ast._
 
 object IntegerTheory extends Theory {
   val name = "IntegerTheory"

@@ -1,4 +1,4 @@
-package uppsat
+package uppsat.precision
 
 class IntPrecisionOrdering(val max : Int) extends PrecisionOrdering[Int] {
   type P = Int

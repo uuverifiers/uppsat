@@ -1,10 +1,11 @@
-package uppsat
+package uppsat.approximation
 
-import uppsat.IntegerTheory._
+import uppsat.theory.IntegerTheory._
 import uppsat.ModelReconstructor.Model
-import uppsat.PrecisionMap.Path
-import uppsat.Encoder.PathMap
-import uppsat.AST.Label
+import uppsat.precision._
+import uppsat.ast._
+import uppsat.theory.FloatingPointTheory
+import uppsat.precision.PrecisionMap.Path
 
 object EmptyApproximation extends Approximation[Int] {
   val inputTheory = FloatingPointTheory

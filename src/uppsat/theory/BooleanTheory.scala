@@ -1,4 +1,6 @@
-package uppsat
+package uppsat.theory
+
+import uppsat.ast._
 
 object BooleanTheory extends Theory {
   val name = "BooleanTheory"
