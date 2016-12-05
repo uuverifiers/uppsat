@@ -41,7 +41,7 @@ object main {
     val FPEq = FPEqualityFactory(List(FP_3_3))    
     val rootNode = AST(FPEq, List(addNode, xNode))
     
-    (rootNode, List(x, y), new SMTTranslator(FloatingPointTheory), EmptyApproximation)
+    (rootNode, List(x, y), new SMTTranslator(FloatingPointTheory), SmallFloatsApproximation)
   }
   
   def main(args: Array[String]) = {
@@ -77,6 +77,7 @@ object main {
         if (pmap.isMaximal)
           maxPrecisionTried = true
         encodedFormula = enc.encode(formula, pmap)   
+        encodedFormula.prettyPrint
         encodedSMT = translator.translate(encodedFormula)
         val result = Z3Solver.solve(encodedSMT)
 

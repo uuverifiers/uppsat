@@ -3,7 +3,7 @@ package uppsat
 import uppsat.BooleanTheory._
 import uppsat.PolymorphicTheory.PolyITE
 import java.math.RoundingMode
-
+import uppsat.FloatingPointTheory.FPSortFactory.FPSort
 object FloatingPointTheory extends Theory {
   val name = "FPTheory"
   
@@ -24,27 +24,36 @@ object FloatingPointTheory extends Theory {
     }
   }
   
+  abstract class FloatingPointFunctionSymbol(val sort : FPSort) extends IndexedFunctionSymbol
+  abstract class FloatingPointPredicateSymbol extends IndexedFunctionSymbol
+  
   case class FPOperatorSymbolFactory(symbolName : String, isRounding : Boolean, fpArity : Int) extends IndexedFunctionSymbolFactory {
     val thisFactory = this
     
     // TODO: This should only be Symbol, since each instance of the factory will have it's own instance of the class
-    case class FPFunctionSymbol(val args : Seq[ConcreteSort], val sort : ConcreteSort) extends IndexedFunctionSymbol {   
+    case class FPFunctionSymbol(val args : Seq[ConcreteSort], override val sort : FPSort) extends FloatingPointFunctionSymbol(sort) {   
       val theory = FloatingPointTheory
       val getFactory = thisFactory
       val name = symbolName
     }
-
+    
     val rank = 1 // Refers to the sorts
-    override def apply(sort : Seq[ConcreteSort]) = {
-      val args = if (isRounding) RoundingModeSort :: List.fill(fpArity)(sort.head) else List.fill(fpArity)(sort.head)
-      FPFunctionSymbol(args, sort.head)  
+    override def apply(sorts : Seq[ConcreteSort]) = {
+      sorts.reverse.head match {
+        case fpsort : FPSort => {      
+          val argSorts = sorts.take(sorts.length - 1).toList
+          val args = if (isRounding) RoundingModeSort :: argSorts else argSorts
+          FPFunctionSymbol(args, fpsort)
+        }
+        case _ =>  throw new Exception("Non-FP sort : " + sorts.head)
+      }  
     }
   }
 
   case class FPPredicateSymbolFactory(symbolName : String, fpArity : Int) extends IndexedFunctionSymbolFactory {
     val thisFactory = this
     
-    case class FPPredicateSymbol( val argSort : ConcreteSort) extends IndexedFunctionSymbol {   
+    case class FPPredicateSymbol( val argSort : ConcreteSort) extends FloatingPointPredicateSymbol {   
       val theory = FloatingPointTheory
       val getFactory = thisFactory
       val name = symbolName
@@ -76,7 +85,7 @@ object FloatingPointTheory extends Theory {
   case class FPConstantFactory(sign : Int, eBits : List[Int], sBits : List[Int]) extends IndexedFunctionSymbolFactory {
     val thisFactory = this
     
-    case class FPConstantSymbol(val sort : ConcreteSort) extends IndexedFunctionSymbol {
+    case class FPConstantSymbol(override val sort : FPSort) extends FloatingPointFunctionSymbol(sort) {
       // TODO: Does name have to be SMT-appliant, not nice!
       val name = fpToFloat(sign, eBits, sBits).toString() 
       val theory = FloatingPointTheory
@@ -87,8 +96,13 @@ object FloatingPointTheory extends Theory {
     val rank = 1 // Refers to the sorts
 
     override def apply(sort : Seq[ConcreteSort]) = {
-      FPConstantSymbol(sort.head)
-    }
+      sort.head match {
+        case fpsort : FPSort => {          
+          FPConstantSymbol(fpsort)
+        }
+        case _ =>  throw new Exception("Non-FP sort : " + sort.head)
+      }  
+    }    
   }
   
   // TODO: Change to Booleans?
@@ -112,6 +126,7 @@ object FloatingPointTheory extends Theory {
   val FPSubtractionFactory = new FPOperatorSymbolFactory("subtraction", true, 2)
   val FPEqualityFactory = new FPPredicateSymbolFactory("fp-equality", 2)
   val FPLessThanOrEqualFactory = new FPPredicateSymbolFactory("fp-leq", 2)  
+  val FPToFPFactory = new FPOperatorSymbolFactory("fp-to-fp", true, 1)
   // case class FPITE(sort : FPSort) extends PolyITE("fp-ite", sort)
   
 //  implicit def FPToAST(float : Float) = Leaf(new FPLiteral(float))
@@ -179,7 +194,7 @@ object FloatingPointTheory extends Theory {
   val sorts : List[Sort] = List()
 
   // TODO: How do we do this?
-  val symbols = List()
+  val symbols = List() //: List[IndexedFunctionSymbol] = List(FPAdditionFactory.FPFunctionSymbol, FPSubtractionFactory.FPFunctionSymbol, FPEqualityFactory.FPPredicateSymbol)
   
   def isDefinedLiteral(symbol : ConcreteFunctionSymbol) = {
     symbol match {
@@ -197,14 +212,21 @@ object FloatingPointTheory extends Theory {
     symbol match {
       case FPVar(name, _) => name
       case RoundToZero => "RTZ"
-      case idxSym : IndexedFunctionSymbol => {      
-        idxSym.getFactory match {
+      case fpFunSym : FloatingPointFunctionSymbol => {      
+        fpFunSym.getFactory match {
           case FPAdditionFactory => "fp.add"
-          case FPSubtractionFactory => "fp.sub" 
-          case FPEqualityFactory => "="
+          case FPSubtractionFactory => "fp.sub"
+          case FPToFPFactory => "(_ to_fp " + fpFunSym.sort.eBits + " " + fpFunSym.sort.sBits + ")"          
           case FPConstantFactory(sign, eBits, sBits) => "(fp #b" + sign + " #b" + eBits.mkString("") + " #b" + sBits.mkString("") + ")" 
           case str => throw new Exception("Unsupported FP symbol: " + str)
         }
+      }
+      case fpPredSym : FloatingPointPredicateSymbol => {
+        fpPredSym.getFactory match {
+          case FPEqualityFactory => "="          
+          case str => throw new Exception("Unsupported FP symbol: " + str)
+        }
+      
       }
     }
   }

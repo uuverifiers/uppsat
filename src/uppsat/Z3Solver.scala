@@ -27,6 +27,7 @@ object Z3Solver extends SMTSolver {
   }
   
   def solve(formula : String) : Boolean = {
+    println(formula)
     val result = runSolver(formula)  
     val retVal = result.split("\n").head.trim()
     retVal match {
