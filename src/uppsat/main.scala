@@ -34,18 +34,13 @@ object main {
   }
   
   def floatingpoint() = {
+    implicit val rmm = RoundToPositive
+    implicit val fpsort = FPSortFactory(List(10,10))
     
-    val rm = Leaf(RoundToZero)
-    val FP_3_3 = FPSortFactory(List(3,3))
-    val x = new FPVar("x", FP_3_3)
-    val y = new FPVar("y", FP_3_3)
-    val FPAdd = FPAdditionFactory(List(FP_3_3))
-    val xNode = Leaf(x)
-    val yNode = Leaf(y)
-    val addNode = AST(FPAdd, List(rm, xNode, yNode))
-    val FPEq = FPEqualityFactory(List(FP_3_3))    
-    val rootNode = AST(FPEq, List(addNode, xNode))
+    val x = FPVar("x")
+    val y = FPVar("y")
     
+    val rootNode = (x + x <= y) & (y <= x)
     (rootNode, List(x, y), new SMTTranslator(FloatingPointTheory), SmallFloatsApproximation)
   }
   

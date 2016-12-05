@@ -4,6 +4,8 @@ import uppsat.theory.BooleanTheory._
 import scala.collection.mutable.ArrayStack
 import uppsat.precision.PrecisionMap.Path
 import uppsat.theory.IntegerTheory._
+import uppsat.theory.FloatingPointTheory._
+import uppsat.theory.FloatingPointTheory.FPSortFactory.FPSort
 import uppsat.ast.AST._
 
 object Leaf {
@@ -87,15 +89,17 @@ case class AST(val symbol : ConcreteFunctionSymbol, val label : Label, val child
      }
   }
   
-  def +(that : AST) = {
+  def +(that : AST)(implicit rm : RoundingMode = RoundToZero) = {
      (this.symbol.sort, that.symbol.sort) match {
        case (IntegerSort, IntegerSort) => intAddition(this, that)
+       case (f1 : FPSort, f2 : FPSort) => floatAddition(this, that)       
      }
   }
   
-  def -(that : AST) = {
+  def -(that : AST)(implicit rm : RoundingMode = RoundToZero) = {
      (this.symbol.sort, that.symbol.sort) match {
        case (IntegerSort, IntegerSort) => intSubstraction(this, that)
+       case (f1 : FPSort, f2 : FPSort) => floatSubtraction(this, that)
      }
   }
   
@@ -103,12 +107,14 @@ case class AST(val symbol : ConcreteFunctionSymbol, val label : Label, val child
   def ===(that : AST) = {
     (this.symbol.sort, that.symbol.sort) match {
        case (IntegerSort, IntegerSort) => intEquality(this, that)
+       case (f1 : FPSort, f2 : FPSort) => floatEquality(this, that)              
      }
   }
   
   def <=(that : AST) = {
     (this.symbol.sort, that.symbol.sort) match {
        case (IntegerSort, IntegerSort) => intLessThanOrEqual(this, that)
+       case (f1 : FPSort, f2 : FPSort) => floatLessThanOrEqual(this, that)
      }
   }
 }
