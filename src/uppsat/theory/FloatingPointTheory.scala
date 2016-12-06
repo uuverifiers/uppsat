@@ -199,13 +199,22 @@ object FloatingPointTheory extends Theory {
     bti(bits.reverse, 1, 0)
   }
   
+  def ebitsToInt(bits : List[Int]) : Int = {
+    val sum = bitsToInt(bits.tail.reverse)
+    if (bits.head == 1) {
+      sum - 2.pow(bits.length - 1).toInt
+    } else {
+      sum
+    }        
+   }
+  
   def fpToFloat(signBit : Int, eBits : List[Int], sBits : List[Int]) = {
     val sign = (signBit == 0)
-    val exponent = bitsToInt(eBits)
+    val exponent = ebitsToInt(eBits)
     val significand = bitsToInt(sBits)
-    val absVal = (1 + significand) * (2^exponent)
-    val value = if (sign) absVal else -absVal
-    value
+    val magnitude = if (exponent > 0) (2.pow(exponent).toInt) else (1.0 / (2.pow(-exponent).toInt)) 
+    val absVal = (1 + significand) * magnitude
+    if (sign) absVal else -absVal    
   }
   
   def parseLiteral(lit : String) = {
@@ -296,7 +305,7 @@ object FloatingPointTheory extends Theory {
   
   def toSMTLib(sort : ConcreteSort) = {
     sort match {
-      case FPSort(s,e) => "(_ FloatingPoint " + e + " " + s + ")"
+      case FPSort(e, s) => "(_ FloatingPoint " + e + " " + s + ")"
       case RoundingModeSort => "RoundingMode"
     }
   }
