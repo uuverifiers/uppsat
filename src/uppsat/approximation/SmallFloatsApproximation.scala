@@ -14,6 +14,7 @@ import ast.AST
 import ast.ConcreteFunctionSymbol
 import ast.Sort
 
+
 object SmallFloatsApproximation extends Approximation[Int] {
   val inputTheory = FloatingPointTheory
   val outputTheory = FloatingPointTheory
@@ -72,6 +73,7 @@ object SmallFloatsApproximation extends Approximation[Int] {
     
    def encodeSymbol(symbol : ConcreteFunctionSymbol, path : Path, children : List[AST], precision : Int) : AST = {
     symbol match {
+      case fpLit : FloatingPointConstantSymbol => AST(symbol, path, children) 
       case fpSym : FloatingPointFunctionSymbol => encodeFunSymbol(fpSym, path, children, precision)
       case fpPred : FloatingPointPredicateSymbol => encodePredSymbol(fpPred, path, children, precision)
       case _ => AST(symbol, path, children) 

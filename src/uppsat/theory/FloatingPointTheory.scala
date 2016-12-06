@@ -25,6 +25,7 @@ object FloatingPointTheory extends Theory {
   }
   
   abstract class FloatingPointFunctionSymbol(val sort : FPSort) extends IndexedFunctionSymbol
+  abstract class FloatingPointConstantSymbol(override val sort : FPSort) extends FloatingPointFunctionSymbol(sort)
   abstract class FloatingPointPredicateSymbol extends IndexedFunctionSymbol
   
   case class FPOperatorSymbolFactory(symbolName : String, isRounding : Boolean, fpArity : Int) extends IndexedFunctionSymbolFactory {
@@ -90,10 +91,10 @@ object FloatingPointTheory extends Theory {
   }
   
   
-  case class FPConstantFactory(sign : Int, eBits : List[Int], sBits : List[Int]) extends IndexedFunctionSymbolFactory {
+  case class FPConstantFactory(sign : Int, eBits: List[Int], sBits : List[Int]) extends IndexedFunctionSymbolFactory {
     val thisFactory = this
     
-    case class FPConstantSymbol(override val sort : FPSort) extends FloatingPointFunctionSymbol(sort) {
+    case class FPConstantSymbol(override val sort : FPSort) extends FloatingPointConstantSymbol(sort) {
       // TODO: Does name have to be SMT-appliant, not nice!
       val name = fpToFloat(sign, eBits, sBits).toString() 
       val theory = FloatingPointTheory
@@ -143,6 +144,27 @@ object FloatingPointTheory extends Theory {
     val factory = new FPConstantFactory(sign, eBits, sBits)
     factory(List(sort))
   } 
+  
+  def intToBits(int : Int, upperBound : Int) = {
+    (for ( i <- 0 until upperBound) yield {
+      if ((int & (1 << i )) > 0) 1 else 0
+    }).reverse.toList
+  }
+  
+  def floatToBits(f : Float) = {
+    val bits = java.lang.Float.floatToIntBits(f)
+    val bitList = intToBits(bits,32)
+    val sign  = bitList.head //intToBits(bits & 0x80000000, 1)
+    val ebits = bitList.tail.take(8)//intToBits(bits & 0x7f800000, 8)
+    val sbits = bitList.drop(9)//intToBits(bits & 0x007fffff, 23)
+    (sign, ebits, sbits)
+  }
+  
+  implicit def floatToAST(float : Float) = {
+    val sort = FPSortFactory(List(8,24))
+    val (sign, ebits, sbits) = floatToBits(float)
+    Leaf(fp(sign, ebits, sbits)(sort))    
+  }
   
   implicit def FPVarToAST(floatVar : FPVar) = Leaf(floatVar)
   implicit def RoundingModeToAST(rm : RoundingMode) = Leaf(rm)
@@ -199,9 +221,21 @@ object FloatingPointTheory extends Theory {
     bti(bits.reverse, 1, 0)
   }
   
+  def sbitsToFloat(bits : List[Int]) : Float = {
+    def bti(bs : List[Int], exp : Float, ack : Float) : Float = {
+      bs match {
+        case Nil => ack
+        case 0 :: tail => bti(tail, exp/2, ack)
+        case 1 :: tail => bti(tail, exp/2, ack+exp)
+        case _ => throw new Exception("List contains non-binary digit: " + bs)
+      }
+    }
+    bti(bits, 0.5f, 0)
+  }
+  
   def ebitsToInt(bits : List[Int]) : Int = {
     val sum = bitsToInt(bits.tail.reverse)
-    if (bits.head == 1) {
+    if (bits.head == 0) {
       sum - 2.pow(bits.length - 1).toInt
     } else {
       sum
@@ -210,9 +244,10 @@ object FloatingPointTheory extends Theory {
   
   def fpToFloat(signBit : Int, eBits : List[Int], sBits : List[Int]) = {
     val sign = (signBit == 0)
-    val exponent = ebitsToInt(eBits)
-    val significand = bitsToInt(sBits)
-    val magnitude = if (exponent > 0) (2.pow(exponent).toInt) else (1.0 / (2.pow(-exponent).toInt)) 
+    val exponent = 2.pow(eBits.length - 1).toInt - 1 - bitsToInt(eBits)
+    val significand = sbitsToFloat(sBits)
+    val magnitude = if (exponent >= 0) (2.pow(exponent).toInt) else (1.0 / (2.pow(-exponent).toInt))
+    // If denormal, etc
     val absVal = (1 + significand) * magnitude
     if (sign) absVal else -absVal    
   }
@@ -224,7 +259,7 @@ object FloatingPointTheory extends Theory {
     lit match {
       case bitPattern(d1, d2, d3) => {
         val constFactory = new FPConstantFactory(d1.toInt, d2.toList.map(_.toString.toInt), d3.toList.map(_.toString.toInt))
-        val fpsort = FPSortFactory(List(d2.length, d3.length+1))
+        val fpsort = FPSortFactory(List(d2.length, d3.length))
         Leaf(constFactory(List(fpsort)))
       }
       case specialPattern(d1, d2, d3) => {
@@ -286,7 +321,9 @@ object FloatingPointTheory extends Theory {
           case FPAdditionFactory => "fp.add"
           case FPSubtractionFactory => "fp.sub"
           case FPToFPFactory => "(_ to_fp " + fpFunSym.sort.eBits + " " + fpFunSym.sort.sBits + ")"          
-          case FPConstantFactory(sign, eBits, sBits) => "(fp #b" + sign + " #b" + eBits.mkString("") + " #b" + sBits.mkString("") + ")" 
+          case FPConstantFactory(sign, eBits, sBits) => {
+            "(fp #b" + sign + " #b" + eBits.mkString("") + " #b" + sBits.mkString("") + ")" 
+          }
           case str => throw new Exception("Unsupported FP symbol: " + str)
         }
       }
