@@ -35,12 +35,12 @@ object main {
   
   def floatingpoint() = {
     implicit val rmm = RoundToPositive
-    implicit val fpsort = FPSortFactory(List(10,10))
+    implicit val fpsort = FPSortFactory(List(8, 24))
     
     val x = FPVar("x")
     val y = FPVar("y")
     
-    val rootNode = (x + x <= y) & (y <= x)
+    val rootNode = (x + x <= y)
     (rootNode, List(x, y), new SMTTranslator(FloatingPointTheory), SmallFloatsApproximation)
   }
   
@@ -49,7 +49,6 @@ object main {
     println("<<<Formula>>>")
     formula.prettyPrint
     
-    //TODO:  Request it from approximation
     type P = approximation.precisionOrdering.P
     val enc = new Encoder[P](approximation)    
     var pmap = PrecisionMap[P](approximation.precisionOrdering)
