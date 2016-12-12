@@ -35,12 +35,12 @@ object main {
   
   def floatingpoint() = {
     implicit val rmm = RoundToPositive
-    implicit val fpsort = FPSortFactory(List(10,10))
+    implicit val fpsort = FPSortFactory(List(8,24))
     
     val x = FPVar("x")
     val y = FPVar("y")
-    
-    val rootNode = (x + x <= y) & (y <= x)
+    val c : AST = 1.75f
+    val rootNode = (x + 1.75f === y) & (x === 2f)
     (rootNode, List(x, y), new SMTTranslator(FloatingPointTheory), SmallFloatsApproximation)
   }
   
