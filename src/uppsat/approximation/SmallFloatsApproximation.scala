@@ -1,5 +1,6 @@
 package uppsat
 
+
 import uppsat.theory.FloatingPointTheory._
 
 import uppsat.ModelReconstructor.Model
@@ -11,6 +12,7 @@ import uppsat.precision.PrecisionMap
 import uppsat.theory.FloatingPointTheory
 import uppsat.approximation.Approximation
 import ast.AST
+import ast.Leaf
 import ast.ConcreteFunctionSymbol
 import ast.Sort
 
@@ -71,12 +73,33 @@ object SmallFloatsApproximation extends Approximation[Int] {
       AST(symbol.getFactory(argSorts ++ List(symbol.sort)), path, newChildren)      
     }
     
+    def encodeVar(fpVar : FPVar, path : Path, precision : Int) = {
+      // TODO: Do not convert if sorts are the same
+      val newSort = scaleSort(fpVar.sort, precision)
+      val cast = FPToFPFactory(List(fpVar.sort, newSort)) 
+      val rmNode = AST(RoundToZero, List(), List())
+      val varNode = uppsat.ast.Leaf(fpVar, path)
+      // TODO: Do we label the variable node or the casting node?
+      AST(cast, List(), List(rmNode, varNode))
+    }
+    
    def encodeSymbol(symbol : ConcreteFunctionSymbol, path : Path, children : List[AST], precision : Int) : AST = {
     symbol match {
-      case fpLit : FloatingPointConstantSymbol => AST(symbol, path, children) 
-      case fpSym : FloatingPointFunctionSymbol => encodeFunSymbol(fpSym, path, children, precision)
-      case fpPred : FloatingPointPredicateSymbol => encodePredSymbol(fpPred, path, children, precision)
-      case _ => AST(symbol, path, children) 
+      case fpLit : FloatingPointConstantSymbol => {
+        AST(symbol, path, children) 
+      }
+      case fpSym : FloatingPointFunctionSymbol => {
+        encodeFunSymbol(fpSym, path, children, precision)
+      }
+      case fpPred : FloatingPointPredicateSymbol => {
+        encodePredSymbol(fpPred, path, children, precision)
+      }
+      case fpVar : FPVar => {
+        encodeVar(fpVar, path, precision)
+      }
+      case _ => {
+        AST(symbol, path, children) 
+      }
     }      
   }
     

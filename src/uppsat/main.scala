@@ -49,7 +49,6 @@ object main {
     println("<<<Formula>>>")
     formula.prettyPrint
     
-    //TODO:  Request it from approximation
     type P = approximation.precisionOrdering.P
     val enc = new Encoder[P](approximation)    
     var pmap = PrecisionMap[P](approximation.precisionOrdering)

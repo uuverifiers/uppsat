@@ -252,31 +252,66 @@ object FloatingPointTheory extends Theory {
     if (sign) absVal else -absVal    
   }
   
-  def parseLiteral(lit : String) = {
-    val bitPattern = "\\(fp #b(\\d+) #b(\\d+) #b(\\d+)\\)".r
-    val specialPattern = "\\(_ ([a-z\\-]*) (\\d+) (\\d+)\\)".r
-    val testPattern = "\\(_ ([a-z\\-]*)(.*)".r
-    lit match {
-      case bitPattern(d1, d2, d3) => {
-        val constFactory = new FPConstantFactory(d1.toInt, d2.toList.map(_.toString.toInt), d3.toList.map(_.toString.toInt))
-        val fpsort = FPSortFactory(List(d2.length, d3.length))
-        Leaf(constFactory(List(fpsort)))
-      }
-      case specialPattern(d1, d2, d3) => {
-        val fpsort = FPSortFactory(List(d2.toInt, d3.toInt - 1))
-        val constFactory =
-          d1 match {
-            case "-zero" => new FPConstantFactory(1, List.fill(d2.toInt)(0), List.fill(d3.toInt - 1)(0))
-            case _ => throw new Exception("Couldn't match special FP type: " + d1 + " in (" + lit + ")")
+  def parseSymbol(sym : String) = {
+    val bitPattern = "#b(\\d+)".r
+    val hexPattern = "#x([0-9a-f]*)".r
+    sym match {
+      case bitPattern(b) => b.toList.map(_.toString.toInt)
+      case hexPattern(h) => {
+        val bits = 
+          for (d <- h) yield {
+            d match {
+              case '0' => "0000"
+              case '1' => "0001"
+              case '2' => "0010"
+              case '3' => "0011"
+              case '4' => "0100"
+              case '5' => "0101"
+              case '6' => "0110"
+              case '7' => "0111"
+              case '8' => "1000"
+              case '9' => "1001"
+              case 'a' => "1010"
+              case 'b' => "1011"
+              case 'c' => "1100"
+              case 'd' => "1101"
+              case 'e' => "1110"
+              case 'f' => "1111"                
+            }
           }
-          Leaf(constFactory(List(fpsort)))
+          bits.map(_.toList).flatten.map(_.toString.toInt)
       }
-      case _ => {
-        throw new Exception("fp.parseLiteral error: " + lit)
-      }
+      case asd => throw new Exception("parseSymbol: " + asd)
     }
   }
   
+  
+  def parseLiteral(lit : String) = {
+    val bitPattern = "\\(fp (\\S*) (\\S*) (\\S*)\\)".r
+    val zeroPattern = "\\(_ ([\\+\\-])zero (\\d+) (\\d+)\\)".r
+    lit match {
+      case bitPattern(s1, s2, s3) => {
+        val sign = 
+          if (s1 == "#b0") 0
+          else if (s1 == "#b1") 1
+          else throw new Exception("Wrong sign bit: " + s1)
+        
+        val eBits = parseSymbol(s2).toList
+        val sBits = parseSymbol(s3).toList
+        val constFactory = new FPConstantFactory(sign, eBits, sBits)
+        val fpsort = FPSortFactory(List(eBits.length, sBits.length))
+        Leaf(constFactory(List(fpsort)))
+      }
+      case zeroPattern(sign, eBits, sBits) => {
+        val signBit = if (sign == "+") 0 else 1
+        val fpsort = FPSortFactory(List(eBits.toInt, sBits.toInt))
+        // TODO: Aleks, is the number of zeroes correct?
+        val factory = new FPConstantFactory(signBit, List.fill(eBits.toInt)(0), List.fill(sBits.toInt - 1)(0))
+        Leaf(factory(List(fpsort)))
+      }
+      case _ => throw new Exception("Unknown FP literal: " + lit)
+    }
+  }
   
   object FPVar {
     def apply(name : String)(implicit sort : FPSort) = {
