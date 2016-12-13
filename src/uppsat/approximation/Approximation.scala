@@ -11,7 +11,9 @@ import uppsat.ast.FunctionSymbol
 import uppsat.precision.PrecisionMap.Path
 
 trait Approximation[P] {
+  // TODO: type precision
   
+  // Do we need this? 
   val inputTheory : Theory
   val outputTheory : Theory
   val precisionOrdering : PrecisionOrdering[P]

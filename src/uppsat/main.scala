@@ -52,7 +52,7 @@ object main {
     type P = approximation.precisionOrdering.P
     val enc = new Encoder[P](approximation)    
     var pmap = PrecisionMap[P](approximation.precisionOrdering)
-    pmap = pmap.cascadingUpdate(List(0), formula, 1) 
+    pmap = pmap.cascadingUpdate(List(0), formula, 0) 
 
     import uppsat.precision.PrecisionMap.Path
     import uppsat.Encoder.PathMap

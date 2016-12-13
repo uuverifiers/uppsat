@@ -15,8 +15,8 @@ object FloatingPointTheory extends Theory {
       val getFactory = FPSortFactory
     }
   
-    val rank = 2
-    def apply(idx : Seq[BigInt]) = {
+    val rank = 2 // TODO: arity
+    def apply(idx : Seq[BigInt]) = { //TODO: BigInt *
       val eBits = idx(0).toInt
       val sBits = idx(1).toInt
       // TODO: Use HashTable to store and re-use
@@ -90,7 +90,7 @@ object FloatingPointTheory extends Theory {
     val name = "RoundToPositive"
   }
   
-  
+  // TODO: Bitset instead of List[Int]
   case class FPConstantFactory(sign : Int, eBits: List[Int], sBits : List[Int]) extends IndexedFunctionSymbolFactory {
     val thisFactory = this
     
@@ -103,7 +103,7 @@ object FloatingPointTheory extends Theory {
     }
 
     val rank = 1 // Refers to the sorts
-
+    // TODO:  Remove
     override def apply(sort : Seq[ConcreteSort]) = {
       sort.head match {
         case fpsort : FPSort => {          
@@ -114,7 +114,7 @@ object FloatingPointTheory extends Theory {
     }    
   }
   
-  // TODO: Change to Booleans?
+  // TODO: Change to BigInt
   def FPLiteral(sign : Int, eBits : List[Int], sBits : List[Int], sort : FPSort) = {
     val newFactory = new FPConstantFactory(sign, eBits, sBits)
     newFactory(List(sort))
@@ -129,7 +129,7 @@ object FloatingPointTheory extends Theory {
     zeroFactory(List(FPSort_3_3))
   }
     
-  // Symbols, conjunction and negation
+  // Symbols
 
   val FPAdditionFactory = new FPOperatorSymbolFactory("addition", true, 2)
   val FPSubtractionFactory = new FPOperatorSymbolFactory("subtraction", true, 2)
@@ -244,11 +244,13 @@ object FloatingPointTheory extends Theory {
   
   def fpToFloat(signBit : Int, eBits : List[Int], sBits : List[Int]) = {
     val sign = (signBit == 0)
-    val exponent = 2.pow(eBits.length - 1).toInt - 1 - bitsToInt(eBits)
+    val exponent = bitsToInt(eBits) - (2.pow(eBits.length - 1).toInt - 1)
     val significand = sbitsToFloat(sBits)
     val magnitude = if (exponent >= 0) (2.pow(exponent).toInt) else (1.0 / (2.pow(-exponent).toInt))
     // If denormal, etc
     val absVal = (1 + significand) * magnitude
+//    println(eBits.mkString(""))
+//    println(sBits.mkString(""))
     if (sign) absVal else -absVal    
   }
   
@@ -323,6 +325,7 @@ object FloatingPointTheory extends Theory {
     }  
   }
   
+  // Theory shouldn't be here
   class FPVar(val name : String, val sort : FPSort) extends ConcreteFunctionSymbol {
     val args = List()
     val theory = FloatingPointTheory
@@ -346,6 +349,7 @@ object FloatingPointTheory extends Theory {
   }
   
   //TODO: Fix type-checking
+  //TODO: Change to SMTLIB names
   def toSMTLib(symbol : ConcreteFunctionSymbol) = { 
     symbol match {
       case FPVar(name, _) => name

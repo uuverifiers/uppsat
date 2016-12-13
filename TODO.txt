@@ -1,7 +1,3 @@
-// Introduce theory (e.g., first Boolean later Floats (maybe Int in between))
-
-// Hardcode formula (shouldn't be too hard)
-
 // TODO: Two notions of equality, one general and one per-theory (cf, object identity and -0 = +0)
 
 // TODO: Symbol generation - use HashTable to store and re-use
@@ -14,7 +10,7 @@
 // Write down design decisions!
 
 // Model reconstruction
-How do we deal with testing the hat-model. Testing and fixing every sub-formula could be expensive? (Loads of calls to the underlying solver). Maybe not a problem?
+ How do we deal with testing the hat-model. Testing and fixing every sub-formula could be expensive? (Loads of calls to the underlying solver). Maybe not a problem?
 
 Plan:
 1> Boolean theory, w. syntactic sugar and translator. half a day (done)
