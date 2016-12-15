@@ -17,6 +17,7 @@ import ast.ConcreteFunctionSymbol
 import ast.Sort
 
 
+
 object SmallFloatsApproximation extends Approximation[Int] {
   val inputTheory = FloatingPointTheory
   val outputTheory = FloatingPointTheory
@@ -76,11 +77,8 @@ object SmallFloatsApproximation extends Approximation[Int] {
     def encodeVar(fpVar : FPVar, path : Path, precision : Int) = {
       // TODO: Do not convert if sorts are the same
       val newSort = scaleSort(fpVar.sort, precision)
-      val cast = FPToFPFactory(List(fpVar.sort, newSort)) 
-      val rmNode = AST(RoundToZero, List(), List())
-      val varNode = uppsat.ast.Leaf(fpVar, path)
-      // TODO: Do we label the variable node or the casting node?
-      AST(cast, List(), List(rmNode, varNode))
+      val newVar = FPVar(fpVar.name)(newSort)
+      uppsat.ast.Leaf(newVar, path)     
     }
     
    def encodeSymbol(symbol : ConcreteFunctionSymbol, path : Path, children : List[AST], precision : Int) : AST = {
@@ -116,8 +114,37 @@ object SmallFloatsApproximation extends Approximation[Int] {
     encodeAux(ast, List(0), pmap)
   }
   
+  // TODO: _Symbol should have a sort?
+  def decodeSymbolValue(symbol : ConcreteFunctionSymbol, value : AST, p : Int) = {
+    (symbol.sort, value.symbol) match {
+      case (FPSort(e, s), fp : FloatingPointTheory.FloatingPointLiteral)  => {
+        val fullEBits = fp.eBits ++ List.fill(e - fp.eBits.length)(0)
+        val fullSBits = fp.sBits ++ List.fill(s - fp.sBits.length)(0)
+        Leaf(FPLiteral(fp.sign, fullEBits, fullSBits, FPSort(e, s)))
+      }
+      
+      case _ => value
+    }
+  }
+  
+  def decodeAux(ast : AST, path : Path, appModel : Model, pmap : PrecisionMap[Int]) : Model = {
+    val AST(symbol, label, children) = ast
+    val partialModels = 
+      for ((c, i) <- children zip children.indices) yield {
+        decodeAux( c, i :: path, appModel, pmap)
+      }    
+    
+    // TODO: Literals have no children
+    if (!isLiteral(symbol)) {
+      val currentModel = Map(path -> decodeSymbolValue(symbol, appModel(path), pmap(path)))
+      partialModels.foldLeft(currentModel)((x,y) => x ++ y)
+    } else {
+      Map()      
+    }
+  }
+  
   def decodeModel(ast : AST, appModel : Model, pmap : PrecisionMap[Int]) = {
-    appModel
+    decodeAux(ast, List(0), appModel, pmap)
   }
   def reconstruct(ast : AST, decodedModel : Model) : Model = {
     decodedModel

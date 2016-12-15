@@ -26,7 +26,9 @@ object FloatingPointTheory extends Theory {
   
   abstract class FloatingPointFunctionSymbol(val sort : FPSort) extends IndexedFunctionSymbol
   abstract class FloatingPointConstantSymbol(override val sort : FPSort) extends FloatingPointFunctionSymbol(sort)
+  abstract class FloatingPointLiteral(override val sort : FPSort, val sign : Int, val eBits : List[Int], val sBits : List[Int]) extends FloatingPointFunctionSymbol(sort)
   abstract class FloatingPointPredicateSymbol extends IndexedFunctionSymbol
+  
   
   case class FPOperatorSymbolFactory(symbolName : String, isRounding : Boolean, fpArity : Int) extends IndexedFunctionSymbolFactory {
     val thisFactory = this
@@ -94,7 +96,7 @@ object FloatingPointTheory extends Theory {
   case class FPConstantFactory(sign : Int, eBits: List[Int], sBits : List[Int]) extends IndexedFunctionSymbolFactory {
     val thisFactory = this
     
-    case class FPConstantSymbol(override val sort : FPSort) extends FloatingPointConstantSymbol(sort) {
+    case class FPConstantSymbol(override val sort : FPSort) extends FloatingPointLiteral(sort, sign, eBits.take(sort.eBits), sBits.take(sort.sBits - 1)) {
       // TODO: Does name have to be SMT-appliant, not nice!
       val name = fpToFloat(sign, eBits, sBits).toString() 
       val theory = FloatingPointTheory
@@ -337,6 +339,13 @@ object FloatingPointTheory extends Theory {
   // TODO: How do we do this?
   val symbols = List() //: List[IndexedFunctionSymbol] = List(FPAdditionFactory.FPFunctionSymbol, FPSubtractionFactory.FPFunctionSymbol, FPEqualityFactory.FPPredicateSymbol)
   
+  def isLiteral(symbol : ConcreteFunctionSymbol) = {
+    symbol match {
+      case l : FloatingPointLiteral => true
+      case rm : RoundingMode => true
+      case _ => false
+    }
+  }
   def isDefinedLiteral(symbol : ConcreteFunctionSymbol) = {
     symbol match {
       case FPVar(_) => false
@@ -361,7 +370,7 @@ object FloatingPointTheory extends Theory {
           case FPSubtractionFactory => "fp.sub"
           case FPToFPFactory => "(_ to_fp " + fpFunSym.sort.eBits + " " + fpFunSym.sort.sBits + ")"          
           case FPConstantFactory(sign, eBits, sBits) => {
-            "(fp #b" + sign + " #b" + eBits.mkString("") + " #b" + sBits.mkString("") + ")" 
+            "(fp #b" + sign + " #b" + eBits.take(fpFunSym.sort.eBits).mkString("") + " #b" + sBits.take(fpFunSym.sort.sBits - 1).mkString("") + ")" 
           }
           case str => throw new Exception("Unsupported FP symbol: " + str)
         }
