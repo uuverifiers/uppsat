@@ -93,8 +93,9 @@ object main {
         val stringModel = Z3Solver.getModel(encodedSMT, translator.getDefinedSymbols.toList)
         val appModel = translator.getModel(formula, stringModel)
         val reconstructor = new ModelReconstructor[P](approximation)         
-        val reconstructedModel = reconstructor.reconstruct(formula, appModel) 
-        val decodedModel = approximation.decodeModel(formula, reconstructedModel, pmap)
+        val decodedModel = approximation.decodeModel(formula, appModel, pmap)
+        val reconstructedModel = reconstructor.reconstruct(formula, decodedModel) 
+        
         
         val assignments = for ((symbol, label) <- formula.iterator if (!symbol.theory.isDefinedLiteral(symbol))) yield {
           val value = decodedModel(label)

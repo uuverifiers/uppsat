@@ -17,7 +17,7 @@ Plan:
 2> Integer theory, w. encoder and model reconstructor. two days
 3> Floating theory w. everything! seven days.
 
-APC: What about Equality? Special EqualityNode subclassed by each theory
+APC: What about Equality? Special EqualityNode subclassed by each theory. Meta-equality vs fp.eq?
 
 APC: Multi-layered approximations: 
 	1) Support them directly.

@@ -39,4 +39,14 @@ object Z3Solver extends SMTSolver {
     }
   }
 
+  def getAnswer(formula : String) : String = {
+    println(formula)
+    val result = runSolver(formula)  
+    val retVal = result.split("\n")
+    retVal.head.trim() match {
+      case "sat" => retVal(1).trim()
+      case str => throw new Exception("Unexpected sat/unsat result: " + str)
+    }
+  }
+
 }

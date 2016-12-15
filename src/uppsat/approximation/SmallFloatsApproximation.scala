@@ -15,6 +15,8 @@ import ast.AST
 import ast.Leaf
 import ast.ConcreteFunctionSymbol
 import ast.Sort
+import java.util.ResourceBundle$Control.CandidateListCache
+import uppsat.solver.Z3Solver
 
 
 
@@ -146,7 +148,72 @@ object SmallFloatsApproximation extends Approximation[Int] {
   def decodeModel(ast : AST, appModel : Model, pmap : PrecisionMap[Int]) = {
     decodeAux(ast, List(0), appModel, pmap)
   }
+  
+  def getCurrentValue(ast : AST, path : Path, decodedModel : Model, candidateModel : Model) : (AST, Model) = {
+    if (isLiteral(ast.symbol)) {
+      (ast, candidateModel)
+    } else if (candidateModel.contains(path)) {
+      (candidateModel(path), candidateModel)
+    } else {
+      //TODO: assert ast is variable
+      (decodedModel(path), candidateModel + (path -> decodedModel(path))) 
+    }
+  }
+  
+  def reconstructNode(ast : AST, path : Path, decodedModel : Model, candidateModel : Model) : Model = {
+    val AST(symbol, label, children) = ast
+    
+    var currModel = 
+      symbol match {
+        case fpEq : FPEqualityFactory.FPPredicateSymbol => {
+         val v0Path = 0::path
+         val v1Path = 1::path
+         val v0Defined = candidateModel.contains(v0Path)
+         val v1Defined = candidateModel.contains(v1Path)
+         (children(0).symbol, children(1).symbol) match {         
+           case ( v0 : FPVar, v1 : FPVar) => {
+             (v0Defined, v1Defined) match {
+               case (false, true) => candidateModel + (v0Path -> candidateModel(v1Path))
+               case (true, false) => candidateModel + (v1Path -> candidateModel(v0Path))
+               case (false, false) => candidateModel + (v1Path -> decodedModel(v0Path)) + (v0Path -> decodedModel(v0Path)) //TODO: Fancy things could be done here.
+               case (true, true) => candidateModel                   
+             }
+           }           
+           case ( v0 : FPVar, _ ) if (!v0Defined) => candidateModel + (v0Path -> candidateModel(v1Path)) //TODO: add invariant v1Defined
+           case ( _ , v1 : FPVar) if (!v1Defined) => candidateModel + (v1Path -> candidateModel(v0Path))
+           case (_, _) => candidateModel
+        }
+      }
+      case _ => candidateModel
+    }
+    
+    val newChildren = for ( i <- 0 until children.length) yield { 
+      val (newC, newM) = getCurrentValue(children(i), i :: path, decodedModel, currModel)
+      currModel = newM
+      newC
+    }
+    
+    //TODO: Make this check more comprehensive
+    if ( children.length > 0) {
+      val newAST = AST(symbol, label, newChildren.toList)
+      val newValue = ModelReconstructor.evalAST(newAST, FloatingPointTheory, Z3Solver)
+      currModel + (path -> newValue)
+    } else { 
+      currModel
+    }
+  }
+  
+  def reconstructAux(ast : AST, path : Path, decodedModel : Model, candidateModel : Model) : Model = {
+    val AST(symbol, label, children) = ast
+    var currModel = candidateModel
+   
+    for ((c, i) <- children zip children.indices) 
+      currModel = reconstructAux( c, i :: path, decodedModel, currModel)
+    
+    reconstructNode(ast, path, decodedModel, currModel)
+    
+  }
   def reconstruct(ast : AST, decodedModel : Model) : Model = {
-    decodedModel
+    reconstructAux(ast, List(0), decodedModel, Map())
   }
 }

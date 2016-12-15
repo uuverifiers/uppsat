@@ -61,15 +61,14 @@ class SMTTranslator(theory : Theory) {
   def symAsserts =
     symbolAssertions.map("(assert " + _ + ")").mkString("\n")
   
-  def translate(ast : AST, assignments : List[(String, String)] = List()) : String = {
+  def translate(ast : AST, noAssert : Boolean = false, assignments : List[(String, String)] = List()) : String = {
     nextAST = 0
     IdToPaths.clear()
     astSymbols.clear()
     symbolAssertions.clear()
     
     val astFormula = translateAST(ast)
-    val assertions =
-        "(assert " + astFormula + ")"
+    val assertions = if (!noAssert) "(assert " + astFormula + ")" else ""
     
     val assig = for ((x, v) <- assignments) yield { 
       "(assert ( = " + x + " " + v + "))"
@@ -80,6 +79,23 @@ class SMTTranslator(theory : Theory) {
     assertions + "\n" +
     assig.mkString("\n") + "\n" +
     footer
+  }
+  
+  def evalExpression(ast : AST) : String = {
+    nextAST = 0
+    IdToPaths.clear()
+    astSymbols.clear()
+    symbolAssertions.clear()
+    
+    
+    val astFormula = translateAST( ast)
+    val eval = "(assert (= answer " + astFormula + "))"
+    header + "\n" +
+    symDecs + "\n" +
+    "(declare-fun answer () " + ast.symbol.theory.toSMTLib(ast.symbol.sort) +" )\n" +
+    eval + "\n" +
+    footer +  "\n" +
+    "(eval answer)"
   }
   
   def header = theory.SMTHeader
@@ -100,4 +116,5 @@ class SMTTranslator(theory : Theory) {
       }
     }).flatten.toMap
   }
+    
 }
