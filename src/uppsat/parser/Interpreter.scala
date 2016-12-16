@@ -1,5 +1,9 @@
 package uppsat.parser
 
+import uppsat.theory.IntegerTheory._
+import uppsat.theory.FloatingPointTheory.FPSortFactory.FPSort
+import uppsat.theory.BooleanTheory._
+
 import smtlib._
 import smtlib.Absyn._
 import java.io._
@@ -114,29 +118,30 @@ object Interpreter {
           "\" is applied to a wrong number of arguments: " +
           ((for (a <- args) yield (printer print a)) mkString ", "))
 
-  protected def asFormula(expr : (MyExpression, SMTType)) : MyFormula = expr match {
-    case (expr : MyFormula, SMTBool) =>
-      expr
-    // case (expr : MyTerm, SMTBool) =>
-    case (expr : MyTerm, _) =>
-      // then we assume that an integer encoding of boolean values was chosen
-      StrangeFormula(expr.toString())
-    // IIntFormula(IIntRelation.EqZero, expr)
-    case (expr, _) =>
-      println(expr.getClass)
-      throw new Exception(
-        "Expected a formula, not " + expr)
-  }
+ // TODO: What does this do?
+//  protected def asFormula(expr : (MyExpression, SMTType)) : uppsat.ast.AST = expr match {
+//    case (expr : MyFormula, SMTBool) =>
+//      expr
+//    // case (expr : MyTerm, SMTBool) =>
+//    case (expr : MyTerm, _) =>
+//      // then we assume that an integer encoding of boolean values was chosen
+//      StrangeFormula(expr.toString())
+//    // IIntFormula(IIntRelation.EqZero, expr)
+//    case (expr, _) =>
+//      println(expr.getClass)
+//      throw new Exception(
+//        "Expected a formula, not " + expr)
+//  }
 
   protected def translateTerm(t : Term, polarity : Int)
-      : (MyExpression, SMTType) = t match {
+      : uppsat.ast.AST = t match {
     case t : smtlib.Absyn.ConstantTerm =>
       translateSpecConstant(t.specconstant_)
-      
-    case t : NullaryTerm =>
-      symApp(t.symbolref_, List(), polarity)
     case t : FunctionTerm =>
       symApp(t.symbolref_, t.listterm_, polarity)
+    case t : NullaryTerm =>
+      symApp(t.symbolref_, List(), polarity)     
+    case _ => throw new Exception("Unknown term: " + t.toString())
 
     // case t : QuantifierTerm =>
     //   translateQuantifier(t, polarity)
@@ -216,13 +221,19 @@ object Interpreter {
 
   // TODO: Int => ItdealInt/Rat=> IdealRat
   protected def translateSpecConstant(c : SpecConstant)
-      : (MyTerm, SMTType) = c match {
-    case c : NumConstant =>
-      (MyIntLit(c.numeral_), SMTInteger)
-    case c : HexConstant =>
-      (MyIntLit(c.hexadecimal_ substring (2, 16)), SMTInteger)
-    case c : BinConstant =>
-      (MyIntLit(c.binary_ substring (2, 2)), SMTInteger)
+      : uppsat.ast.AST = {
+    c match {
+      // TODO: What is numconstant? Also FP?
+    case c : NumConstant => {
+      uppsat.ast.Leaf(uppsat.theory.IntegerTheory.IntLiteral(c.numeral_.toInt))
+    }
+//    case c : HexConstant =>
+//      (MyIntLit(c.hexadecimal_ substring (2, 16)), SMTInteger)
+//    case c : BinConstant =>
+//      (MyIntLit(c.binary_ substring (2, 2)), SMTInteger)
+    case  c => {
+      throw new Exception("Unknown SpecConstant: " + c + " (" + c.getClass +")")
+    }
 
     // case c : RatConstant => {
     //   val v = c.rational_
@@ -237,6 +248,7 @@ object Interpreter {
     //   //   (const, SMTInteger)
     //   // }
     // }
+    }
   }
 
   // private def importProverSymbol(name : String,
@@ -347,16 +359,24 @@ object Interpreter {
     case cmd : FunctionDeclCommand => {
       // Functions are always declared to have integer inputs and outputs
       val name = asString(cmd.symbol_)
-      val args : Seq[SMTType] = cmd.mesorts_ match {
-        case sorts : SomeSorts =>
-          for (s <- sorts.listsort_) yield translateSort(s)
-        case _ : NoSorts =>
-          List()
+      cmd.mesorts_ match {
+        case _ : NoSorts => {
+          val res = translateSort(cmd.sort_)          
+          val symbol = res match {
+            case IntegerSort => new uppsat.theory.IntegerTheory.IntVar(name)
+            case BooleanSort => new uppsat.theory.BooleanTheory.BoolVar(name)
+            case fp : FPSort => new uppsat.theory.FloatingPointTheory.FPVar(name, fp)
+          }
+
+          myEnv.addSymbol(name, symbol)
+        }
+        case _ => throw new Exception("Function Declaration with arguments!")
+//        case sorts : SomeSorts =>
+//          for (s <- sorts.listsort_) yield translateSort(s)
       }
 
-      val res = translateSort(cmd.sort_)
-      myEnv.addSymbol(name, args.mkString(", ") + " => " + res)
 
+      // TODO: How do we represent function applications?
       // ensureEnvironmentCopy
 
       // if (!importProverSymbol(name, args, res)) {
@@ -405,7 +425,15 @@ object Interpreter {
       val name = asString(cmd.symbol_)
       val res = translateSort(cmd.sort_)
 
-      myEnv.addSymbol(name, res.toString())
+      val symbol = 
+        res match {
+          case IntegerSort => new uppsat.theory.IntegerTheory.IntVar(name)
+          case BooleanSort => new uppsat.theory.BooleanTheory.BoolVar(name)
+          case sort => throw new Exception("ast._.sort not handled: " + sort)
+        }
+
+      println("Adding2: (" + name + ", " + symbol + ")")
+      myEnv.addSymbol(name, symbol)
       // ensureEnvironmentCopy
 
 
@@ -482,11 +510,8 @@ object Interpreter {
   //     //////////////////////////////////////////////////////////////////////////
       
     case cmd : AssertCommand => {
-      println("CMD: " + cmd)
       val t = translateTerm(cmd.term_, -1)
-      println("t: " + t + "(" + t.getClass + ")")
-      val f = asFormula(t)
-      myEnv.addAssumption(f.toString)
+      myEnv.addAssumption(t)
 
       // if (incremental && !justStoreAssertions) {
       //   if (genInterpolants) {
@@ -516,7 +541,11 @@ object Interpreter {
   //     //////////////////////////////////////////////////////////////////////////
     case cmd : CheckSatCommand => {
       myEnv.print
+      val formula = myEnv.assumptions.head
+      val translator = new uppsat.solver.SMTTranslator(uppsat.theory.IntegerTheory)
+      val approximation = uppsat.approximation.IntApproximation
       println("CHECK SAT")
+      uppsat.ApproximationSolver.loop(formula, translator, approximation)
       success
     }
   //   case cmd : CheckSatCommand => if (incremental) try {
@@ -625,12 +654,11 @@ object Interpreter {
 
   //     //////////////////////////////////////////////////////////////////////////
 
-  //   case cmd : GetModelCommand => if (checkIncrementalWarn("get-model")) {
-  //     if (!getModelWarning) {
-  //       warn("accepting command get-model, which is not SMT-LIB 2.")
-  //       warn("only values of integer constants or Boolean variables will be shown.")
-  //       getModelWarning = true
-  //     }
+     case cmd : GetModelCommand => {  
+       // TODO: What do we do with get-model statements?
+       println("(get-model) ignored!")
+       //throw new Exception("get-model in smt-file")
+     }
 
   //     prover.getStatus(false) match {
   //       case SimpleAPI.ProverStatus.Sat |
@@ -832,14 +860,18 @@ object Interpreter {
 
   //////////////////////////////////////////////////////////////////////////////
 
-  protected def translateSort(s : Sort) : SMTType = s match {
+  //protected def translateSort(s : Sort) : SMTType = s match {
+  protected def translateSort(s : Sort) : uppsat.ast.Sort = {
+    val fpPattern = "FloatingPoint\\_(\\d+)\\_(\\d+)".r
+    s match {
     case s : IdentSort => asString(s.identifier_) match {
-      case "Int" => SMTInteger
-      case "Bool" => SMTBool
+      case "Int" => IntegerSort
+      case "Bool" => BooleanSort
       // case id if (sortDefs contains id) => sortDefs(id)
+      case fpPattern(eBits, sBits) => uppsat.theory.FloatingPointTheory.FPSortFactory(List(eBits.toInt, sBits.toInt))
       case id => {
-        warn("treating sort " + (printer print s) + " as Int")
-        SMTInteger
+        println("Unknown sort: " + asString(s.identifier_))
+        throw new Exception("Unknown sort...")
       }
     }
     // case s : CompositeSort => asString(s.identifier_) match {
@@ -856,6 +888,7 @@ object Interpreter {
     //     SMTInteger
     //   }
     // }
+    }
   }
 
   // //////////////////////////////////////////////////////////////////////////////
@@ -1100,17 +1133,16 @@ object Interpreter {
   // private var tildeWarning = false
   
   protected def symApp(sym : SymbolRef, args : Seq[Term], polarity : Int)
-      : (MyExpression, SMTType) = sym match {
+      : uppsat.ast.AST = sym match {
     ////////////////////////////////////////////////////////////////////////////
     // Hardcoded connectives of formulae
     
     case PlainSymbol("true") => {
       checkArgNum("true", 0, args)
-      (MyConstant("true"), SMTBool)
+      uppsat.ast.Leaf(BoolTrue)
     }
     case PlainSymbol("false") => {
-      checkArgNum("false", 0, args)
-      (MyConstant("false"), SMTBool)
+      uppsat.ast.Leaf(BoolFalse)
     }
 
     // case PlainSymbol("not") => {
@@ -1168,20 +1200,40 @@ object Interpreter {
     //         t1)
     //   }
     // }
-      
+
+    
+    case PlainSymbol("+") => {
+      if (args.length != 2) {
+        throw new Exception("Not two arguments for + ...")
+      } else {
+        translateTerm(args(0), 0) + translateTerm(args(1), 0)
+      }
+    }    
+    
+    
     //   ////////////////////////////////////////////////////////////////////////////
     //   // Hardcoded predicates (which might also operate on booleans)
       
     case PlainSymbol("=") => {
-      val eq = 
-        if (args.length > 2) {
-          throw new Exception("More than two arguments for = ...")
-        } else {
-          val transArgs = for (a <- args) yield translateTerm(a, 0)
-          transArgs(0) + " = " + transArgs(1)
-        }
-
-      (MyConstant(eq), SMTBool)
+      if (args.length != 2) {
+        throw new Exception("Not two arguments for = ...")
+      } else {
+        val lhs = translateTerm(args(0), 0)
+        val rhs = translateTerm(args(1), 0)
+        lhs.prettyPrint
+        println(rhs)
+        translateTerm(args(0), 0) === translateTerm(args(1), 0)
+      }
+    }
+     
+    case PlainSymbol("fp.leq") => {
+      if (args.length != 2) {
+        throw new Exception("Not two arguments for fp.leq ...")
+      } else {
+        translateTerm(args(0), 0) <= translateTerm(args(1), 0)
+      }
+    }    
+     
       // for (Seq(a, b) <- (transArgs map (asFormula(_))) sliding 2)
       // yield (
       //   // println("transArgs: " + transArgs.mkString(", "))
@@ -1199,7 +1251,6 @@ object Interpreter {
       //     IBinJunctor.And)
       // },
       //   SMTBool)
-    }
       
     // case PlainSymbol("distinct") => {
     //   val transArgs = for (a <- args) yield translateTerm(a, 0)
@@ -1235,10 +1286,6 @@ object Interpreter {
     //   ////////////////////////////////////////////////////////////////////////////
     //   // Hardcoded integer operations
 
-    // case PlainSymbol("+") =>
-    //   (sum(for (s <- flatten("+", args))
-    //   yield asTerm(translateTerm(s, 0), SMTInteger)),
-    //     SMTInteger)
 
     // case PlainSymbol("-") if (args.length == 1) =>
     //   (-asTerm(translateTerm(args.head, 0), SMTInteger), SMTInteger)
@@ -1313,8 +1360,15 @@ object Interpreter {
     ////////////////////////////////////////////////////////////////////////////
     // Declared symbols from the environment
     case id => {
-      println("Bailing out on uniterpreted formula: " + id)
-      unintFunApp(asString(id), sym, args, polarity)
+      // TODO: We should maybe not use strings as IDs?
+      myEnv.find(asString(id)) match {
+        case Some(symbol) => {
+          uppsat.ast.Leaf(symbol)
+        }
+        case None => throw new Exception("Undefined symbol: " + asString(id))
+      }
+//      println("Bailing out on uniterpreted formula: " + asString(id))
+//      unintFunApp(asString(id), sym, args, polarity)
     }
   }
 
@@ -1352,15 +1406,16 @@ object Interpreter {
   // UNINTERPRETED function application
   private def unintFunApp(id : String,
     sym : SymbolRef, args : Seq[Term], polarity : Int)
-      : (MyExpression, SMTType) = {
+      : uppsat.ast.AST = {
     val funSort = myEnv.lookup(id)
-    if (args.length > 0) {
-      val transArgs = args.map(x => asTerm(translateTerm(x, 0)).toString)
-      (MyConstant(id + "(" + transArgs.mkString(", ") + ")"), SMTUnknown)
-    } else {
-      (MyConstant(id), SMTUnknown)
-
-    }
+    throw new Exception("Cannot handle uninterpreted function applications")    
+//    if (args.length > 0) {
+//      val transArgs = args.map(x => translateTerm(x, 0))
+//      (MyConstant(id + "(" + transArgs.mkString(", ") + ")"), SMTUnknown)
+//    } else {
+//      (MyConstant(id), SMTUnknown)
+//
+//    }
   }
 
     // (env lookupSym id) match {
@@ -1554,24 +1609,24 @@ object Interpreter {
   
 
 
-  protected def asTerm(expr : (MyExpression, SMTType)) : MyTerm = expr match {
-    case (expr : MyTerm, _) =>
-      expr
-    // case (expr : MyFormula, SMTBool) =>
-    //   // ITermITE
-    //   "ITE(" + expr +", 0, 1)"
-    case (expr, _) =>
-      throw new Exception(
-        "Expected a term, not " + expr)
-  }
-
-  private def asTerm(expr : (MyExpression, SMTType),
-    expectedSort : SMTType) : MyTerm = expr match {
-    case (expr : MyTerm, `expectedSort`) =>
-      expr
-    case (expr, _) =>
-      throw new Exception(
-        "Expected a term of type " + expectedSort + ", not " + expr)
-  }
+//  protected def asTerm(expr : (MyExpression, SMTType)) : MyTerm = expr match {
+//    case (expr : MyTerm, _) =>
+//      expr
+//    // case (expr : MyFormula, SMTBool) =>
+//    //   // ITermITE
+//    //   "ITE(" + expr +", 0, 1)"
+//    case (expr, _) =>
+//      throw new Exception(
+//        "Expected a term, not " + expr)
+//  }
+//
+//  private def asTerm(expr : (MyExpression, SMTType),
+//    expectedSort : SMTType) : MyTerm = expr match {
+//    case (expr : MyTerm, `expectedSort`) =>
+//      expr
+//    case (expr, _) =>
+//      throw new Exception(
+//        "Expected a term of type " + expectedSort + ", not " + expr)
+//  }
 /// EOP
 }

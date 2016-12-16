@@ -106,6 +106,7 @@ case class AST(val symbol : ConcreteFunctionSymbol, val label : Label, val child
   //TODO: Check which one to use
   def ===(that : AST) = {
     (this.symbol.sort, that.symbol.sort) match {
+      case (BooleanSort, BooleanSort) => boolEquality(this, that)
        case (IntegerSort, IntegerSort) => intEquality(this, that)
        case (f1 : FPSort, f2 : FPSort) => floatEquality(this, that)              
      }

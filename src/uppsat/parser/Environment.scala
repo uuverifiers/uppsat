@@ -1,15 +1,28 @@
 package uppsat.parser
 
-class Environment {
-  var symbols : List[(String, String)] = List()
-  var assumptions : List[String] = List()
+import uppsat.ast.Sort
+import uppsat.ast.ConcreteFunctionSymbol
+import uppsat.ast.AST
 
-  def addSymbol(symb : String, sort : String) = {
-    symbols = (symb, sort) :: symbols
+import scala.collection.mutable.Map
+
+class Environment {
+  var symbols : Map[String, ConcreteFunctionSymbol] = Map()
+  var assumptions : List[AST] = List()
+
+  def addSymbol(id : String, symbol : ConcreteFunctionSymbol) = {
+    symbols += id -> symbol
   }
 
-  def addAssumption(ass : String) = {
+  def addAssumption(ass : AST) = {
     assumptions = ass :: assumptions
+  }
+  
+  def find(id : String) : Option[ConcreteFunctionSymbol] = {
+    if (symbols contains id)
+      Some(symbols(id))
+    else
+      None 
   }
 
   def lookup(id : String) = {
@@ -18,8 +31,8 @@ class Environment {
 
   def print = {
     println("myEnv:")
-    for ((sym, sort) <- symbols) {
-      println("\tSYMBOL: " + sym + " (" + sort + ")")
+    for ((id, symbol) <- symbols) {
+      println("\t" + id + ": " + symbol + " (" + symbol.sort + ")")
     }
     for (ass <- assumptions) {
       println("\tASSUMPTION: " + ass)

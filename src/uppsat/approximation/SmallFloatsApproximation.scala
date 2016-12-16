@@ -1,4 +1,4 @@
-package uppsat
+package uppsat.approximation
 
 
 import uppsat.theory.FloatingPointTheory._
@@ -10,12 +10,9 @@ import uppsat.theory.FloatingPointTheory.FPSortFactory.FPSort
 import uppsat.precision.IntPrecisionOrdering
 import uppsat.precision.PrecisionMap
 import uppsat.theory.FloatingPointTheory
-import uppsat.approximation.Approximation
-import ast.AST
-import ast.Leaf
-import ast.ConcreteFunctionSymbol
-import ast.Sort
-import java.util.ResourceBundle$Control.CandidateListCache
+import uppsat.ModelReconstructor
+import uppsat.ast.AST
+import uppsat.ast._
 import uppsat.solver.Z3Solver
 
 

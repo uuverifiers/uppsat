@@ -1,7 +1,13 @@
-(set-logic QF_FPABV)
-(declare-fun x () (_ FP 11 53))
-(declare-fun y () (_ FP 11 53))
-
-(assert (= x y))
+(set-logic QF_LIA)
+(declare-fun y () Int)
+(declare-fun integer-equality2 () Bool)
+(declare-fun addition1 () Int)
+(declare-fun x () Int)
+(declare-fun addition0 () Int)
+(assert (= addition0 (+ x 3)))
+(assert (= addition1 (+ y 5)))
+(assert (= integer-equality2 (= (+ x 3) (+ y 5))))
+(assert (= (+ x 3) (+ y 5)))
 
 (check-sat)
+(get-model)

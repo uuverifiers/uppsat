@@ -33,7 +33,8 @@ object BooleanTheory extends Theory {
   // Symbols, conjunction and negation
   case object BoolConjunction extends BooleanBinaryFunctionSymbol("conjunction")  
   case object BoolDisjunction extends BooleanBinaryFunctionSymbol("disjunction")  
-  case object BoolImplication extends BooleanBinaryFunctionSymbol("implication")  
+  case object BoolImplication extends BooleanBinaryFunctionSymbol("implication")
+  case object BoolEquality extends BooleanBinaryFunctionSymbol("equality")
   case object BoolNegation extends BooleanUnaryFunctionSymbol("negation")
   
   object BoolVar {
@@ -51,6 +52,10 @@ object BooleanTheory extends Theory {
   
   def boolNot(ast: AST) = {
     AST(BoolNegation, List(ast))
+  }
+  
+  def boolEquality(left : AST, right : AST) = {
+    AST(BoolEquality, List(left, right))
   }
   
   // Make regular class; id is not support to be the identifier
@@ -87,6 +92,7 @@ object BooleanTheory extends Theory {
       case BoolFalse => "false"
       case BoolConjunction => "and"
       case BoolDisjunction => "or"
+      case BoolEquality => "="
       // TODO: Is this correct?
       case BoolImplication => "implies"
       case BoolNegation => "not"

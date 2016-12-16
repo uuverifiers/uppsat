@@ -293,6 +293,7 @@ object FloatingPointTheory extends Theory {
   def parseLiteral(lit : String) = {
     val bitPattern = "\\(fp (\\S*) (\\S*) (\\S*)\\)".r
     val zeroPattern = "\\(_ ([\\+\\-])zero (\\d+) (\\d+)\\)".r
+    val nanPattern = "\\(_ NaN (\\d+) (\\d+)\\)".r
     lit match {
       case bitPattern(s1, s2, s3) => {
         val sign = 
@@ -312,6 +313,14 @@ object FloatingPointTheory extends Theory {
         // TODO: Aleks, is the number of zeroes correct?
         val factory = new FPConstantFactory(signBit, List.fill(eBits.toInt)(0), List.fill(sBits.toInt - 1)(0))
         Leaf(factory(List(fpsort)))
+      }
+      case nanPattern(eBits, sBits) => {
+        // TODO: Have special representation for NaN
+        val signBit = 0
+        val fpsort = FPSortFactory(List(eBits.toInt, sBits.toInt))
+        // TODO: Aleks, is the number of zeroes correct?
+        val factory = new FPConstantFactory(signBit, List.fill(eBits.toInt)(0), List.fill(sBits.toInt - 1)(0))
+        Leaf(factory(List(fpsort)))        
       }
       case _ => throw new Exception("Unknown FP literal: " + lit)
     }
