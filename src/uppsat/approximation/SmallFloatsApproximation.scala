@@ -20,10 +20,11 @@ import uppsat.solver.Z3Solver
 
 
 
-object SmallFloatsApproximation extends Approximation[Int] {
+object SmallFloatsApproximation extends Approximation {
+  type P = Int
   val inputTheory = FloatingPointTheory
   val outputTheory = FloatingPointTheory
-  val precisionOrdering = new IntPrecisionOrdering(10)
+  val precisionOrdering = new IntPrecisionOrdering(0, 10)
   def satRefine(ast : AST, appModel : Model, failedModel : Model, pmap : PrecisionMap[Int]) : PrecisionMap[Int] = {
     pmap.map(_ + 1)
   }

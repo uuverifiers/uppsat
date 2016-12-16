@@ -11,10 +11,11 @@ import uppsat.theory.IntegerTheory
 import uppsat.precision._
 import uppsat.ast.Leaf
 
-object IntApproximation extends Approximation[Int] {
+object IntApproximation extends Approximation {
+  type P = Int
   val inputTheory = IntegerTheory
   val outputTheory = IntegerTheory
-  val precisionOrdering = new IntPrecisionOrdering(10)
+  val precisionOrdering = new IntPrecisionOrdering(0, 10)
   def satRefine(ast : AST, appModel : Model, failedModel : Model, pmap : PrecisionMap[Int]) : PrecisionMap[Int] = {
     pmap.map(_ + 1)
   }

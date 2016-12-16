@@ -10,9 +10,9 @@ import uppsat.precision.PrecisionOrdering
 import uppsat.ast.FunctionSymbol
 import uppsat.precision.PrecisionMap.Path
 
-trait Approximation[P] {
+trait Approximation {
   // TODO: type precision
-  
+  type P
   // Do we need this? 
   val inputTheory : Theory
   val outputTheory : Theory
@@ -27,7 +27,7 @@ trait Approximation[P] {
 
 
 
-trait TemplateApproximation[P] extends Approximation[P] {  
+trait TemplateApproximation extends Approximation {  
   def encodeNode(symbol : FunctionSymbol, children : List[AST], precision : P) : AST
   def cast(ast : AST, source : ConcreteSort, target : ConcreteSort  ) : AST
   //errorFunction

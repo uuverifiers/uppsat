@@ -18,7 +18,9 @@ class PrecisionMap[T](val map : Map[Path, T])(implicit val precisionOrdering : P
   }
   
   
-  def isMaximal = map.values.find(x => precisionOrdering.lt(x, precisionOrdering.max)).isEmpty
+  def isMaximal = {
+    map.values.find(x => precisionOrdering.lt(x, precisionOrdering.max)).isEmpty
+  }
   
   def map(f : T => T) : PrecisionMap[T] = {
     new PrecisionMap[T](map.map(x => {

@@ -8,9 +8,14 @@ import uppsat.theory.FloatingPointTheory._
 import uppsat.theory.IntegerTheory._
 import uppsat.solver._
 import uppsat.approximation._
+import uppsat.precision.PrecisionMap.Path
+import uppsat.Encoder.PathMap
+import uppsat.ModelReconstructor.Model
 
 
 object main {
+  type ExtModel = Map[ConcreteFunctionSymbol, String]
+  
   def boolean() = {
 
     val a = new BoolVar("a")
@@ -33,6 +38,14 @@ object main {
     (rootNode, List(x, y), new SMTTranslator(IntegerTheory), IntApproximation)
   }
   
+  def contradiction() = {
+    val x = new IntVar("x")
+    val y = new IntVar("y")
+
+    val rootNode = (x + 3 === y + 5)
+    (rootNode, List(x, y), new SMTTranslator(IntegerTheory), IntApproximation)
+  }    
+  
   def floatingpoint() = {
     implicit val rmm = RoundToPositive
     implicit val fpsort = FPSortFactory(List(8,24))
@@ -43,86 +56,85 @@ object main {
     val rootNode = (x + 1.75f === y) & (x === 2f)
     (rootNode, List(x, y), new SMTTranslator(FloatingPointTheory), SmallFloatsApproximation)
   }
+
   
-  def main(args: Array[String]) = {
-    val (formula, vars, translator, approximation) = floatingpoint()
-    println("<<<Formula>>>")
-    formula.prettyPrint
+  def loop(formula : AST, translator : SMTTranslator, approximation : Approximation) : Option[ExtModel] = {  
     
-    type P = approximation.precisionOrdering.P
-    val enc = new Encoder[P](approximation)    
-    var pmap = PrecisionMap[P](approximation.precisionOrdering)
-    pmap = pmap.cascadingUpdate(List(0), formula, 0) 
-
-    import uppsat.precision.PrecisionMap.Path
-    import uppsat.Encoder.PathMap
-    import uppsat.ModelReconstructor.Model
-
+    var pmap = PrecisionMap[approximation.P](approximation.precisionOrdering)
+    pmap = pmap.cascadingUpdate(List(0), formula, approximation.precisionOrdering.min)    
     var iterations = 0
+    
+    def tryReconstruct(encodedSMT : String) : (Option[ExtModel], Option[PrecisionMap[approximation.P]]) = {
+      val stringModel = Z3Solver.getModel(encodedSMT, translator.getDefinedSymbols.toList)
+      val appModel = translator.getModel(formula, stringModel)
+      val decodedModel = approximation.decodeModel(formula, appModel, pmap)
+      val reconstructedModel = approximation.reconstruct(formula, decodedModel)
+      
+      val assignments = for ((symbol, label) <- formula.iterator if (!symbol.theory.isDefinedLiteral(symbol))) yield {
+        val value = reconstructedModel(label)
+        (symbol.toString(), value.symbol.theory.toSMTLib(value.symbol) )
+      }
 
-    var finalModel = None: Option[Map[ConcreteFunctionSymbol, String]]
-    var haveAnAnswer = false
-    var encodedFormula = formula
-    var encodedSMT = ""
-    var maxPrecisionTried = false
-    while (!haveAnAnswer && !maxPrecisionTried) {
-      var haveApproxModel = false
-
-      // TODO: fix maximal pmap
-      while (!haveApproxModel && !maxPrecisionTried) {
-        iterations += 1
-        println("-----------------------------------------------")
-        println("Starting iteration " + iterations)
-        println("-----------------------------------------------")
-        
-        if (pmap.isMaximal)
-          maxPrecisionTried = true
-        encodedFormula = enc.encode(formula, pmap)   
-        encodedFormula.prettyPrint
-        encodedSMT = translator.translate(encodedFormula)
-        val result = Z3Solver.solve(encodedSMT)
-
-        if (result) {
-          haveApproxModel = true
+      if (ModelReconstructor.valAST(formula, assignments.toList, approximation.inputTheory, Z3Solver)) {
+        val extModel =
+          (for ((symbol, label) <- formula.iterator 
+              if (!symbol.theory.isDefinedLiteral(symbol))) yield {
+                (symbol, reconstructedModel(label).toString())
+          }).toMap
+        (Some(extModel), None)
+      } else {
+        if (pmap.isMaximal) {
+          println("Model reconstruction failed: maximal precision reached")
+          return (None, None)
         } else {
-          println("No approximative model found> updating precisions")
-          // TODO: Unsat core reasoning
+          println("Model reconstruction failed: refining precision")            
+          val newPmap = approximation.satRefine(formula, appModel, decodedModel, pmap)
+          (None, Some(newPmap))
+        }
+      }      
+    }    
+       
+    // TODO: can we change this into if not maximal pmap    
+    while (true) {     
+
+      iterations += 1
+      println("-----------------------------------------------")
+      println("Starting iteration " + iterations)
+      println("-----------------------------------------------")
+      
+      val encodedFormula = approximation.encodeFormula(formula, pmap) 
+      encodedFormula.prettyPrint
+      val encodedSMT = translator.translate(encodedFormula)
+
+      if (Z3Solver.solve(encodedSMT)) {
+        val (extModel, newPMap) = tryReconstruct(encodedSMT)
+        (extModel, newPMap) match {
+          case (Some(model), _) => return extModel
+          case (_, Some(p)) => pmap = pmap.merge(p)
+          case (_, None) => return None
+        }          
+      } else {
+        if (pmap.isMaximal) {
+          println("Approximative model not found: maximal precision reached.")
+          return None
+        } else {
+          println("Approximative model not found: refining precision.")            
+        // TODO: Unsat core reasoning            
           pmap = approximation.unsatRefine(formula, List(), pmap)
         }
       }
-
-      if (haveApproxModel) {
-        val stringModel = Z3Solver.getModel(encodedSMT, translator.getDefinedSymbols.toList)
-        val appModel = translator.getModel(formula, stringModel)
-        val reconstructor = new ModelReconstructor[P](approximation)         
-        val decodedModel = approximation.decodeModel(formula, appModel, pmap)
-        val reconstructedModel = reconstructor.reconstruct(formula, decodedModel) 
-        val assignments = for ((symbol, label) <- formula.iterator if (!symbol.theory.isDefinedLiteral(symbol))) yield {
-          val value = reconstructedModel(label)
-          (symbol.toString(), value.symbol.theory.toSMTLib(value.symbol) )
-        }
-
-        if (ModelReconstructor.valAST(formula, assignments.toList, approximation.inputTheory, Z3Solver)) {
-          haveAnAnswer = true
-          finalModel = Some((for ((symbol, label) <- formula.iterator if (!symbol.theory.isDefinedLiteral(symbol))) yield {
-            (symbol, reconstructedModel(label).toString())
-          }).toMap)
-          
-        } else {
-          println("Model reconstruction failed> updating precisions")
-          val newPmap = approximation.satRefine(formula, appModel, decodedModel, pmap)
-          pmap = pmap.merge(newPmap)
-        }
-      }
     }
-
-    if (haveAnAnswer == true) {
-      println("Found model")        
-      println(finalModel.get)
-     } else if (pmap.isMaximal) {
-      println("Precision maximal...")
-    } else{
-      println("Why did we stop trying?")
-    }
-  }
+    throw new Exception("Main loop exited without return-value.")
+  }    
+  
+  def main(args: Array[String]) = {
+    val (formula, vars, translator, approximation) = contradiction()
+    println("-----------------------------------------------")
+    println("Formula ")
+    println("-----------------------------------------------")
+    formula.prettyPrint    
+    
+    loop(formula, translator, approximation)
+    println("Running time: -- ms")
+  }    
 }

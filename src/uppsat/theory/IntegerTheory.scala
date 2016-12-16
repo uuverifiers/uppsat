@@ -68,7 +68,12 @@ object IntegerTheory extends Theory {
   }
   
   def parseLiteral(lit : String) = {
-    IntLiteral(lit.toInt)
+    val negPattern = "\\(- (\\d+)\\)".r
+    val posPattern = "(\\d+)".r
+    lit match {
+      case negPattern(i) => -(i.toInt)
+      case posPattern(i) => i.toInt
+    }
   }
   
   
