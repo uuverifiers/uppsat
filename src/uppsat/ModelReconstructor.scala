@@ -19,10 +19,8 @@ object ModelReconstructor {
   }
   
   def evalAST(ast : AST, theory : Theory, solver : SMTSolver) : AST = {
-    ast.prettyPrint("")
     val translator = new SMTTranslator(theory)
     val formula = translator.evalExpression(ast)
-    println(formula)
     val answer = solver.getAnswer(formula)
     ast.symbol.sort.theory.parseLiteral(answer.trim())    
   }

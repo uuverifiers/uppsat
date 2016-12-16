@@ -92,7 +92,7 @@ class SMTTranslator(theory : Theory) {
     val eval = "(assert (= answer " + astFormula + "))"
     header + "\n" +
     symDecs + "\n" +
-    "(declare-fun answer () " + ast.symbol.theory.toSMTLib(ast.symbol.sort) +" )\n" +
+    "(declare-fun answer () " + ast.symbol.sort.theory.toSMTLib(ast.symbol.sort) +" )\n" + //TODO: Which theory should we call?
     eval + "\n" +
     footer +  "\n" +
     "(eval answer)"

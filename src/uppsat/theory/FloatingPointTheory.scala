@@ -303,7 +303,7 @@ object FloatingPointTheory extends Theory {
         val eBits = parseSymbol(s2).toList
         val sBits = parseSymbol(s3).toList
         val constFactory = new FPConstantFactory(sign, eBits, sBits)
-        val fpsort = FPSortFactory(List(eBits.length, sBits.length))
+        val fpsort = FPSortFactory(List(eBits.length, sBits.length + 1))
         Leaf(constFactory(List(fpsort)))
       }
       case zeroPattern(sign, eBits, sBits) => {

@@ -71,7 +71,9 @@ object main {
       // TODO: fix maximal pmap
       while (!haveApproxModel && !maxPrecisionTried) {
         iterations += 1
+        println("-----------------------------------------------")
         println("Starting iteration " + iterations)
+        println("-----------------------------------------------")
         
         if (pmap.isMaximal)
           maxPrecisionTried = true
@@ -95,17 +97,15 @@ object main {
         val reconstructor = new ModelReconstructor[P](approximation)         
         val decodedModel = approximation.decodeModel(formula, appModel, pmap)
         val reconstructedModel = reconstructor.reconstruct(formula, decodedModel) 
-        
-        
         val assignments = for ((symbol, label) <- formula.iterator if (!symbol.theory.isDefinedLiteral(symbol))) yield {
-          val value = decodedModel(label)
+          val value = reconstructedModel(label)
           (symbol.toString(), value.symbol.theory.toSMTLib(value.symbol) )
         }
 
         if (ModelReconstructor.valAST(formula, assignments.toList, approximation.inputTheory, Z3Solver)) {
           haveAnAnswer = true
           finalModel = Some((for ((symbol, label) <- formula.iterator if (!symbol.theory.isDefinedLiteral(symbol))) yield {
-            (symbol, decodedModel(label).toString())
+            (symbol, reconstructedModel(label).toString())
           }).toMap)
           
         } else {

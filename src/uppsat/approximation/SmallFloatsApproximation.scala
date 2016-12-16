@@ -179,8 +179,14 @@ object SmallFloatsApproximation extends Approximation[Int] {
                case (true, true) => candidateModel                   
              }
            }           
-           case ( v0 : FPVar, _ ) if (!v0Defined) => candidateModel + (v0Path -> candidateModel(v1Path)) //TODO: add invariant v1Defined
-           case ( _ , v1 : FPVar) if (!v1Defined) => candidateModel + (v1Path -> candidateModel(v0Path))
+           case ( v0 : FPVar, _ ) if (!v0Defined) => { 
+             val (newC, newM) = getCurrentValue(children(1), v1Path, decodedModel, candidateModel)
+             newM + (v0Path -> newC )
+           }
+           case ( _ , v1 : FPVar) if (!v1Defined) =>{
+             val (newC, newM) = getCurrentValue(children(0), v0Path, decodedModel, candidateModel)
+             newM + (v1Path -> newC )           
+           }
            case (_, _) => candidateModel
         }
       }
@@ -214,6 +220,6 @@ object SmallFloatsApproximation extends Approximation[Int] {
     
   }
   def reconstruct(ast : AST, decodedModel : Model) : Model = {
-    reconstructAux(ast, List(0), decodedModel, Map())
+    reconstructAux(ast, List(0), decodedModel, Map())  
   }
 }
