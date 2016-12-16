@@ -1,3 +1,5 @@
+TODO: Add timer functions
+
 // TODO: Two notions of equality, one general and one per-theory (cf, object identity and -0 = +0)
 
 // TODO: Symbol generation - use HashTable to store and re-use
