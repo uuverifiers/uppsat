@@ -65,19 +65,21 @@ object main {
 //    ApproximationSolver.loop(formula, translator, approximation)
 //    println("Running time: -- ms")
     
-    import smtlib._
-    import smtlib.Absyn._
-    import java.io._
-    import scala.collection.JavaConversions._
-    import uppsat.parser._
-    
-    
-    val filename = "test.smt2";
-    val reader = () => new java.io.BufferedReader (new java.io.FileReader(new java.io.File (filename)))
-    println(reader)
-    val l = new smtlib.Yylex(reader())
-    val p = new parser(l)
-    val script = p.pScriptC
-    val result = Interpreter.interpret(script)
+//    import smtlib._
+//    import smtlib.Absyn._
+//    import java.io._
+//    import scala.collection.JavaConversions._
+//    import uppsat.parser._
+//    
+//    
+//    val filename = "mule.smt2";
+//    val reader = () => new java.io.BufferedReader (new java.io.FileReader(new java.io.File (filename)))
+//    println(reader)
+//    val l = new smtlib.Yylex(reader())
+//    val p = new parser(l)
+//    val script = p.pScriptC
+//    val result = Interpreter.interpret(script)
+    import uppsat.parser.smttest
+    smttest.test("simplefp.smt2")
   }    
 }

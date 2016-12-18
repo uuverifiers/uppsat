@@ -17,6 +17,20 @@ object ApproximationSolver {
   
   type ExtModel = Map[ConcreteFunctionSymbol, String]
   
+  def solve(formula : AST, translator : SMTTranslator, approximation : Approximation) = {
+    loop(formula : AST, translator : SMTTranslator, approximation : Approximation) match {
+      case Some(model) => {
+        println("Model found!")
+        println(model.mkString("\t", "\n\t", "\n"))
+        Some(model)
+      }
+      case None => {
+        println("No model found!")
+        None
+      }
+    }
+  }
+  
   def loop(formula : AST, translator : SMTTranslator, approximation : Approximation) : Option[ExtModel] = {  
     
     var pmap = PrecisionMap[approximation.P](approximation.precisionOrdering)

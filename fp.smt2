@@ -1,0 +1,8 @@
+(set-logic QF_FP)
+(declare-fun integer-equality2 () Bool)
+(declare-fun addition1 () Int)
+(declare-fun addition0 () Int)
+(assert (= addition0 (+ x 3)))
+(assert (= addition1 (+ y 5)))
+(assert (= integer-equality2 (= (+ x 3) (+ y 5))))
+(assert (= (+ x 3) (+ y 5)))
