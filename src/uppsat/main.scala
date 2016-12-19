@@ -85,7 +85,7 @@ object main {
             "fpqurt.c.20.smt2",
             "fpsqrt.c.20.smt2")
     
-    val reader = () => new java.io.BufferedReader (new java.io.FileReader(new java.io.File("benchmarks/" + files(2))))
+    val reader = () => new java.io.BufferedReader (new java.io.FileReader(new java.io.File("benchmarks/" + files(8))))
     println(reader)
     val l = new smtlib.Yylex(reader())
     val p = new parser(l)

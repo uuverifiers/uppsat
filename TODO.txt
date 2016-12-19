@@ -1,0 +1,203 @@
+Old interpreter code:
+
+object IBinJunctor extends Enumeration {
+    val And, Or, Eqv, EqualitySign = Value
+  }
+
+  protected def checkArgNum(op : String, expected : Int, args : Seq[Term]) : Unit =
+    if (expected != args.size)
+      throw new Exception(
+          "Operator \"" + op +
+          "\" is applied to a wrong number of arguments: " +
+          ((for (a <- args) yield (printer print a)) mkString ", "))
+
+ // TODO: What does this do?
+//  protected def asFormula(expr : (MyExpression, SMTType)) : uppsat.ast.AST = expr match {
+//    case (expr : MyFormula, SMTBool) =>
+//      expr
+//    // case (expr : MyTerm, SMTBool) =>
+//    case (expr : MyTerm, _) =>
+//      // then we assume that an integer encoding of boolean values was chosen
+//      StrangeFormula(expr.toString())
+//    // IIntFormula(IIntRelation.EqZero, expr)
+//    case (expr, _) =>
+//      println(expr.getClass)
+//      throw new Exception(
+//        "Expected a formula, not " + expr)
+//  }
+
+      // TODO: Do we have to handle SetOptionCommand?
+      // val annot = cmd.optionc_.asInstanceOf[Option]
+      //   .annotation_.asInstanceOf[AttrAnnotation]
+
+      // val handled =
+      //   handleBooleanAnnot(":print-success", annot) {
+      //     value => printSuccess = value
+      //   } ||
+      // handleBooleanAnnot(":produce-models", annot) {
+      //   value => // nothing
+      // } ||
+      // handleBooleanAnnot(":boolean-functions-as-predicates", annot) {
+      //   value => booleanFunctionsAsPredicates = value
+      // } ||
+      // handleBooleanAnnot(":inline-let", annot) {
+      //   value => inlineLetExpressions = value
+      // } ||
+      // handleBooleanAnnot(":inline-definitions", annot) {
+      //   value => inlineDefinedFuns = value
+      // } ||
+      // handleBooleanAnnot(":totality-axiom", annot) {
+      //   value => totalityAxiom = value
+      // } ||
+      // handleBooleanAnnot(":functionality-axiom", annot) {
+      //   value => functionalityAxiom = value
+      // } ||
+      // handleBooleanAnnot(":produce-interpolants", annot) {
+      //   value => {
+      //     genInterpolants = value
+      //     if (incremental)
+      //       prover.setConstructProofs(value)
+      //   }
+      // } ||
+      // handleNumAnnot(":timeout-per", annot) {
+      //   value => timeoutPer = (value min IdealInt(Int.MaxValue)).intValue
+      // }
+
+      // if (handled) {
+      //   success
+      // } else {
+      //   if (incremental)
+      //     unsupported
+      //   else
+      //     warn("ignoring option " + annot.annotattribute_)
+      // }
+      
+// case t : QuantifierTerm =>
+    //   translateQuantifier(t, polarity)
+      
+    // case t : AnnotationTerm => {
+    //   val triggers = for (annot <- t.listannotation_;
+    //     a = annot.asInstanceOf[AttrAnnotation];
+    //     if (a.annotattribute_ == ":pattern")) yield {
+    //     a.attrparam_ match {
+    //       case p : SomeAttrParam => p.sexpr_ match {
+    //         case e : ParenSExpr =>
+    //           for (expr <- e.listsexpr_.toList;
+    //             transTriggers = {
+    //               try { List(translateTrigger(expr)) }
+    //               catch { case _ : TranslationException |
+    //                 _ : Environment.EnvironmentException => {
+    //                   warn("could not parse trigger " +
+    //                     (printer print expr) +
+    //                     ", ignoring")
+    //                   List()
+    //                 } }
+    //             };
+    //             t <- transTriggers) yield t
+    //         case _ =>
+    //           throw new Parser2InputAbsy.TranslationException(
+    //             "Expected list of patterns after \":pattern\"")
+    //       }
+    //       case _ : NoAttrParam =>
+    //         throw new Parser2InputAbsy.TranslationException(
+    //           "Expected trigger patterns after \":pattern\"")
+    //     }
+    //   }
+
+    //   val baseExpr =
+    //     if (genInterpolants) {
+    //       val names = for (annot <- t.listannotation_;
+    //         a = annot.asInstanceOf[AttrAnnotation];
+    //         if (a.annotattribute_ == ":named")) yield {
+    //         a.attrparam_ match {
+    //           case p : SomeAttrParam => p.sexpr_ match {
+    //             case e : SymbolSExpr =>
+    //               printer print e
+    //             case _ =>
+    //               throw new Parser2InputAbsy.TranslationException(
+    //                 "Expected name after \":named\"")
+    //           }
+    //           case _ : NoAttrParam =>
+    //             throw new Parser2InputAbsy.TranslationException(
+    //               "Expected name after \":named\"")
+    //         }
+    //       }
+          
+    //       translateTerm(t.term_, polarity) match {
+    //         case p@(expr, SMTBool) =>
+    //           ((asFormula(p) /: names) {
+    //             case (res, name) => INamedPart(env lookupPartName name, res)
+    //           }, SMTBool)
+    //         case p =>
+    //           // currently names for terms are ignored
+    //           p
+    //       }
+    //     } else {
+    //       translateTerm(t.term_, polarity)
+    //     }
+
+    //   if (triggers.isEmpty)
+    //     baseExpr
+    //   else
+    //     ((asFormula(baseExpr) /: triggers) {
+    //       case (res, trigger) => ITrigger(ITrigger.extractTerms(trigger), res)
+    //     }, SMTBool)
+    // }
+      
+    // case t : LetTerm =>
+    //   translateLet(t, polarity)      
+    
+  // private def translateQuantifier(t : QuantifierTerm, polarity : Int)
+  //     : (IExpression, SMTType) = {
+  //   val quant : Quantifier = t.quantifier_ match {
+  //     case _ : AllQuantifier => Quantifier.ALL
+  //     case _ : ExQuantifier => Quantifier.EX
+  //   }
+
+  //   val quantNum = pushVariables(t.listsortedvariablec_)
+    
+  //   val body = asFormula(translateTerm(t.term_, polarity))
+
+  //   // we might need guards 0 <= x <= 1 for quantifiers ranging over booleans
+  //   val guard = connect(
+  //     for (binderC <- t.listsortedvariablec_.iterator;
+  //       binder = binderC.asInstanceOf[SortedVariable];
+  //       if (translateSort(binder.sort_) == SMTBool)) yield {
+  //       (env lookupSym asString(binder.symbol_)) match {
+  //         case Environment.Variable(ind, _) => (v(ind) >= 0) & (v(ind) <= 1)
+  //         case _ => { // just prevent a compiler warning
+  //                     //-BEGIN-ASSERTION-///////////////////////////////////////////////
+  //           Debug.assertInt(SMTParser2InputAbsy.AC, false)
+  //           //-END-ASSERTION-/////////////////////////////////////////////////
+  //           null
+  //         }
+  //       }
+  //     },
+  //     IBinJunctor.And)
+    
+  //   val matrix = guard match {
+  //     case IBoolLit(true) =>
+  //       body
+  //     case _ => {
+  //       // we need to insert the guard underneath possible triggers
+  //       def insertGuard(f : IFormula) : IFormula = f match {
+  //         case ITrigger(pats, subF) =>
+  //           ITrigger(pats, insertGuard(subF))
+  //         case _ => quant match {
+  //           case Quantifier.ALL => guard ===> f
+  //           case Quantifier.EX => guard &&& f
+  //         }
+  //       }
+        
+  //       insertGuard(body)
+  //     }
+  //   }
+    
+  //   val res = quan(Array.fill(quantNum){quant}, matrix)
+
+  //   // pop the variables from the environment
+  //   for (_ <- PlainRange(quantNum)) env.popVar
+    
+  //   (res, SMTBool)
+  // }
+      

@@ -36,25 +36,17 @@ object Interpreter {
   def interpretCommand(command : smtlib.Absyn.Command, o : Object) = {
     println("Command: " + command)
   }
-
-  /// PHILIPPS
-
+  
   private val printer = new PrettyPrinterNonStatic
 
   private def parse(script : Script) : Unit =
     for (cmd <- script.listcommand_) parse(cmd)
 
-  // Should we output on success?
-  private var printSuccess = true
   // Should we give warning for decl-const (Which is not SMT2)?
   private var declareConstWarning = false
 
   // "Our" environment
   var myEnv = new Environment
-  private def success : Unit = {
-    if (printSuccess)
-      println("success")
-  }
 
   def warn(msg : String) : Unit = {
     println("Warning: " + msg)
@@ -94,118 +86,16 @@ object Interpreter {
       case _ => None
     }
   }
-
-  object IBinJunctor extends Enumeration {
-    val And, Or, Eqv, EqualitySign = Value
-  }
-
-  protected def checkArgNum(op : String, expected : Int, args : Seq[Term]) : Unit =
-    if (expected != args.size)
-      throw new Exception(
-          "Operator \"" + op +
-          "\" is applied to a wrong number of arguments: " +
-          ((for (a <- args) yield (printer print a)) mkString ", "))
-
- // TODO: What does this do?
-//  protected def asFormula(expr : (MyExpression, SMTType)) : uppsat.ast.AST = expr match {
-//    case (expr : MyFormula, SMTBool) =>
-//      expr
-//    // case (expr : MyTerm, SMTBool) =>
-//    case (expr : MyTerm, _) =>
-//      // then we assume that an integer encoding of boolean values was chosen
-//      StrangeFormula(expr.toString())
-//    // IIntFormula(IIntRelation.EqZero, expr)
-//    case (expr, _) =>
-//      println(expr.getClass)
-//      throw new Exception(
-//        "Expected a formula, not " + expr)
-//  }
-
-  protected def translateTerm(t : Term, polarity : Int)
+  protected def translateTerm(t : Term)
       : uppsat.ast.AST = t match {
     case t : smtlib.Absyn.ConstantTerm =>
       translateSpecConstant(t.specconstant_)
     case t : FunctionTerm => {               
-      symApp(t.symbolref_, t.listterm_, polarity)
+      symApp(t.symbolref_, t.listterm_)
     }
     case t : NullaryTerm =>
-      symApp(t.symbolref_, List(), polarity)     
+      symApp(t.symbolref_, List())     
     case _ => throw new Exception("Unknown term: " + t.toString())
-
-    // case t : QuantifierTerm =>
-    //   translateQuantifier(t, polarity)
-      
-    // case t : AnnotationTerm => {
-    //   val triggers = for (annot <- t.listannotation_;
-    //     a = annot.asInstanceOf[AttrAnnotation];
-    //     if (a.annotattribute_ == ":pattern")) yield {
-    //     a.attrparam_ match {
-    //       case p : SomeAttrParam => p.sexpr_ match {
-    //         case e : ParenSExpr =>
-    //           for (expr <- e.listsexpr_.toList;
-    //             transTriggers = {
-    //               try { List(translateTrigger(expr)) }
-    //               catch { case _ : TranslationException |
-    //                 _ : Environment.EnvironmentException => {
-    //                   warn("could not parse trigger " +
-    //                     (printer print expr) +
-    //                     ", ignoring")
-    //                   List()
-    //                 } }
-    //             };
-    //             t <- transTriggers) yield t
-    //         case _ =>
-    //           throw new Parser2InputAbsy.TranslationException(
-    //             "Expected list of patterns after \":pattern\"")
-    //       }
-    //       case _ : NoAttrParam =>
-    //         throw new Parser2InputAbsy.TranslationException(
-    //           "Expected trigger patterns after \":pattern\"")
-    //     }
-    //   }
-
-    //   val baseExpr =
-    //     if (genInterpolants) {
-    //       val names = for (annot <- t.listannotation_;
-    //         a = annot.asInstanceOf[AttrAnnotation];
-    //         if (a.annotattribute_ == ":named")) yield {
-    //         a.attrparam_ match {
-    //           case p : SomeAttrParam => p.sexpr_ match {
-    //             case e : SymbolSExpr =>
-    //               printer print e
-    //             case _ =>
-    //               throw new Parser2InputAbsy.TranslationException(
-    //                 "Expected name after \":named\"")
-    //           }
-    //           case _ : NoAttrParam =>
-    //             throw new Parser2InputAbsy.TranslationException(
-    //               "Expected name after \":named\"")
-    //         }
-    //       }
-          
-    //       translateTerm(t.term_, polarity) match {
-    //         case p@(expr, SMTBool) =>
-    //           ((asFormula(p) /: names) {
-    //             case (res, name) => INamedPart(env lookupPartName name, res)
-    //           }, SMTBool)
-    //         case p =>
-    //           // currently names for terms are ignored
-    //           p
-    //       }
-    //     } else {
-    //       translateTerm(t.term_, polarity)
-    //     }
-
-    //   if (triggers.isEmpty)
-    //     baseExpr
-    //   else
-    //     ((asFormula(baseExpr) /: triggers) {
-    //       case (res, trigger) => ITrigger(ITrigger.extractTerms(trigger), res)
-    //     }, SMTBool)
-    // }
-      
-    // case t : LetTerm =>
-    //   translateLet(t, polarity)
   }
 
   // TODO: Int => ItdealInt/Rat=> IdealRat
@@ -281,65 +171,20 @@ object Interpreter {
   private def parse(cmd : Command) : Unit = cmd match {
 
     case cmd : SetLogicCommand => {
+      println("Ignoring set-logic command")
       // just ignore for the time being
-      success
     }
 
       //////////////////////////////////////////////////////////////////////////
 
     case cmd : SetOptionCommand => {
-      // TODO: Do we have to handle SetOptionCommand?
-      success
-      // val annot = cmd.optionc_.asInstanceOf[Option]
-      //   .annotation_.asInstanceOf[AttrAnnotation]
-
-      // val handled =
-      //   handleBooleanAnnot(":print-success", annot) {
-      //     value => printSuccess = value
-      //   } ||
-      // handleBooleanAnnot(":produce-models", annot) {
-      //   value => // nothing
-      // } ||
-      // handleBooleanAnnot(":boolean-functions-as-predicates", annot) {
-      //   value => booleanFunctionsAsPredicates = value
-      // } ||
-      // handleBooleanAnnot(":inline-let", annot) {
-      //   value => inlineLetExpressions = value
-      // } ||
-      // handleBooleanAnnot(":inline-definitions", annot) {
-      //   value => inlineDefinedFuns = value
-      // } ||
-      // handleBooleanAnnot(":totality-axiom", annot) {
-      //   value => totalityAxiom = value
-      // } ||
-      // handleBooleanAnnot(":functionality-axiom", annot) {
-      //   value => functionalityAxiom = value
-      // } ||
-      // handleBooleanAnnot(":produce-interpolants", annot) {
-      //   value => {
-      //     genInterpolants = value
-      //     if (incremental)
-      //       prover.setConstructProofs(value)
-      //   }
-      // } ||
-      // handleNumAnnot(":timeout-per", annot) {
-      //   value => timeoutPer = (value min IdealInt(Int.MaxValue)).intValue
-      // }
-
-      // if (handled) {
-      //   success
-      // } else {
-      //   if (incremental)
-      //     unsupported
-      //   else
-      //     warn("ignoring option " + annot.annotattribute_)
-      // }
+      println("Ignoring set-option command")
     }
 
   //     //////////////////////////////////////////////////////////////////////////
       
      case cmd : SetInfoCommand =>
-       success
+       println("Ignoring set-info command")
 
   //     //////////////////////////////////////////////////////////////////////////
 
@@ -414,7 +259,6 @@ object Interpreter {
       //   }
       // }
 
-      success
     }
 
   //     //////////////////////////////////////////////////////////////////////////
@@ -452,8 +296,6 @@ object Interpreter {
       //       prover.addRelation(p)
       //   }
       // }
-
-      success
     }
 
   //     //////////////////////////////////////////////////////////////////////////
@@ -465,7 +307,7 @@ object Interpreter {
          throw new Exception("Function Def with arguments..")
        } else {
          val resType = translateSort(cmd.sort_)
-         val body = translateTerm(cmd.term_, 0)
+         val body = translateTerm(cmd.term_)
 //         val newSymbol =
 //         resType match {
 //           case IntegerSort => new uppsat.theory.IntegerTheory.IntVar(name)
@@ -522,7 +364,7 @@ object Interpreter {
   //     //////////////////////////////////////////////////////////////////////////
       
     case cmd : AssertCommand => {
-      val t = translateTerm(cmd.term_, -1)
+      val t = translateTerm(cmd.term_)
       myEnv.addAssumption(t)
 
       // if (incremental && !justStoreAssertions) {
@@ -546,8 +388,6 @@ object Interpreter {
       // } else {
       //   assumptions += f
       // }
-
-      success
     }
 
   //     //////////////////////////////////////////////////////////////////////////
@@ -558,7 +398,6 @@ object Interpreter {
       val approximation = uppsat.approximation.SmallFloatsApproximation
       println("CHECK SAT")
       uppsat.ApproximationSolver.solve(formula, translator, approximation)
-      success
     }
   //   case cmd : CheckSatCommand => if (incremental) try {
   //     var res = prover checkSat false
@@ -855,7 +694,9 @@ object Interpreter {
 
   //     //////////////////////////////////////////////////////////////////////////
 
-    case cmd : ExitCommand => success
+    case cmd : ExitCommand => {
+      println("Ignoring exit-command")
+    }
     // case cmd : ExitCommand => if (checkIncrementalWarn("exit")) {
     //   throw ExitException
     // }
@@ -941,60 +782,6 @@ object Interpreter {
   // private def pushVar(bsort : Sort, bsym : Symbol) : Unit = {
   //   ensureEnvironmentCopy
   //   env.pushVar(asString(bsym), BoundVariable(translateSort(bsort)))
-  // }
-  
-  // private def translateQuantifier(t : QuantifierTerm, polarity : Int)
-  //     : (IExpression, SMTType) = {
-  //   val quant : Quantifier = t.quantifier_ match {
-  //     case _ : AllQuantifier => Quantifier.ALL
-  //     case _ : ExQuantifier => Quantifier.EX
-  //   }
-
-  //   val quantNum = pushVariables(t.listsortedvariablec_)
-    
-  //   val body = asFormula(translateTerm(t.term_, polarity))
-
-  //   // we might need guards 0 <= x <= 1 for quantifiers ranging over booleans
-  //   val guard = connect(
-  //     for (binderC <- t.listsortedvariablec_.iterator;
-  //       binder = binderC.asInstanceOf[SortedVariable];
-  //       if (translateSort(binder.sort_) == SMTBool)) yield {
-  //       (env lookupSym asString(binder.symbol_)) match {
-  //         case Environment.Variable(ind, _) => (v(ind) >= 0) & (v(ind) <= 1)
-  //         case _ => { // just prevent a compiler warning
-  //                     //-BEGIN-ASSERTION-///////////////////////////////////////////////
-  //           Debug.assertInt(SMTParser2InputAbsy.AC, false)
-  //           //-END-ASSERTION-/////////////////////////////////////////////////
-  //           null
-  //         }
-  //       }
-  //     },
-  //     IBinJunctor.And)
-    
-  //   val matrix = guard match {
-  //     case IBoolLit(true) =>
-  //       body
-  //     case _ => {
-  //       // we need to insert the guard underneath possible triggers
-  //       def insertGuard(f : IFormula) : IFormula = f match {
-  //         case ITrigger(pats, subF) =>
-  //           ITrigger(pats, insertGuard(subF))
-  //         case _ => quant match {
-  //           case Quantifier.ALL => guard ===> f
-  //           case Quantifier.EX => guard &&& f
-  //         }
-  //       }
-        
-  //       insertGuard(body)
-  //     }
-  //   }
-    
-  //   val res = quan(Array.fill(quantNum){quant}, matrix)
-
-  //   // pop the variables from the environment
-  //   for (_ <- PlainRange(quantNum)) env.popVar
-    
-  //   (res, SMTBool)
   // }
   
   // //////////////////////////////////////////////////////////////////////////////
@@ -1146,7 +933,7 @@ object Interpreter {
 
   // private var tildeWarning = false
   
-  protected def symApp(sym : SymbolRef, args : Seq[Term], polarity : Int) 
+  protected def symApp(sym : SymbolRef, args : Seq[Term]) 
       : uppsat.ast.AST = {
     sym match {
            
@@ -1155,7 +942,6 @@ object Interpreter {
     // Hardcoded connectives of formulae
       
     case PlainSymbol("true") => {
-      checkArgNum("true", 0, args)
       uppsat.ast.Leaf(BoolTrue)
     }
     case PlainSymbol("false") => {
@@ -1163,11 +949,11 @@ object Interpreter {
     }
 
     case PlainSymbol("not") => {
-       uppsat.ast.AST(BoolNegation, List(translateTerm(args.head, 0)))
+       uppsat.ast.AST(BoolNegation, List(translateTerm(args.head)))
     }
     
     case PlainSymbol("and") => {
-       uppsat.ast.AST(BoolConjunction, List(translateTerm(args(0), 0), translateTerm(args(1), 0)))
+       uppsat.ast.AST(BoolConjunction, List(translateTerm(args(0)), translateTerm(args(1))))
     }    
       
     // case PlainSymbol("and") =>
@@ -1226,14 +1012,14 @@ object Interpreter {
       if (args.length != 2) {
         throw new Exception("Not two arguments for + ...")
       } else {
-        translateTerm(args(0), 0) + translateTerm(args(1), 0)
+        translateTerm(args(0)) + translateTerm(args(1))
       }
     }
     
     // TODO: This is wrong!
     case PlainSymbol("-") => {
       if (args.length == 1) {
-        translateTerm(args(0), 0)
+        translateTerm(args(0))
       } else {
         throw new Exception("Only unary minus supported...")
       }
@@ -1247,10 +1033,10 @@ object Interpreter {
       if (args.length != 2) {
         throw new Exception("Not two arguments for = ...")
       } else {
-        val lhs = translateTerm(args(0), 0)
-        val rhs = translateTerm(args(1), 0)
+        val lhs = translateTerm(args(0))
+        val rhs = translateTerm(args(1))
         lhs.prettyPrint
-        translateTerm(args(0), 0) === translateTerm(args(1), 0)
+        translateTerm(args(0)) === translateTerm(args(1))
       }
     }
     
@@ -1263,7 +1049,7 @@ object Interpreter {
       if (args.length != 1) {
         throw new Exception("Not one argument for fp.neg...")
       } else {
-        translateTerm(args(0), 0)
+        translateTerm(args(0))
       }
     }      
     
@@ -1272,7 +1058,7 @@ object Interpreter {
       if (args.length != 2) {
         throw new Exception("Not two arguments for fp.leq ...")
       } else {
-        translateTerm(args(0), 0) <= translateTerm(args(1), 0)
+        translateTerm(args(0)) <= translateTerm(args(1))
       }
     }    
     
@@ -1280,7 +1066,7 @@ object Interpreter {
       if (args.length != 2) {
         throw new Exception("Not two arguments for fp.leq ...")
       } else {
-        translateTerm(args(0), 0) <= translateTerm(args(1), 0)
+        translateTerm(args(0)) <= translateTerm(args(1))
       }
     }
 
@@ -1288,10 +1074,10 @@ object Interpreter {
       if (args.length != 3) {
         throw new Exception("Not two arguments for fp.mul ...")
       } else {
-        if (!(translateTerm(args(0), 0).symbol.sort == RoundingModeSort))
+        if (!(translateTerm(args(0)).symbol.sort == RoundingModeSort))
           throw new Exception("First argument not roundingmode...")
         implicit val roundingMode = args(0)
-        translateTerm(args(1), 0) + translateTerm(args(2), 0)
+        translateTerm(args(1)) + translateTerm(args(2))
       }
     }
 
@@ -1300,10 +1086,10 @@ object Interpreter {
       if (args.length != 3) {
         throw new Exception("Not two arguments for fp.mul ...")
       } else {
-        if (!(translateTerm(args(0), 0).symbol.sort == RoundingModeSort))
+        if (!(translateTerm(args(0)).symbol.sort == RoundingModeSort))
           throw new Exception("First argument not roundingmode...")
         implicit val roundingMode = args(0)
-        translateTerm(args(1), 0) + translateTerm(args(2), 0)
+        translateTerm(args(1)) + translateTerm(args(2))
       }
     }      
     
@@ -1312,10 +1098,10 @@ object Interpreter {
       if (args.length != 3) {
         throw new Exception("Not two arguments for fp.mul ...")
       } else {
-        if (!(translateTerm(args(0), 0).symbol.sort == RoundingModeSort))
+        if (!(translateTerm(args(0)).symbol.sort == RoundingModeSort))
           throw new Exception("First argument not roundingmode...")
         implicit val roundingMode = args(0)
-        translateTerm(args(1), 0) + translateTerm(args(2), 0)
+        translateTerm(args(1)) + translateTerm(args(2))
       }
     }  
     
@@ -1459,7 +1245,7 @@ object Interpreter {
         case p(eBits, sBits) => {
           val targetSort = FloatingPointTheory.FPSortFactory(List(eBits.toInt, sBits.toInt))
           val s = FloatingPointTheory.FPToFPFactory(List(targetSort))
-          uppsat.ast.AST(s, List(translateTerm(args(0), 0), translateTerm(args(1), 0)))
+          uppsat.ast.AST(s, List(translateTerm(args(0)), translateTerm(args(1))))
         }
       }
     }
