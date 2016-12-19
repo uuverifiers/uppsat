@@ -12,13 +12,13 @@ import uppsat.theory.FloatingPointTheory.RoundingModeSort
 import uppsat.theory.FloatingPointTheory
 import uppsat.theory.FloatingPointTheory.RoundingMode
 import uppsat.theory.FloatingPointTheory.FPConstantFactory
+import uppsat.theory.FloatingPointTheory.FPSortFactory
 
 object Interpreter {
   class SMTParser extends smtlib.Absyn.ScriptC.Visitor[Int, Object] {
     def visit(t : smtlib.Absyn.Script, o : Object) : Int = {
       for (i <- 0 until t.listcommand_.iterator.length) { 
-        val c = t.listcommand_(i)
-        println("visiting: " + c.toString)        
+        val c = t.listcommand_(i)        
         parse(c)
       }
       0
@@ -40,13 +40,6 @@ object Interpreter {
   /// PHILIPPS
 
   private val printer = new PrettyPrinterNonStatic
-
-//  abstract class SMTType
-//  case object SMTBool extends SMTType
-//  case object SMTInteger extends SMTType
-//  case object SMTUnknown extends SMTType
-//  case class  SMTArray(arguments : List[SMTType],
-//                       result : SMTType) extends SMTType
 
   private def parse(script : Script) : Unit =
     for (cmd <- script.listcommand_) parse(cmd)
@@ -132,8 +125,9 @@ object Interpreter {
       : uppsat.ast.AST = t match {
     case t : smtlib.Absyn.ConstantTerm =>
       translateSpecConstant(t.specconstant_)
-    case t : FunctionTerm =>
+    case t : FunctionTerm => {               
       symApp(t.symbolref_, t.listterm_, polarity)
+    }
     case t : NullaryTerm =>
       symApp(t.symbolref_, List(), polarity)     
     case _ => throw new Exception("Unknown term: " + t.toString())
@@ -221,6 +215,19 @@ object Interpreter {
       // TODO: What is numconstant? Also FP?
     case c : NumConstant => {
       uppsat.ast.Leaf(uppsat.theory.IntegerTheory.IntLiteral(c.numeral_.toInt))
+    }
+    case c : RatConstant => {
+      println(c.rational_)
+      val bits = java.lang.Long.toBinaryString(java.lang.Double.doubleToRawLongBits(c.rational_.toDouble))
+      // TODO: We always store rationals as floats, good? bad? probably we should use reals.
+      // TODO: Is the leading bits dropped
+      val allBits = (("0" * (64 - bits.length)) ++ bits).map(_.toString.toInt)
+      val sign = allBits.head
+      val eBits = allBits.tail.take(11).map(_.toInt).toList
+      val sBits = allBits.tail.drop(11).map(_.toInt).toList
+      
+      val fpsort = FPSortFactory(List(52, 11))
+      uppsat.ast.Leaf(FloatingPointTheory.FPLiteral(sign.toInt, eBits, sBits, fpsort))
     }
 //    case c : HexConstant =>
 //      (MyIntLit(c.hexadecimal_ substring (2, 16)), SMTInteger)
@@ -353,17 +360,18 @@ object Interpreter {
       
     case cmd : FunctionDeclCommand => {
       // Functions are always declared to have integer inputs and outputs
-      val name = asString(cmd.symbol_)
+      val fullname = asString(cmd.symbol_)
+      val name = if (fullname contains ':') "|" + fullname + "|" else fullname
       cmd.mesorts_ match {
         case _ : NoSorts => {
-          val res = translateSort(cmd.sort_)          
+          val res = translateSort(cmd.sort_) 
           val symbol = res match {
             case IntegerSort => new uppsat.theory.IntegerTheory.IntVar(name)
             case BooleanSort => new uppsat.theory.BooleanTheory.BoolVar(name)
             case fp : FPSort => new uppsat.theory.FloatingPointTheory.FPVar(name, fp)
           }
 
-          myEnv.addSymbol(name, symbol)
+          myEnv.addSymbol(fullname, symbol)
         }
         case _ => throw new Exception("Function Declaration with arguments!")
 //        case sorts : SomeSorts =>
@@ -427,7 +435,6 @@ object Interpreter {
           case sort => throw new Exception("ast._.sort not handled: " + sort)
         }
 
-      println("Adding2: (" + name + ", " + symbol + ")")
       myEnv.addSymbol(name, symbol)
       // ensureEnvironmentCopy
 
@@ -452,16 +459,20 @@ object Interpreter {
   //     //////////////////////////////////////////////////////////////////////////
 
      case cmd : FunctionDefCommand => {
-       val name = asString(cmd.symbol_)
-       println("FunctionDef: " + name)
-       for (sortedVar <- cmd.listesortedvarc_) 
-         println("\t|" + sortedVar)
+       val fullname = asString(cmd.symbol_)
+       val name = if (fullname contains ':') "|" + fullname + "|" else fullname
        if (!cmd.listesortedvarc_.isEmpty) {
          throw new Exception("Function Def with arguments..")
        } else {
          val resType = translateSort(cmd.sort_)
          val body = translateTerm(cmd.term_, 0)
-         println(body)
+//         val newSymbol =
+//         resType match {
+//           case IntegerSort => new uppsat.theory.IntegerTheory.IntVar(name)
+//           case BooleanSort => new uppsat.theory.BooleanTheory.BoolVar(name)
+//           case fp : FPSort => new uppsat.theory.FloatingPointTheory.FPVar(name, fp)
+//         }         
+         
          myEnv.addDefinition(name, body)
        }
 //       val args : Seq[Sort] =
@@ -874,8 +885,7 @@ object Interpreter {
       // case id if (sortDefs contains id) => sortDefs(id)
       case fpPattern(eBits, sBits) => uppsat.theory.FloatingPointTheory.FPSortFactory(List(eBits.toInt, sBits.toInt))
       case id => {
-        println("Unknown sort: " + asString(s.identifier_))
-        throw new Exception("Unknown sort...")
+        throw new Exception("Unknown sort...:" + asString(s.identifier_))
       }
     }
     // case s : CompositeSort => asString(s.identifier_) match {
@@ -1138,7 +1148,6 @@ object Interpreter {
   
   protected def symApp(sym : SymbolRef, args : Seq[Term], polarity : Int) 
       : uppsat.ast.AST = {
-    println("symApp(" + sym + ", " + args + ", " + polarity +")")
     sym match {
            
 
@@ -1219,7 +1228,16 @@ object Interpreter {
       } else {
         translateTerm(args(0), 0) + translateTerm(args(1), 0)
       }
-    }    
+    }
+    
+    // TODO: This is wrong!
+    case PlainSymbol("-") => {
+      if (args.length == 1) {
+        translateTerm(args(0), 0)
+      } else {
+        throw new Exception("Only unary minus supported...")
+      }
+    }      
     
     
     //   ////////////////////////////////////////////////////////////////////////////
@@ -1232,11 +1250,23 @@ object Interpreter {
         val lhs = translateTerm(args(0), 0)
         val rhs = translateTerm(args(1), 0)
         lhs.prettyPrint
-        println(rhs)
         translateTerm(args(0), 0) === translateTerm(args(1), 0)
       }
     }
+    
+    // 
+    //  FLOATING POINT SYMBOLS
+    //
 
+    // TODO: This is wrong!
+    case PlainSymbol("fp.neg") => {
+      if (args.length != 1) {
+        throw new Exception("Not one argument for fp.neg...")
+      } else {
+        translateTerm(args(0), 0)
+      }
+    }      
+    
     // TODO: This is wrong!
     case PlainSymbol("fp.lt") => {
       if (args.length != 2) {
@@ -1263,6 +1293,18 @@ object Interpreter {
         implicit val roundingMode = args(0)
         translateTerm(args(1), 0) + translateTerm(args(2), 0)
       }
+    }
+
+    //TODO: This is wrong!
+    case PlainSymbol("fp.div") => {
+      if (args.length != 3) {
+        throw new Exception("Not two arguments for fp.mul ...")
+      } else {
+        if (!(translateTerm(args(0), 0).symbol.sort == RoundingModeSort))
+          throw new Exception("First argument not roundingmode...")
+        implicit val roundingMode = args(0)
+        translateTerm(args(1), 0) + translateTerm(args(2), 0)
+      }
     }      
     
     // TODO: This is wrong!
@@ -1277,10 +1319,15 @@ object Interpreter {
       }
     }  
     
-    case PlainSymbol("roundNearestTiesToEven") => {
-      // TODO: This is wrong!
+      // TODO: This is wrong!    
+    case PlainSymbol("roundTowardZero") => {
       FloatingPointTheory.RoundToPositive
     }
+
+      // TODO: This is wrong!    
+    case PlainSymbol("roundNearestTiesToEven") => {
+      FloatingPointTheory.RoundToPositive
+    }    
      
       // for (Seq(a, b) <- (transArgs map (asFormula(_))) sliding 2)
       // yield (
@@ -1407,7 +1454,6 @@ object Interpreter {
 
 //    case PlainSymbol(ps) if ("to\\_\\fp\\_(\\d+)\\_(\\d+)".r.findFirstIn(asString(sym)).isDefined) => {
     case _ if ("to".r.findFirstIn(asString(sym)).isDefined) => {
-      println(asString(sym))
       val p = "to_fp_(\\d+)_(\\d+)".r
       asString(sym) match {
         case p(eBits, sBits) => {
@@ -1417,6 +1463,31 @@ object Interpreter {
         }
       }
     }
+    
+    // TODO: This is wrong!
+    case _ if ("\\+oo".r.findFirstIn(asString(sym)).isDefined) => {
+      val p = "\\+oo_(\\d+)_(\\d+)".r
+      asString(sym) match {
+        case p(eBits, sBits) => {
+          val sort = FloatingPointTheory.FPSortFactory(List(eBits.toInt, sBits.toInt))
+          val value = FloatingPointTheory.FPZero.getFactory(List(sort))
+          uppsat.ast.AST(value, List())
+        }
+      }
+    }
+    
+    // TODO: This is wrong!
+    case _ if ("-oo".r.findFirstIn(asString(sym)).isDefined) => {
+      val p = "-oo_(\\d+)_(\\d+)".r
+      asString(sym) match {
+        case p(eBits, sBits) => {
+          val sort = FloatingPointTheory.FPSortFactory(List(eBits.toInt, sBits.toInt))
+          val value = FloatingPointTheory.FPZero.getFactory(List(sort))
+          uppsat.ast.AST(value, List())
+        }
+      }
+    }    
+    
    
     ////////////////////////////////////////////////////////////////////////////
     // Declared symbols from the environment
@@ -1427,7 +1498,6 @@ object Interpreter {
           uppsat.ast.Leaf(symbol)
         case (_, Some(ast)) => ast
         case (None, None) => {
-          println("Couldn't find defined symbol: " + asString(id))
           myEnv.print
           throw new Exception("Undefined symbol: " + asString(id))
         }

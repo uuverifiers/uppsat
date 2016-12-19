@@ -6,6 +6,8 @@ import uppsat.ast.AST
 
 import scala.collection.mutable.Map
 
+// We should not be adding || afterwards?
+
 class Environment {
   var symbols : Map[String, ConcreteFunctionSymbol] = Map()
   var definitions : Map[String, AST] = Map()
