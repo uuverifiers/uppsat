@@ -1470,7 +1470,7 @@ object Interpreter {
       asString(sym) match {
         case p(eBits, sBits) => {
           val sort = FloatingPointTheory.FPSortFactory(List(eBits.toInt, sBits.toInt))
-          val value = FloatingPointTheory.FPZero.getFactory(List(sort))
+          val value = FloatingPointTheory.FPPlusInfinity(List(sort))
           uppsat.ast.AST(value, List())
         }
       }
@@ -1482,7 +1482,7 @@ object Interpreter {
       asString(sym) match {
         case p(eBits, sBits) => {
           val sort = FloatingPointTheory.FPSortFactory(List(eBits.toInt, sBits.toInt))
-          val value = FloatingPointTheory.FPZero.getFactory(List(sort))
+          val value = FloatingPointTheory.FPMinusInfinity(List(sort))
           uppsat.ast.AST(value, List())
         }
       }

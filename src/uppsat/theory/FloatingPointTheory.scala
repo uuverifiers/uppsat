@@ -250,13 +250,13 @@ case class FPSpecialValuesFactory(symbolName : String) extends IndexedFunctionSy
   //   ; comparison operators
   //   ; Note that all comparisons evaluate to false if either argument is NaN
   //   (fp.leq (_ FloatingPoint eb sb) (_ FloatingPoint eb sb) Bool :chainable)
-  val FPLessThanOrEqualFactory = new FPPredicateSymbolFactory("less than or equal to", 2)
+  val FPLessThanOrEqualFactory = new FPPredicateSymbolFactory("less-than-or-equal-to", 2)
   //   (fp.lt  (_ FloatingPoint eb sb) (_ FloatingPoint eb sb) Bool :chainable)
-  val FPLessThanFactory = new FPPredicateSymbolFactory("less than", 2)
+  val FPLessThanFactory = new FPPredicateSymbolFactory("less-than", 2)
   //   (fp.geq (_ FloatingPoint eb sb) (_ FloatingPoint eb sb) Bool :chainable)
-  val FPGreaterThanOrEqualFactory = new FPPredicateSymbolFactory("greater or equal", 2)
+  val FPGreaterThanOrEqualFactory = new FPPredicateSymbolFactory("greater-or-equal", 2)
   //   (fp.gt  (_ FloatingPoint eb sb) (_ FloatingPoint eb sb) Bool :chainable)
-  val FPGreaterThanFactory = new FPPredicateSymbolFactory("greater than", 2)
+  val FPGreaterThanFactory = new FPPredicateSymbolFactory("greater-than", 2)
   //   ; IEEE 754-2008 equality (as opposed to SMT-LIB =)
   //   (fp.eq (_ FloatingPoint eb sb) (_ FloatingPoint eb sb) Bool :chainable) 
   val FPEqualityFactory = new FPPredicateSymbolFactory("equal", 2)
@@ -582,7 +582,6 @@ case class FPSpecialValuesFactory(symbolName : String) extends IndexedFunctionSy
   //TODO: Change to SMTLIB names
   def toSMTLib(symbol : ConcreteFunctionSymbol) = { 
     symbol match {
-      case FPVar(name, _) => name
       case RoundToZero => "RTZ"
       case RoundToPositive => "RTP"
       case RoundToNegative => "RTN"
@@ -590,6 +589,10 @@ case class FPSpecialValuesFactory(symbolName : String) extends IndexedFunctionSy
       case RoundToNearestTiesToAway => "RTE"
       case fpFunSym : FloatingPointFunctionSymbol => {      
         fpFunSym.getFactory match {
+          case FPPositiveZero => "+0"
+          case FPPlusInfinity => "+00"
+          case FPMinusInfinity => "-00"
+            
           case FPAdditionFactory => "fp.add"
           case FPSubstractionFactory => "fp.sub"
           case FPMultiplicationFactory => "fp.mul"
@@ -611,8 +614,9 @@ case class FPSpecialValuesFactory(symbolName : String) extends IndexedFunctionSy
           case FPGreaterThanFactory => "fp.gt"
           case str => throw new Exception("Unsupported FP symbol: " + str)
         }
-      
       }
+      case FPVar(name, _) => name
+      
     }
   }
   
