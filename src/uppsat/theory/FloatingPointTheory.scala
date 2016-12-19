@@ -594,7 +594,7 @@ case class FPSpecialValuesFactory(symbolName : String) extends IndexedFunctionSy
       case RoundToPositive => "RTP"
       case RoundToNegative => "RTN"
       case RoundToNearestTiesToAway => "RTA"
-      case RoundToNearestTiesToAway => "RTE"
+      case RoundToNearestTiesToEven => "RTE"
       case fpFunSym : FloatingPointFunctionSymbol => {      
         fpFunSym.getFactory match {
           case FPPositiveZero => "+0"
