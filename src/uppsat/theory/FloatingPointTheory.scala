@@ -598,9 +598,8 @@ case class FPSpecialValuesFactory(symbolName : String) extends IndexedFunctionSy
       case fpFunSym : FloatingPointFunctionSymbol => {      
         fpFunSym.getFactory match {
           case FPPositiveZero => "+0"
-          case FPPlusInfinity => "+00"
-          case FPMinusInfinity => "-00"
-            
+          case FPPlusInfinity => "(_ +oo " + fpFunSym.sort.eBits + " " + fpFunSym.sort.sBits + ")"
+          case FPMinusInfinity => "(_ -oo " + fpFunSym.sort.eBits + " " + fpFunSym.sort.sBits + ")"
           case FPAdditionFactory => "fp.add"
           case FPSubstractionFactory => "fp.sub"
           case FPMultiplicationFactory => "fp.mul"
