@@ -505,6 +505,7 @@ case class FPSpecialValuesFactory(symbolName : String) extends IndexedFunctionSy
   def parseLiteral(lit : String) = {
     val bitPattern = "\\(fp (\\S*) (\\S*) (\\S*)\\)".r
     val zeroPattern = "\\(_ ([\\+\\-])zero (\\d+) (\\d+)\\)".r
+    val infPattern = "\\(_ ([\\+\\-])oo (\\d+) (\\d+)\\)".r
     val nanPattern = "\\(_ NaN (\\d+) (\\d+)\\)".r
     lit match {
       case bitPattern(s1, s2, s3) => {
@@ -526,6 +527,13 @@ case class FPSpecialValuesFactory(symbolName : String) extends IndexedFunctionSy
         val factory = new FPConstantFactory(signBit, List.fill(eBits.toInt)(0), List.fill(sBits.toInt - 1)(0))
         Leaf(factory(List(fpsort)))
       }
+      case infPattern(sign, eBits, sBits) => {
+        val fpsort = FPSortFactory(List(eBits.toInt, sBits.toInt))
+        if (sign == "+")
+          Leaf(FPPlusInfinity(List(fpsort)))
+        else
+          Leaf(FPMinusInfinity(List(fpsort)))
+      } 
       case nanPattern(eBits, sBits) => {
         // TODO: Have special representation for NaN
         val signBit = 0

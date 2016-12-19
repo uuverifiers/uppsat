@@ -73,10 +73,19 @@ object main {
     
 
 
+    val files = 
+      List("fpadd_01_1_1.smt2",
+            "fpdiv.c.3.smt2",
+            "fpmule1.c.smt2",
+            "fpnewton.4.1.i.smt2",
+            "fpsin2.c.5.smt2",
+            "fptest_v3_r3_vr1_c1_s5578.smt2",
+            "fpgaussian.c.25.smt2",
+            "fpmult1.c.3.smt2",
+            "fpqurt.c.20.smt2",
+            "fpsqrt.c.20.smt2")
     
-    
-    val filename = "benchmarks/fpdiv.c.3.smt2";
-    val reader = () => new java.io.BufferedReader (new java.io.FileReader(new java.io.File (filename)))
+    val reader = () => new java.io.BufferedReader (new java.io.FileReader(new java.io.File("benchmarks/" + files(2))))
     println(reader)
     val l = new smtlib.Yylex(reader())
     val p = new parser(l)

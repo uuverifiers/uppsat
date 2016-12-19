@@ -4,11 +4,20 @@ import java.io.ByteArrayInputStream;
 import scala.sys.process.stringToProcess
 import uppsat.solver._
 
+class Z3Exception(msg : String) extends Exception("Z3 error: " + msg)
+
 object Z3Solver extends SMTSolver {
+
   def runSolver(formula : String) = {
     import sys.process._
+    
+    val stdout = new StringBuilder
+    val stderr = new StringBuilder    
     val is = new ByteArrayInputStream(formula.getBytes("UTF-8"))
-    ("z3 -in -smt2" #< is) !! 
+    val status = "z3 -in -smt2" #< is ! ProcessLogger(str => stdout append (str + "\n"), str => stderr append (str + "\n"))
+    if (status != 0)
+      throw new Z3Exception(stdout.toString)
+    stdout.toString
   }
  
   
