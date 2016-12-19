@@ -18,6 +18,8 @@ object ApproximationSolver {
   type ExtModel = Map[ConcreteFunctionSymbol, String]
   
   def solve(formula : AST, translator : SMTTranslator, approximation : Approximation) = {
+    println("SOLVING")
+    println(translator.translate(formula))
     loop(formula : AST, translator : SMTTranslator, approximation : Approximation) match {
       case Some(model) => {
         println("Model found!")

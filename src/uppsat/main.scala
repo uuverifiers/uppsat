@@ -71,8 +71,11 @@ object main {
     import scala.collection.JavaConversions._
     import uppsat.parser._
     
+
+
     
-    val filename = "mule.smt2";
+    
+    val filename = "benchmarks/fpdiv.c.3.smt2";
     val reader = () => new java.io.BufferedReader (new java.io.FileReader(new java.io.File (filename)))
     println(reader)
     val l = new smtlib.Yylex(reader())
