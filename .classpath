@@ -3,8 +3,8 @@
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="con" path="org.scala-ide.sdt.launching.SCALA_CONTAINER"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.8"/>
-	<classpathentry kind="lib" path="/home/ptr/uuverifiers/uppsat/lib/java-cup-11a.jar"/>
-	<classpathentry kind="lib" path="/home/ptr/uuverifiers/uppsat/lib/parser.jar"/>
-	<classpathentry kind="lib" path="/home/ptr/uuverifiers/uppsat/lib/smt-parser.jar"/>
+	<classpathentry kind="lib" path="./lib/java-cup-11a.jar"/>
+	<classpathentry kind="lib" path="./lib/parser.jar"/>
+	<classpathentry kind="lib" path="./lib/smt-parser.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
