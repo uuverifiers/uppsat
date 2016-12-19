@@ -89,6 +89,12 @@ case class AST(val symbol : ConcreteFunctionSymbol, val label : Label, val child
      }
   }
   
+  def unary_- = {
+     this.symbol.sort match {
+       case f : FPSort => floatNegate(this)
+     }
+  }
+  
   def +(that : AST)(implicit rm : RoundingMode = RoundToZero) = {
      (this.symbol.sort, that.symbol.sort) match {
        case (IntegerSort, IntegerSort) => intAddition(this, that)
@@ -100,6 +106,20 @@ case class AST(val symbol : ConcreteFunctionSymbol, val label : Label, val child
      (this.symbol.sort, that.symbol.sort) match {
        case (IntegerSort, IntegerSort) => intSubstraction(this, that)
        case (f1 : FPSort, f2 : FPSort) => floatSubtraction(this, that)
+     }
+  }
+  
+  def *(that : AST)(implicit rm : RoundingMode = RoundToZero) = {
+     (this.symbol.sort, that.symbol.sort) match {
+       //case (IntegerSort, IntegerSort) => intAddition(this, that)
+       case (f1 : FPSort, f2 : FPSort) => floatMultiplication(this, that)       
+     }
+  }
+  
+  def /(that : AST)(implicit rm : RoundingMode = RoundToZero) = {
+     (this.symbol.sort, that.symbol.sort) match {
+       //case (IntegerSort, IntegerSort) => intAddition(this, that)
+       case (f1 : FPSort, f2 : FPSort) => floatDivision(this, that)       
      }
   }
   
@@ -118,6 +138,29 @@ case class AST(val symbol : ConcreteFunctionSymbol, val label : Label, val child
        case (f1 : FPSort, f2 : FPSort) => floatLessThanOrEqual(this, that)
      }
   }
+  
+  def <(that : AST) = {
+    (this.symbol.sort, that.symbol.sort) match {
+       //case (IntegerSort, IntegerSort) => intLessThan(this, that)
+       case (f1 : FPSort, f2 : FPSort) => floatLessThan(this, that)
+     }
+  }
+  
+  def >=(that : AST) = {
+    (this.symbol.sort, that.symbol.sort) match {
+       //case (IntegerSort, IntegerSort) => intLessThanOrEqual(this, that)
+       case (f1 : FPSort, f2 : FPSort) => floatGreaterThanOrEqual(this, that)
+     }
+  }
+  
+  def >(that : AST) = {
+    (this.symbol.sort, that.symbol.sort) match {
+       //case (IntegerSort, IntegerSort) => intLessThan(this, that)
+       case (f1 : FPSort, f2 : FPSort) => floatGreaterThan(this, that)
+     }
+  }
+  
+  
 }
 
 
