@@ -21,7 +21,12 @@ class Environment {
   }
 
   def addAssumption(ass : AST) = {
-    assumptions = ass :: assumptions
+    if (assumptions.isEmpty) {
+      assumptions = ass :: assumptions
+      false
+    } else {  
+      true
+    }
   }
   
   def findSymbol(id : String) : Option[ConcreteFunctionSymbol] = {
@@ -48,7 +53,7 @@ class Environment {
         (Leaf(symbol) === definition)
       }).toList
     
-    AST(naryConjunction(1 + defAssertions.length), assumptions.head :: defAssertions)
+    AST(naryConjunction(assumptions.length + defAssertions.length), assumptions.toList ++ defAssertions)
   }
 
   def print = {

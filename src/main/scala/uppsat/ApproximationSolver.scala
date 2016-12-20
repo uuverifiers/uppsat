@@ -19,7 +19,13 @@ object ApproximationSolver {
   
   def solve(formula : AST, translator : SMTTranslator, approximation : Approximation) = {
     println(translator.translate(formula))
-    loop(formula : AST, translator : SMTTranslator, approximation : Approximation) match {
+    val startTime = System.currentTimeMillis
+    val retVal = loop(formula : AST, translator : SMTTranslator, approximation : Approximation) 
+    val stopTime = System.currentTimeMillis
+    
+    println("Solving time: " + (stopTime - startTime) + "ms") 
+    
+    retVal match {
       case Some(model) => {
         println("Model found!")
         println(model.mkString("\t", "\n\t", "\n"))

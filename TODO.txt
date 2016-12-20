@@ -1,5 +1,10 @@
 Old interpreter code:
 
+  // Should we give warning for decl-const (Which is not SMT2)?
+  private var declareConstWarning = false
+  
+  
+
 object IBinJunctor extends Enumeration {
     val And, Or, Eqv, EqualitySign = Value
   }
@@ -302,3 +307,18 @@ object IBinJunctor extends Enumeration {
   //     case t : FunctionTerm => Some(t.listterm_.toList)
   //   }
   // }      
+  
+      // case s : CompositeSort => asString(s.identifier_) match {
+    //   case "Array" => {
+    //     val args =
+    //       for (t <- s.listsort_.toList) yield translateSort(t)
+    //     if (args.size < 2)
+    //       throw new Parser2InputAbsy.TranslationException(
+    //         "Expected at least two sort arguments in " + (printer print s))
+    //     SMTArray(args.init, args.last)
+    //   }
+    //   case id => {
+    //     warn("treating sort " + (printer print s) + " as Int")
+    //     SMTInteger
+    //   }
+    // }

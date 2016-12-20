@@ -14,6 +14,8 @@ import uppsat.theory.FloatingPointTheory.RoundingMode
 import uppsat.theory.FloatingPointTheory.FPConstantFactory
 import uppsat.theory.FloatingPointTheory.FPSortFactory
 
+case class SMTParserException(msg : String) extends Exception(msg)
+
 object Interpreter {
   class SMTParser extends smtlib.Absyn.ScriptC.Visitor[Int, Object] {
     def visit(t : smtlib.Absyn.Script, o : Object) : Int = {
@@ -37,15 +39,17 @@ object Interpreter {
     println("Command: " + command)
   }
   
-  private val printer = new PrettyPrinterNonStatic
-
   private def parse(script : Script) : Unit =
     for (cmd <- script.listcommand_) parse(cmd)
 
-  // Should we give warning for decl-const (Which is not SMT2)?
-  private var declareConstWarning = false
-
-  // "Our" environment
+     
+  protected def checkArgNum(op : String, expected : Int, args : Seq[Term]) : Unit =
+    if (expected != args.size)
+      throw new SMTParserException(
+        "Function \"" + op +
+        "\" is applied to a wrong number of arguments: " +
+        args.map(translateTerm).mkString("\n"))    
+    
   var myEnv = new Environment
 
   def warn(msg : String) : Unit = {
@@ -67,10 +71,8 @@ object Interpreter {
   
   def asString(s : Symbol) : String = s match {
     case s : NormalSymbol =>
-//      sanitise(s.normalsymbolt_)
       s.normalsymbolt_
     case s : QuotedSymbol =>
-//      sanitise(s.quotedsymbolt_.substring(1, s.quotedsymbolt_.length - 1))
       s.quotedsymbolt_.substring(1, s.quotedsymbolt_.length - 1)
   }
 
@@ -95,54 +97,38 @@ object Interpreter {
     }
     case t : NullaryTerm =>
       symApp(t.symbolref_, List())     
-    case _ => throw new Exception("Unknown term: " + t.toString())
+    case _ => throw new SMTParserException("Unknown term: " + t.toString())
   }
 
-  // TODO: Int => ItdealInt/Rat=> IdealRat
   protected def translateSpecConstant(c : SpecConstant)
       : uppsat.ast.AST = {
     c match {
-      // TODO: What is numconstant? Also FP?
-    case c : NumConstant => {
-      uppsat.ast.Leaf(uppsat.theory.IntegerTheory.IntLiteral(c.numeral_.toInt))
-    }
-    case c : RatConstant => {
-      val bits = java.lang.Long.toBinaryString(java.lang.Double.doubleToRawLongBits(c.rational_.toDouble))
-      // TODO: We always store rationals as floats, good? bad? probably we should use reals.
-      // TODO: Is the leading bits dropped
-      val allBits = (("0" * (64 - bits.length)) ++ bits).map(_.toString.toInt)
-      val sign = allBits.head
-      val eBits = allBits.tail.take(11).map(_.toInt).toList
-      val sBits = allBits.tail.drop(11).map(_.toInt).toList
-      
-      val fpsort = FPSortFactory(List(52, 11))
-      uppsat.ast.Leaf(FloatingPointTheory.FPLiteral(sign.toInt, eBits, sBits, fpsort))
-    }
-//    case c : HexConstant =>
-//      (MyIntLit(c.hexadecimal_ substring (2, 16)), SMTInteger)
-//    case c : BinConstant =>
-//      val binPattern = "\\#b(\\d+)".r
-//      val binPattern(bits) = c.binary_
-//      val bitList = bits.map(_.toString.toInt).toList
-//      throw new Exception(bitList + " (" + bitList.getClass + ")")
-      //(MyIntLit(c.binary_ substring (2, 2)), SMTInteger)
-    case  c => {
-      throw new Exception("Unknown SpecConstant: " + c + " (" + c.getClass +")")
-    }
-
-    // case c : RatConstant => {
-    //   val v = c.rational_
-    //   (v, SMTInteger)
-    //   // if (v.denom.isOne) {
-    //   //   warn("mapping rational literal " + c.rational_ + " to an integer literal")
-    //   //   (v.num, SMTInteger)
-    //   // } else {
-    //   //   warn("mapping rational literal " + c.rational_ + " to an integer constant")
-    //   //   val const = new ConstantTerm("rat_" + c.r.0ational_)
-    //   //   // addConstant(const, SMTInteger)
-    //   //   (const, SMTInteger)
-    //   // }
-    // }
+      case c : NumConstant => {
+        uppsat.ast.Leaf(uppsat.theory.IntegerTheory.IntLiteral(c.numeral_.toInt))
+      }
+      case c : RatConstant => {
+        val bits = java.lang.Long.toBinaryString(java.lang.Double.doubleToRawLongBits(c.rational_.toDouble))
+        // TODO: We always store rationals as floats, good? bad? probably we should use reals.
+        // TODO: Is the leading bits dropped
+        val allBits = (("0" * (64 - bits.length)) ++ bits).map(_.toString.toInt)
+        val sign = allBits.head
+        val eBits = allBits.tail.take(11).map(_.toInt).toList
+        val sBits = allBits.tail.drop(11).map(_.toInt).toList
+        
+        val fpsort = FPSortFactory(List(52, 11))
+        uppsat.ast.Leaf(FloatingPointTheory.FPLiteral(sign.toInt, eBits, sBits, fpsort))
+      }
+  //    case c : HexConstant =>
+  //      (MyIntLit(c.hexadecimal_ substring (2, 16)), SMTInteger)
+  //    case c : BinConstant =>
+  //      val binPattern = "\\#b(\\d+)".r
+  //      val binPattern(bits) = c.binary_
+  //      val bitList = bits.map(_.toString.toInt).toList
+  //      throw new Exception(bitList + " (" + bitList.getClass + ")")
+        //(MyIntLit(c.binary_ substring (2, 2)), SMTInteger)
+      case  c => {
+        throw new Exception("Unknown SpecConstant: " + c + " (" + c.getClass +")")
+      }
     }
   }
 
@@ -152,7 +138,6 @@ object Interpreter {
 
     case cmd : SetLogicCommand => {
       println("Ignoring set-logic command")
-      // just ignore for the time being
     }
 
       //////////////////////////////////////////////////////////////////////////
@@ -168,23 +153,17 @@ object Interpreter {
 
   //     //////////////////////////////////////////////////////////////////////////
 
-  //   case cmd : SortDeclCommand if (incremental) =>
-  //     unsupported
+     case cmd : SortDeclCommand =>
+       throw new SMTParserException("Sort Declaration Command unsupported")
 
   //     //////////////////////////////////////////////////////////////////////////
 
-  //   case cmd : SortDefCommand => {
-  //     if (!cmd.listsymbol_.isEmpty)
-  //       throw new Parser2InputAbsy.TranslationException(
-  //         "Currently only define-sort with arity 0 is supported")
-  //     sortDefs = sortDefs + (asString(cmd.symbol_) -> translateSort(cmd.sort_))
-  //     success
-  //   }
+     case cmd : SortDefCommand =>
+       throw new SMTParserException("Sort Definition Command unsupported")
 
   //     //////////////////////////////////////////////////////////////////////////
       
     case cmd : FunctionDeclCommand => {
-      // Functions are always declared to have integer inputs and outputs
       val fullname = asString(cmd.symbol_)
       val name = if (fullname contains ':') "|" + fullname + "|" else fullname
       cmd.mesorts_ match {
@@ -198,23 +177,13 @@ object Interpreter {
 
           myEnv.addSymbol(fullname, symbol)
         }
-        case _ => throw new Exception("Function Declaration with arguments!")
-//        case sorts : SomeSorts =>
-//          for (s <- sorts.listsort_) yield translateSort(s)
+        case _ => throw new SMTParserException("Function Declaration with arguments unsupported")
       }
-
-
-
     }
 
   //     //////////////////////////////////////////////////////////////////////////
 
     case cmd : ConstDeclCommand => {
-      if (!declareConstWarning) {
-        warn("accepting command declare-const, which is not SMT-LIB 2")
-        declareConstWarning = true
-      }
-
       val name = asString(cmd.symbol_)
       val res = translateSort(cmd.sort_)
 
@@ -222,7 +191,7 @@ object Interpreter {
         res match {
           case IntegerSort => new uppsat.theory.IntegerTheory.IntVar(name)
           case BooleanSort => new uppsat.theory.BooleanTheory.BoolVar(name)
-          case sort => throw new Exception("ast._.sort not handled: " + sort)
+          case sort => throw new SMTParserException("Unsupported sort: " + sort)
         }
 
       myEnv.addSymbol(name, symbol)
@@ -234,7 +203,7 @@ object Interpreter {
        val fullname = asString(cmd.symbol_)
        val name = if (fullname contains ':') "|" + fullname + "|" else fullname
        if (!cmd.listesortedvarc_.isEmpty) {
-         throw new Exception("Function Def with arguments..")
+         throw new SMTParserException("Function Definitions with arguments unsupported")
        } else {
          val resType = translateSort(cmd.sort_)
          val body = translateTerm(cmd.term_)
@@ -251,45 +220,17 @@ object Interpreter {
 
   //     //////////////////////////////////////////////////////////////////////////
       
-  //   case cmd : PushCommand => {
-  //     for (_ <- 0 until cmd.numeral_.toInt)
-  //       push
-  //     success
-  //   }
+     case cmd : PushCommand =>
+       throw new SMTParserException("Push Command unsupported")
 
-  //   case cmd : PopCommand => {
-  //     for (_ <- 0 until cmd.numeral_.toInt)
-  //       pop
-  //     success
-  //   }
+     case cmd : PopCommand =>
+       throw new SMTParserException("Pop Command unsupported")
 
   //     //////////////////////////////////////////////////////////////////////////
       
     case cmd : AssertCommand => {
       val t = translateTerm(cmd.term_)
       myEnv.addAssumption(t)
-
-      // if (incremental && !justStoreAssertions) {
-      //   if (genInterpolants) {
-      //     PartExtractor(f, false) match {
-      //       case List(INamedPart(PartName.NO_NAME, g)) => {
-      //         // generate consecutive partition numbers
-      //         prover setPartitionNumber nextPartitionNumber
-      //         nextPartitionNumber = nextPartitionNumber + 1
-      //         prover addAssertion PartNameEliminator(g)
-      //       }
-      //       case parts =>
-      //         for (INamedPart(name, g) <- parts) {
-      //           prover setPartitionNumber getPartNameIndexFor(name)
-      //           prover addAssertion PartNameEliminator(g)
-      //         }
-      //     }
-      //   } else {
-      //     prover addAssertion f
-      //   }
-      // } else {
-      //   assumptions += f
-      // }
     }
 
   //     //////////////////////////////////////////////////////////////////////////
@@ -304,227 +245,86 @@ object Interpreter {
       
       uppsat.ApproximationSolver.solve(formula, translator, approximation)
     }
-  //   case cmd : CheckSatCommand => if (incremental) try {
-  //     var res = prover checkSat false
-  //     val startTime = System.currentTimeMillis
+  //     //////////////////////////////////////////////////////////////////////////
 
-  //     while (res == SimpleAPI.ProverStatus.Running) {
-  //       if (timeoutChecker()) {
-  //         println("unknown")
-  //         lastReasonUnknown = "timeout"
-  //         Console.err.println("Global timeout, stopping solver")
-  //         prover.stop
-  //         throw ExitException
-  //       }
-  //       if ((System.currentTimeMillis - startTime).toInt > timeoutPer)
-  //         prover.stop
-  //       res = prover.getStatus(100)
-  //     }
-      
-  //     res match {
-  //       case SimpleAPI.ProverStatus.Sat |
-  //           SimpleAPI.ProverStatus.Invalid =>
-  //         println("sat")
-  //       case SimpleAPI.ProverStatus.Unsat |
-  //           SimpleAPI.ProverStatus.Valid =>
-  //         println("unsat")
-  //       case SimpleAPI.ProverStatus.Unknown => {
-  //         println("unknown")
-  //         lastReasonUnknown = "timeout"
-  //       }
-  //       case SimpleAPI.ProverStatus.Inconclusive => {
-  //         println("unknown")
-  //         lastReasonUnknown = "incomplete"
-  //       }
-  //       case _ =>
-  //         error("unexpected prover result")
-  //     }
-  //   } catch {
-  //     case e : SimpleAPI.SimpleAPIException =>
-  //       error(e.getMessage)
-  //   }
+     case cmd : GetAssertionsCommand =>
+       throw new SMTParserException("Get Assertions Command unsupported")
 
   //     //////////////////////////////////////////////////////////////////////////
 
-  //   case cmd : GetAssertionsCommand =>
-  //     error("get-assertions not supported")
+     case cmd : GetValueCommand => 
+       throw new SMTParserException("Get-Value Command unsupported")
+       
+  //     //////////////////////////////////////////////////////////////////////////
+
+     case cmd : GetProofCommand =>
+       throw new SMTParserException("Get-Proof Command unsupported")
 
   //     //////////////////////////////////////////////////////////////////////////
 
-  //   case cmd : GetValueCommand => if (checkIncrementalWarn("get-value")) {
-  //     prover.getStatus(false) match {
-  //       case SimpleAPI.ProverStatus.Sat |
-  //           SimpleAPI.ProverStatus.Invalid |
-  //           SimpleAPI.ProverStatus.Inconclusive => try {
-  //             val expressions = cmd.listterm_.toList
-
-  //             var unsupportedType = false
-  //             val values = prover.withTimeout(timeoutPer) {
-  //               for (expr <- expressions) yield
-  //                 translateTerm(expr, 0) match {
-  //                   case p@(_, SMTBool) =>
-  //                     (prover eval asFormula(p)).toString
-  //                   case p@(_, SMTInteger) =>
-  //                     SMTLineariser toSMTExpr (prover eval asTerm(p))
-  //                   case (_, _) => {
-  //                     unsupportedType = true
-  //                     ""
-  //                   }
-  //                 }
-  //             }
-              
-  //             if (unsupportedType) {
-  //               error("cannot print values of this type yet")
-  //             } else {
-  //               println("(" +
-  //                 (for ((e, v) <- expressions.iterator zip values.iterator)
-  //                 yield ("(" + (printer print e) + " " + v + ")")).mkString(" ") +
-  //                 ")")
-  //             }
-  //           } catch {
-  //             case SimpleAPI.TimeoutException =>
-  //               error("timeout when constructing full model")
-  //             case SimpleAPI.NoModelException =>
-  //               error("no model available")
-  //           }
-
-  //       case _ =>
-  //         error("no model available")
-  //     }
-  //   }
+     case cmd : GetUnsatCoreCommand =>
+       throw new SMTParserException("Get-Unsat-Core Command unsupported")
 
   //     //////////////////////////////////////////////////////////////////////////
 
-  //   case cmd : GetProofCommand =>
-  //     error("get-proof not supported")
+     case cmd : GetAssignmentCommand =>
+       throw new SMTParserException("Get-Assignment Command unsupported")
 
-  //     //////////////////////////////////////////////////////////////////////////
+//     //////////////////////////////////////////////////////////////////////////
 
-  //   case cmd : GetUnsatCoreCommand =>
-  //     error("get-unsat-core not supported")
-
-  //     //////////////////////////////////////////////////////////////////////////
-
-  //   case cmd : GetAssignmentCommand =>
-  //     error("get-assignment not supported")
-
-  //     //////////////////////////////////////////////////////////////////////////
-
-     case cmd : GetModelCommand => {  
-       // TODO: What do we do with get-model statements?
-       println("(get-model) ignored!")
-       //throw new Exception("get-model in smt-file")
-     }
-
-  //     prover.getStatus(false) match {
-  //       case SimpleAPI.ProverStatus.Sat |
-  //           SimpleAPI.ProverStatus.Invalid |
-  //           SimpleAPI.ProverStatus.Inconclusive => try {
-  //             val model = prover.withTimeout(timeoutPer) {
-  //               prover.partialModel
-  //             }
-
-  //             for ((SimpleAPI.ConstantLoc(c), SimpleAPI.IntValue(value)) <-
-  //               model.interpretation.iterator)
-  //               println("(define-fun " + (SMTLineariser quoteIdentifier c.name) +
-  //                 " () Int " + (SMTLineariser toSMTExpr value) + ")")
-  //             for ((SimpleAPI.PredicateLoc(p, Seq()), SimpleAPI.BoolValue(value)) <-
-  //               model.interpretation.iterator)
-  //               println("(define-fun " + (SMTLineariser quoteIdentifier p.name) +
-  //                 " () Bool " + value + ")")
-
-  //             /*
-  //              val funValues =
-  //              (for ((SimpleAPI.IntFunctionLoc(f, args), value) <-
-  //              model.interpretation.iterator)
-  //              yield (f, args, value)).toSeq.groupBy(_._1)
-  //              for ((f, triplets) <- funValues) {
-  //              print("(define-fun " + f.name + " (" +
-  //              (for (i <- 0 until f.arity) yield ("x" + i + " Int")).mkString(" ") +
-  //              ") Int ")
-  //              }
-  //              */
-  //           } catch {
-  //             case SimpleAPI.TimeoutException =>
-  //               error("timeout when constructing full model")
-  //             case SimpleAPI.NoModelException =>
-  //               error("no model available")
-  //           }
-
-  //       case _ =>
-  //         error("no model available")
-  //     }
-  //   }
-
-  //     //////////////////////////////////////////////////////////////////////////
+     case cmd : GetModelCommand =>
+       throw new SMTParserException("Get-Model Command unsupported")
+//     //////////////////////////////////////////////////////////////////////////
       
      case cmd : GetInfoCommand =>
        cmd.annotattribute_ match {
-         case ":authors" => {
-           println("(:authors \"")
-//           CmdlMain.printGreeting
-           println("\n\")")
-         }
+         case ":authors" =>
+           throw new SMTParserException("Get-Info Authors Command unsupported")
          case ":name" =>
-           println("(:name \"Princess\")")
+           println("(:name \"uppsat\")")
          case ":version" =>
-           throw new Exception("GetInfoCommand(:version) unsupported")
+           println("(:version 0.01)")
          case ":error-behavior" =>
            println("(:error-behavior \"immediate-exit\")")
          case ":interpolation-method" =>
-           println("(:interpolation-method \"tree\")")
+           throw new SMTParserException("Get-Info Interpolation-Method Command unsupported")
          case ":reason-unknown" =>
-           throw new Exception("GetInfoCommand(:reason-unknown) unsupported")
-         case other => throw new Exception("GetInfoCommand(" + other + ") unsupported")
+           throw new SMTParserException("Get-Info Reason-Uknown Command unsupported")           
+         case other => throw new SMTParserException("Get-Info " + other + " unsupported")
        }
       
   //     //////////////////////////////////////////////////////////////////////////
       
-  //   case cmd : GetOptionCommand => if (checkIncrementalWarn("get-option")) {
-  //     unsupported
-  //   }
+     case cmd : GetOptionCommand =>
+       throw new SMTParserException("Get-Option Command unsupported")
       
   //     //////////////////////////////////////////////////////////////////////////
       
-  //   case cmd : EchoCommand => if (checkIncrementalWarn("echo")) {
-  //     if (!echoWarning) {
-  //       warn("accepting command echo, which is not SMT-LIB 2")
-  //       echoWarning = true
-  //     }
-  //     val str = cmd.smtstring_
-  //     println(str.substring(1, str.size - 1))
-  //   }
+     case cmd : EchoCommand => 
+       throw new SMTParserException("Get-Echo Command unsupported")
 
   //     //////////////////////////////////////////////////////////////////////////
 
-  //   case cmd : ResetCommand => if (checkIncrementalWarn("reset")) {
-  //     reset
-  //   }
+     case cmd : ResetCommand =>
+       throw new SMTParserException("Reset Command unsupported")
 
   //     //////////////////////////////////////////////////////////////////////////
 
-    case cmd : ExitCommand => {
+    case cmd : ExitCommand =>
       println("Ignoring exit-command")
-    }
-    // case cmd : ExitCommand => if (checkIncrementalWarn("exit")) {
-    //   throw ExitException
-    // }
 
   //     //////////////////////////////////////////////////////////////////////////
 
-  //   case _ : EmptyCommand =>
-  //     // command to be ignored
+     case _ : EmptyCommand => ()
 
   //     //////////////////////////////////////////////////////////////////////////
 
-  //   case _ =>
-  //     warn("ignoring " + (printer print cmd))
-    case other => throw new Exception("Unsupported command: " + other) 
+     case other =>
+       throw new SMTParserException("Unsupported command: " + other)  
   }
 
   //////////////////////////////////////////////////////////////////////////////
 
-  //protected def translateSort(s : Sort) : SMTType = s match {
   protected def translateSort(s : Sort) : uppsat.ast.Sort = {
     val fpPattern = "FloatingPoint\\_(\\d+)\\_(\\d+)".r
     s match {
@@ -532,66 +332,12 @@ object Interpreter {
       case "Int" => IntegerSort
       case "Bool" => BooleanSort
       case "RoundingMode" => RoundingModeSort
-      // case id if (sortDefs contains id) => sortDefs(id)
       case fpPattern(eBits, sBits) => uppsat.theory.FloatingPointTheory.FPSortFactory(List(eBits.toInt, sBits.toInt))
       case id => {
         throw new Exception("Unknown sort...:" + asString(s.identifier_))
       }
     }
-    // case s : CompositeSort => asString(s.identifier_) match {
-    //   case "Array" => {
-    //     val args =
-    //       for (t <- s.listsort_.toList) yield translateSort(t)
-    //     if (args.size < 2)
-    //       throw new Parser2InputAbsy.TranslationException(
-    //         "Expected at least two sort arguments in " + (printer print s))
-    //     SMTArray(args.init, args.last)
-    //   }
-    //   case id => {
-    //     warn("treating sort " + (printer print s) + " as Int")
-    //     SMTInteger
-    //   }
-    // }
-    }
   }
-
-  // //////////////////////////////////////////////////////////////////////////////
-
-
-
-  // //////////////////////////////////////////////////////////////////////////////
-
-  // // add bound variables to the environment and record their number
-  // private def pushVariables(vars : smtlib.Absyn.ListSortedVariableC) : Int = {
-  //   var quantNum : Int = 0
-    
-  //   for (binder <- vars) binder match {
-  //     case binder : SortedVariable => {
-  //       pushVar(binder.sort_, binder.symbol_)
-  //       quantNum = quantNum + 1
-  //     }
-  //   }
-    
-  //   quantNum
-  // }
-
-  // private def pushVariables(vars : smtlib.Absyn.ListESortedVarC) : Int = {
-  //   var quantNum : Int = 0
-    
-  //   for (binder <- vars) binder match {
-  //     case binder : ESortedVar => {
-  //       pushVar(binder.sort_, binder.symbol_)
-  //       quantNum = quantNum + 1
-  //     }
-  //   }
-    
-  //   quantNum
-  // }
-
-  // private def pushVar(bsort : Sort, bsym : Symbol) : Unit = {
-  //   ensureEnvironmentCopy
-  //   env.pushVar(asString(bsym), BoundVariable(translateSort(bsort)))
-  // }
   
   // //////////////////////////////////////////////////////////////////////////////
   
@@ -614,16 +360,11 @@ object Interpreter {
        uppsat.ast.AST(BoolNegation, List(translateTerm(args.head)))
     }
     
+    // TODO: This could be more than 2 arguments!
     case PlainSymbol("and") => {
        uppsat.ast.AST(BoolConjunction, List(translateTerm(args(0)), translateTerm(args(1))))
     }    
-      
-    // case PlainSymbol("and") =>
-    //   (connect(for (s <- flatten("and", args))
-    //   yield asFormula(translateTerm(s, polarity)),
-    //     IBinJunctor.And),
-    //     SMTBool)
-      
+            
     // case PlainSymbol("or") =>
     //   (connect(for (s <- flatten("or", args))
     //   yield asFormula(translateTerm(s, polarity)),
