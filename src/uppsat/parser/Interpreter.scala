@@ -107,7 +107,6 @@ object Interpreter {
       uppsat.ast.Leaf(uppsat.theory.IntegerTheory.IntLiteral(c.numeral_.toInt))
     }
     case c : RatConstant => {
-      println(c.rational_)
       val bits = java.lang.Long.toBinaryString(java.lang.Double.doubleToRawLongBits(c.rational_.toDouble))
       // TODO: We always store rationals as floats, good? bad? probably we should use reals.
       // TODO: Is the leading bits dropped
@@ -122,7 +121,11 @@ object Interpreter {
 //    case c : HexConstant =>
 //      (MyIntLit(c.hexadecimal_ substring (2, 16)), SMTInteger)
 //    case c : BinConstant =>
-//      (MyIntLit(c.binary_ substring (2, 2)), SMTInteger)
+//      val binPattern = "\\#b(\\d+)".r
+//      val binPattern(bits) = c.binary_
+//      val bitList = bits.map(_.toString.toInt).toList
+//      throw new Exception(bitList + " (" + bitList.getClass + ")")
+      //(MyIntLit(c.binary_ substring (2, 2)), SMTInteger)
     case  c => {
       throw new Exception("Unknown SpecConstant: " + c + " (" + c.getClass +")")
     }
@@ -135,7 +138,7 @@ object Interpreter {
     //   //   (v.num, SMTInteger)
     //   // } else {
     //   //   warn("mapping rational literal " + c.rational_ + " to an integer constant")
-    //   //   val const = new ConstantTerm("rat_" + c.rational_)
+    //   //   val const = new ConstantTerm("rat_" + c.r.0ational_)
     //   //   // addConstant(const, SMTInteger)
     //   //   (const, SMTInteger)
     //   // }
@@ -235,14 +238,14 @@ object Interpreter {
        } else {
          val resType = translateSort(cmd.sort_)
          val body = translateTerm(cmd.term_)
-//         val newSymbol =
-//         resType match {
-//           case IntegerSort => new uppsat.theory.IntegerTheory.IntVar(name)
-//           case BooleanSort => new uppsat.theory.BooleanTheory.BoolVar(name)
-//           case fp : FPSort => new uppsat.theory.FloatingPointTheory.FPVar(name, fp)
-//         }         
-         
-         myEnv.addDefinition(name, body)
+         val symbol =
+           resType match {
+             case IntegerSort => new uppsat.theory.IntegerTheory.IntVar(name)
+             case BooleanSort => new uppsat.theory.BooleanTheory.BoolVar(name)
+             case fp : FPSort => new uppsat.theory.FloatingPointTheory.FPVar(name, fp)
+             case RoundingModeSort => new uppsat.theory.FloatingPointTheory.RMVar(name)
+           }         
+         myEnv.addDefinition(name, symbol, body)
        }
      }
 
@@ -291,11 +294,14 @@ object Interpreter {
 
   //     //////////////////////////////////////////////////////////////////////////
     case cmd : CheckSatCommand => {
-      myEnv.print
-      val formula = myEnv.assumptions.head
+      val formula = myEnv.getFormula
       val translator = new uppsat.solver.SMTTranslator(uppsat.theory.FloatingPointTheory)
       val approximation = uppsat.approximation.SmallFloatsApproximation
-      println("CHECK SAT")
+      
+      println("-----------------------------------------------")
+      println("Starting Approximation Framework")
+      println("-----------------------------------------------")        
+      
       uppsat.ApproximationSolver.solve(formula, translator, approximation)
     }
   //   case cmd : CheckSatCommand => if (incremental) try {
@@ -691,7 +697,6 @@ object Interpreter {
       } else {
         val lhs = translateTerm(args(0))
         val rhs = translateTerm(args(1))
-        lhs.prettyPrint
         translateTerm(args(0)) === translateTerm(args(1))
       }
     }
@@ -761,6 +766,9 @@ object Interpreter {
       }
     }  
     
+    case PlainSymbol("RTP") => {
+      FloatingPointTheory.RoundToPositive
+    }
       // TODO: This is wrong!    
     case PlainSymbol("roundTowardZero") => {
       FloatingPointTheory.RoundToPositive
@@ -860,7 +868,28 @@ object Interpreter {
     //         "store has to be applied to an array expression, not " + s)
     //   }
     // }
-
+    
+    case PlainSymbol("fp") => {
+      def bitTermToBitList(term : Term) : List[Int] = {
+        term match {
+          case t : smtlib.Absyn.ConstantTerm =>
+            t.specconstant_ match {
+              case c : BinConstant => { 
+                val binPattern = "\\#b(\\d+)".r
+                val binPattern(bits) = c.binary_
+                bits.map(_.toString.toInt).toList
+              }
+            }
+        }
+      }      
+      val transArgs = args.map(bitTermToBitList)
+      val signBit = transArgs(0)(0)
+      val eBits = transArgs(1)
+      val sBits = transArgs(2)
+      val fpsort = uppsat.theory.FloatingPointTheory.FPSortFactory(List(eBits.length, sBits.length+1))
+      uppsat.ast.Leaf(uppsat.theory.FloatingPointTheory.FPLiteral(signBit, eBits, sBits, fpsort))
+    }
+    
 //    case PlainSymbol(ps) if ("to\\_\\fp\\_(\\d+)\\_(\\d+)".r.findFirstIn(asString(sym)).isDefined) => {
     case _ if ("to".r.findFirstIn(asString(sym)).isDefined) => {
       val p = "to_fp_(\\d+)_(\\d+)".r
@@ -908,6 +937,10 @@ object Interpreter {
         case (_, Some(ast)) => ast
         case (None, None) => {
           myEnv.print
+          id match {
+            case PlainSymbol(smth) => println("\t" + smth)
+            case _ => println(id.getClass)
+          }
           throw new Exception("Undefined symbol: " + asString(id))
         }
       }

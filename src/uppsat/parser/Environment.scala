@@ -1,8 +1,7 @@
 package uppsat.parser
 
-import uppsat.ast.Sort
-import uppsat.ast.ConcreteFunctionSymbol
-import uppsat.ast.AST
+import uppsat.ast._
+import uppsat.theory.BooleanTheory._
 
 import scala.collection.mutable.Map
 
@@ -10,15 +9,15 @@ import scala.collection.mutable.Map
 
 class Environment {
   var symbols : Map[String, ConcreteFunctionSymbol] = Map()
-  var definitions : Map[String, AST] = Map()
+  var definitions : Map[String, (ConcreteFunctionSymbol, AST)] = Map()
   var assumptions : List[AST] = List()
 
   def addSymbol(id : String, symbol : ConcreteFunctionSymbol) = {
     symbols += id -> symbol
   }
   
-  def addDefinition(id : String, definition : AST) = {
-    definitions += id -> definition
+  def addDefinition(id : String, symbol : ConcreteFunctionSymbol, definition : AST) = {
+    definitions += id -> (symbol, definition)
   }
 
   def addAssumption(ass : AST) = {
@@ -34,13 +33,22 @@ class Environment {
   
   def findDefinition(id : String) : Option[AST] = {
     if (definitions contains id)
-      Some(definitions(id))
+      Some(Leaf(definitions(id)._1))
     else
       None 
   }  
 
   def lookup(id : String) = {
     symbols.find(_._1 == id).get._2
+  }
+  
+  def getFormula = {
+    val defAssertions = 
+      (for ((name, (symbol, definition)) <- definitions) yield {
+        (Leaf(symbol) === definition)
+      }).toList
+    
+    AST(naryConjunction(1 + defAssertions.length), assumptions.head :: defAssertions)
   }
 
   def print = {

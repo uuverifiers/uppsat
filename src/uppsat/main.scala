@@ -22,10 +22,11 @@ object main {
     val c = new BoolVar("c")
     val t = BoolTrue
 
-    val f = a & (!b & (t & (!c)))
+//    val rootNode = a & (!b & (t & (!c)))
+    val rootNode = AST(naryConjunction(3), List(a, b, c))
     val translator = new SMTTranslator(BooleanTheory)
-    val SMT = translator.translate(f)
-    println(SMT)
+    (rootNode, List(a, b, c), translator, EmptyApproximation)
+
   }
 
   def integer() = {
@@ -57,10 +58,11 @@ object main {
   }
   
   def main(args: Array[String]) = {
-//    val (formula, vars, translator, approximation) = contradiction()
+//    val (formula, vars, translator, approximation) = boolean()
 //    println("-----------------------------------------------")
 //    println("Formula ")
 //    println("-----------------------------------------------")
+//    formula.prettyPrint
 //    
 //    ApproximationSolver.loop(formula, translator, approximation)
 //    println("Running time: -- ms")
@@ -85,13 +87,11 @@ object main {
             "fpqurt.c.20.smt2",
             "fpsqrt.c.20.smt2")
     
-    val reader = () => new java.io.BufferedReader (new java.io.FileReader(new java.io.File("benchmarks/" + files(8))))
-    println(reader)
+//    val reader = () => new java.io.BufferedReader (new java.io.FileReader(new java.io.File("benchmarks/" + files(0))))
+    val reader = () => new java.io.BufferedReader (new java.io.FileReader(new java.io.File("fp.smt2")))            
     val l = new smtlib.Yylex(reader())
     val p = new parser(l)
     val script = p.pScriptC
     val result = Interpreter.interpret(script)
-//    import uppsat.parser.smttest
-//    smttest.test("simplefp.smt2")
   }    
 }

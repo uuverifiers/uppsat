@@ -25,7 +25,11 @@ object BooleanTheory extends Theory {
   }
   
   
-  
+
+  case class NaryConjunction(argCount : Int) extends BooleanFunctionSymbol("nary-conjunction", List.fill(argCount)(BooleanSort), BooleanSort)
+  def naryConjunction(i : Int) = new NaryConjunction(i)
+ 
+ 
   // Constants   
   case object BoolTrue extends BooleanConstant("true")  
   case object BoolFalse extends BooleanConstant("false")
@@ -48,6 +52,10 @@ object BooleanTheory extends Theory {
   
   def boolAnd(left: AST, right: AST) = {
     AST(BoolConjunction, List(left, right))
+  }
+  
+  def boolNaryAnd(asts : List[AST]) = {
+    AST(naryConjunction(asts.length), asts)
   }
   
   def boolNot(ast: AST) = {
@@ -82,7 +90,7 @@ object BooleanTheory extends Theory {
   }
   
   val SMTHeader = {
-    "(set-info :source Boolean logic needs no theory)"
+    ""
   }
   
   //TODO: Fix type-checking
@@ -91,12 +99,14 @@ object BooleanTheory extends Theory {
       case BoolTrue => "true"
       case BoolFalse => "false"
       case BoolConjunction => "and"
+      case nc : NaryConjunction => "and"
       case BoolDisjunction => "or"
       case BoolEquality => "="
       // TODO: Is this correct?
       case BoolImplication => "implies"
       case BoolNegation => "not"
       case BoolVar(name) => name
+      case bc : BooleanConstant => bc.name 
     }
   }
   

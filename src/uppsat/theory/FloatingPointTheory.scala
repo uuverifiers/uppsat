@@ -147,6 +147,12 @@ case class FPSpecialValuesFactory(symbolName : String) extends IndexedFunctionSy
   
   abstract class RoundingMode extends ConcreteFunctionSymbol
   
+  object RoundingModeEquality extends ConcreteFunctionSymbol {
+    val sort = BooleanSort
+    val args = List(RoundingModeSort, RoundingModeSort)
+    val name = "rounding-mode-equality"
+    val theory = FloatingPointTheory : Theory
+  }
   // Theory constants
   //////////////////////////////////////////////////////////////////////////////
   
@@ -406,6 +412,9 @@ case class FPSpecialValuesFactory(symbolName : String) extends IndexedFunctionSy
     }  
   }
   
+  def rmEquality(left : AST, right : AST) = 
+    AST(RoundingModeEquality, List(), List(left, right))  
+  
   def floatEquality(left : AST, right : AST) = 
     genericPredicate(left, right, FPEqualityFactory)
 
@@ -561,6 +570,22 @@ case class FPSpecialValuesFactory(symbolName : String) extends IndexedFunctionSy
     val args = List()
     val theory = FloatingPointTheory
   }
+  
+  object RMVar {
+    def apply(name : String) = {
+      new RMVar(name)
+    }
+    
+    def unapply(symbol : RMVar) : Option[String] = {
+        Some(symbol.name)
+    }  
+  }  
+  
+  class RMVar(val name : String) extends ConcreteFunctionSymbol {
+      val args = List()
+      val theory = FloatingPointTheory
+      val sort = RoundingModeSort
+    }  
 
   // TODO: What to do with this
   val sorts : List[Sort] = List()
@@ -578,6 +603,7 @@ case class FPSpecialValuesFactory(symbolName : String) extends IndexedFunctionSy
   def isDefinedLiteral(symbol : ConcreteFunctionSymbol) = {
     symbol match {
       case FPVar(_) => false
+      case RMVar(_) => false
       case _ => true
     }
   }
@@ -595,6 +621,7 @@ case class FPSpecialValuesFactory(symbolName : String) extends IndexedFunctionSy
       case RoundToNegative => "RTN"
       case RoundToNearestTiesToAway => "RTA"
       case RoundToNearestTiesToEven => "RTE"
+      case RoundingModeEquality => "="
       case fpFunSym : FloatingPointFunctionSymbol => {      
         fpFunSym.getFactory match {
           case FPPositiveZero => "+0"
@@ -622,6 +649,7 @@ case class FPSpecialValuesFactory(symbolName : String) extends IndexedFunctionSy
           case str => throw new Exception("Unsupported FP symbol: " + str)
         }
       }
+      case uppsat.theory.FloatingPointTheory.RMVar(name) => name
       case FPVar(name, _) => name
       
     }
