@@ -201,3 +201,104 @@ object IBinJunctor extends Enumeration {
   //   (res, SMTBool)
   // }
       
+      
+       // private def importProverSymbol(name : String,
+  //                                args : Seq[SMTType],
+  //                                res : SMTType) : Boolean =
+  //   incremental &&
+  //   ((reusedSymbols get name) match {
+  //      case None =>
+  //        false
+  //      case Some(c : ConstantTerm) if (args.isEmpty) => {
+  //        env.addConstant(c, Environment.NullaryFunction, res)
+  //        true
+  //      }
+  //      case Some(f : IFunction) if (args.size == f.arity) => {
+  //        env.addFunction(f, SMTFunctionType(args.toList, res))
+  //        true
+  //      }
+  //      case Some(p : Predicate) if (args.size == p.arity && res == SMTBool) => {
+  //        env.addPredicate(p, ())
+  //        true
+  //      }
+  //      case Some(_) => {
+  //        warn("inconsistent definition of symbol " + name)
+  //        false
+  //      }
+  //    })
+  
+      // ensureEnvironmentCopy
+
+      // if (!importProverSymbol(name, args, res)) {
+      //   if (args.length > 0) {
+      //     if (!booleanFunctionsAsPredicates || res != SMTBool) {
+      //       // use a real function
+      //       val f = new IFunction(name, args.length,
+      //         !totalityAxiom, !functionalityAxiom)
+      //       env.addFunction(f, SMTFunctionType(args.toList, res))
+      //       if (incremental)
+      //         prover.addFunction(f,
+      //           if (functionalityAxiom)
+      //             SimpleAPI.FunctionalityMode.Full
+      //           else
+      //             SimpleAPI.FunctionalityMode.None)
+      //     } else {
+      //       // use a predicate
+      //       val p = new Predicate(name, args.length)
+      //       env.addPredicate(p, ())
+      //       if (incremental)
+      //         prover.addRelation(p)
+      //     }
+      //   } else if (res != SMTBool) {
+      //     // use a constant
+      //     addConstant(new ConstantTerm(name), res)
+      //   } else {
+      //     // use a nullary predicate (propositional variable)
+      //     val p = new Predicate(name, 0)
+      //     env.addPredicate(p, ())
+      //     if (incremental)
+      //       prover.addRelation(p)
+      //   }
+      // }  
+      
+       // for (Seq(a, b) <- (transArgs map (asFormula(_))) sliding 2)
+      // yield (
+      //   // println("transArgs: " + transArgs.mkString(", "))
+      //   (if (transArgs forall (_._2 == SMTBool)) {
+      //     connect(for (Seq(a, b) <- (transArgs map (asFormula(_))) sliding 2)
+      //     yield (a <===> b),
+      //       IBinJunctor.And)
+      // } else {
+      //   val types = (transArgs map (_._2)).toSet
+      //   if (types.size > 1)
+      //     throw new Parser2InputAbsy.TranslationException(
+      //       "Can only compare terms of same type using =")
+      //   connect(for (Seq(a, b) <- (transArgs map (asTerm(_))) sliding 2)
+      //   yield translateEq(a, b, types.iterator.next, polarity),
+      //     IBinJunctor.And)
+      // },
+      //   SMTBool)
+      
+  // private def checkArgNumLazy(op : => String, expected : Int, args : Seq[Term]) : Unit =
+  //   if (expected != args.size) checkArgNum(op, expected, args)
+  
+  // protected def checkArgNum(op : String, expected : Int, args : Seq[Term]) : Unit =
+  //   if (expected != args.size)
+  //     throw new Parser2InputAbsy.TranslationException(
+  //       "Operator \"" + op +
+  //         "\" is applied to a wrong number of arguments: " +
+  //         ((for (a <- args) yield (printer print a)) mkString ", "))
+  
+  // private def checkArgNumSExpr(op : => String, expected : Int, args : Seq[SExpr]) : Unit =
+  //   if (expected != args.size)
+  //     throw new Parser2InputAbsy.TranslationException(
+  //       "Operator \"" + op +
+  //         "\" is applied to a wrong number of arguments: " +
+  //         ((for (a <- args) yield (printer print a)) mkString ", "))
+  
+  // private object SMTConnective extends ASTConnective {
+  //   def unapplySeq(t : Term) : scala.Option[Seq[Term]] = t match {
+  //     case t : NullaryTerm => Some(List())
+  //     case t : FunctionTerm => Some(t.listterm_.toList)
+  //   }
+  // }      

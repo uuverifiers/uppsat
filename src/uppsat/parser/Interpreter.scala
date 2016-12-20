@@ -143,30 +143,7 @@ object Interpreter {
     }
   }
 
-  // private def importProverSymbol(name : String,
-  //                                args : Seq[SMTType],
-  //                                res : SMTType) : Boolean =
-  //   incremental &&
-  //   ((reusedSymbols get name) match {
-  //      case None =>
-  //        false
-  //      case Some(c : ConstantTerm) if (args.isEmpty) => {
-  //        env.addConstant(c, Environment.NullaryFunction, res)
-  //        true
-  //      }
-  //      case Some(f : IFunction) if (args.size == f.arity) => {
-  //        env.addFunction(f, SMTFunctionType(args.toList, res))
-  //        true
-  //      }
-  //      case Some(p : Predicate) if (args.size == p.arity && res == SMTBool) => {
-  //        env.addPredicate(p, ())
-  //        true
-  //      }
-  //      case Some(_) => {
-  //        warn("inconsistent definition of symbol " + name)
-  //        false
-  //      }
-  //    })
+ 
 
   private def parse(cmd : Command) : Unit = cmd match {
 
@@ -224,40 +201,6 @@ object Interpreter {
       }
 
 
-      // TODO: How do we represent function applications?
-      // ensureEnvironmentCopy
-
-      // if (!importProverSymbol(name, args, res)) {
-      //   if (args.length > 0) {
-      //     if (!booleanFunctionsAsPredicates || res != SMTBool) {
-      //       // use a real function
-      //       val f = new IFunction(name, args.length,
-      //         !totalityAxiom, !functionalityAxiom)
-      //       env.addFunction(f, SMTFunctionType(args.toList, res))
-      //       if (incremental)
-      //         prover.addFunction(f,
-      //           if (functionalityAxiom)
-      //             SimpleAPI.FunctionalityMode.Full
-      //           else
-      //             SimpleAPI.FunctionalityMode.None)
-      //     } else {
-      //       // use a predicate
-      //       val p = new Predicate(name, args.length)
-      //       env.addPredicate(p, ())
-      //       if (incremental)
-      //         prover.addRelation(p)
-      //     }
-      //   } else if (res != SMTBool) {
-      //     // use a constant
-      //     addConstant(new ConstantTerm(name), res)
-      //   } else {
-      //     // use a nullary predicate (propositional variable)
-      //     val p = new Predicate(name, 0)
-      //     env.addPredicate(p, ())
-      //     if (incremental)
-      //       prover.addRelation(p)
-      //   }
-      // }
 
     }
 
@@ -280,22 +223,6 @@ object Interpreter {
         }
 
       myEnv.addSymbol(name, symbol)
-      // ensureEnvironmentCopy
-
-
-      // TODO: Do this!
-      // if (!importProverSymbol(name, List(), res)) {
-      //   if (res != SMTBool) {
-      //     // use a constant
-      //     addConstant(new ConstantTerm(name), res)
-      //   } else {
-      //     // use a nullary predicate (propositional variable)
-      //     val p = new Predicate(name, 0)
-      //     env.addPredicate(p, ())
-      //     if (incremental)
-      //       prover.addRelation(p)
-      //   }
-      // }
     }
 
   //     //////////////////////////////////////////////////////////////////////////
@@ -317,34 +244,6 @@ object Interpreter {
          
          myEnv.addDefinition(name, body)
        }
-//       val args : Seq[Sort] =
-//         for (sortedVar <- cmd.listesortedvarc_)
-//         yield translateSort(sortedVar.asInstanceOf[ESortedVar].sort_)
-////       val argNum = pushVariables(cmd.listesortedvarc_)
-//              
-//      
-//       // parse the definition of the function
-
-//
-//       if (bodyType != resType)
-//         throw new Exception("Body of function definition has wrong type")
-//
-//       // use a real function
-//       val f = new IFunction(name, argNum, true, true)
-//       env.addFunction(f, SMTFunctionType(args.toList, resType))
-//       if (incremental)
-//         prover.addFunction(f, SimpleAPI.FunctionalityMode.NoUnification)
-//      
-//       if (inlineDefinedFuns) {
-//         functionDefs = functionDefs + (f -> body)
-//       } else {
-//         // set up a defining equation and formula
-//         val lhs = IFunApp(f, for (i <- 1 to argNum) yield v(argNum - i))
-//         val matrix = ITrigger(List(lhs), lhs === asTerm(body))
-//         addAxiom(quan(Array.fill(argNum){Quantifier.ALL}, matrix))
-//       }
-//
-//       success
      }
 
   //     //////////////////////////////////////////////////////////////////////////
@@ -552,102 +451,6 @@ object Interpreter {
   //   }
 
   //     //////////////////////////////////////////////////////////////////////////
-
-  //   case cmd : GetInterpolantsCommand =>
-  //     if (incremental) {
-  //       if (genInterpolants) prover.getStatus(false) match {
-  //         case SimpleAPI.ProverStatus.Unsat |
-  //             SimpleAPI.ProverStatus.Valid => {
-
-  //               try { prover.withTimeout(timeoutPer) {
-  //                 if (cmd.listsexpr_.isEmpty) {
-
-  //                   val interpolantSpecs =
-  //                     for (i <- 0 until nextPartitionNumber) yield Set(i)
-  //                   val interpolants = prover.getInterpolants(interpolantSpecs)
-
-  //                   print("(")
-  //                   var sep = ""
-  //                   for (interpolant <- prover.getInterpolants(interpolantSpecs)) {
-  //                     print(sep)
-  //                     sep = "\n"
-  //                     smtLinearise(interpolant)
-  //                   }
-  //                   println(")")
-
-  //                 } else translateTreeInterpolantSpec(cmd.listsexpr_) match {
-
-  //                   case List(tree) => {
-  //                     val allMentionedNames =
-  //                       (for (t <- tree.iterator; n <- t.iterator) yield n).toSet
-  //                     val remainingNames =
-  //                       ((0 until nextPartitionNumber).iterator filterNot
-  //                         allMentionedNames).toList
-
-  //                     val finalTree =
-  //                       if (!remainingNames.isEmpty) {
-  //                         warn("not all asserted formulas are mentioned in interpolant specification, " +
-  //                           "putting remaining formulas in the last/root partition")
-  //                         Tree(tree.d ++ remainingNames, tree.children)
-  //                       } else {
-  //                         tree
-  //                       }
-
-  //                     val interpolants =
-  //                       prover.getTreeInterpolant(finalTree,
-  //                         (timeoutPer / tree.size) min 3000)
-
-  //                     print("(")
-  //                     var sep = ""
-  //                     for (t <- interpolants.children) t foreachPostOrder { f =>
-  //                       print(sep)
-  //                       sep = "\n"
-  //                       smtLinearise(f)
-  //                     }
-  //                     println(")")
-  //                   }
-
-  //                   case _ =>
-  //                     error("could not parse interpolant specification")
-  //                 }
-  //               } } catch {
-  //                 case SimpleAPI.TimeoutException =>
-  //                   error("timeout while computing interpolants")
-  //               }
-  //               /*
-  //                Old code that only works for sequence interpolants
-  //                for (p <- cmd.listsexpr_.toList) yield p match {
-  //                case p : SymbolSExpr =>
-  //                Set(partNameIndexes(
-  //                env.lookupPartName(printer print p.symbol_)))
-  //                case p : ParenSExpr
-  //                if (!p.listsexpr_.isEmpty &&
-  //                (printer print p.listsexpr_.head) == "and") => {
-  //                val it = p.listsexpr_.iterator
-  //                it.next
-  //                (for (s <- it)
-  //                yield partNameIndexes(
-  //                env.lookupPartName(printer print s))).toSet
-  //                }
-  //                case p =>
-  //                throw new Parser2InputAbsy.TranslationException(
-  //                "Could not parse interpolation partition: " +
-  //                (printer print p))
-  //                }
-  //                */
-
-  //             }
-
-  //         case _ =>
-  //           error("no proof available")
-  //       } else {
-  //         error(":produce-interpolants has to be set before get-interpolants")
-  //       }
-  //     } else {
-  //       genInterpolants = true
-  //     }
-      
-  //     //////////////////////////////////////////////////////////////////////////
       
      case cmd : GetInfoCommand =>
        cmd.annotattribute_ match {
@@ -785,153 +588,6 @@ object Interpreter {
   // }
   
   // //////////////////////////////////////////////////////////////////////////////
-
-  // private var letVarCounter = 0
-  
-  // private def letVarName(base : String) = {
-  //   val res = base + "_" + letVarCounter
-  //   letVarCounter = letVarCounter + 1
-  //   res
-  // }
-  
-  // /**
-  //   * If t is an integer term, let expression in positive position:
-  //   *   (let ((v t)) s)
-  //   *   ->
-  //   *   \forall int v; (v=t -> s)
-  //   * 
-  //   * If t is a formula, let expression in positive position:
-  //   *   (let ((v t)) s)
-  //   *   ->
-  //   *   \forall int v; ((t <-> v=0) -> s)
-  //   *   
-  //   * TODO: possible optimisation: use implications instead of <->, depending
-  //   * on the polarity of occurrences of v
-  //   */
-  // private def translateLet(t : LetTerm, polarity : Int)
-  //     : (IExpression, SMTType) = {
-  //   val bindings = for (b <- t.listbindingc_) yield {
-  //     val binding = b.asInstanceOf[Binding]
-  //     val (boundTerm, boundType) = translateTerm(binding.term_, 0)
-  //     (asString(binding.symbol_), boundType, boundTerm)
-  //   }
-
-  //   ensureEnvironmentCopy
-
-  //   if (env existsVar (_.isInstanceOf[BoundVariable])) {
-  //     // we are underneath a real quantifier, so have to introduce quantifiers
-  //     // for this let expression, or directly substitute
-      
-  //     for ((v, t, _) <- bindings) env.pushVar(v, BoundVariable(t))
-
-  //     val wholeBody@(body, bodyType) = translateTerm(t.term_, polarity)
-      
-  //     for (_ <- bindings) env.popVar
-
-  //     //////////////////////////////////////////////////////////////////////////
-      
-  //     if (inlineLetExpressions) {
-  //       // then we directly inline the bound formulae and terms
-        
-  //       val subst = for ((_, t, s) <- bindings.toList.reverse) yield asTerm((s, t))
-  //       (LetInlineVisitor.visit(body, (subst, -bindings.size)), bodyType)
-  //     } else {
-  //       val definingEqs =
-  //         connect(for (((_, t, s), num) <- bindings.iterator.zipWithIndex) yield {
-  //           val shiftedS = VariableShiftVisitor(s, 0, bindings.size)
-  //           val bv = v(bindings.length - num - 1)
-  //           t match {
-  //             case SMTBool    =>
-  //               IFormulaITE(asFormula((shiftedS, t)),
-  //                 IIntFormula(IIntRelation.EqZero, bv),
-  //                 IIntFormula(IIntRelation.EqZero, bv + i(-1)))
-  //             case _ =>
-  //               asTerm((shiftedS, t)) === bv
-  //           }}, IBinJunctor.And)
-        
-  //       bodyType match {
-  //         case SMTBool =>
-  //           (if (polarity > 0)
-  //             quan(Array.fill(bindings.length){Quantifier.ALL},
-  //               definingEqs ==> asFormula(wholeBody))
-  //           else
-  //             quan(Array.fill(bindings.length){Quantifier.EX},
-  //               definingEqs &&& asFormula(wholeBody)),
-  //             SMTBool)
-  //       }
-  //     }
-      
-  //   } else {
-  //     // we introduce a boolean or integer variables to encode this let expression
-
-  //     for ((name, t, s) <- bindings)
-  //       // directly substitute small expressions, unless the user
-  //       // has chosen otherwise
-  //       if (inlineLetExpressions && SizeVisitor(s) <= 1000) {
-  //         env.pushVar(name, SubstExpression(s, t))
-  //       } else addAxiom(t match {
-  //         case SMTBool => {
-  //           val f = new IFunction(letVarName(name), 1, true, false)
-  //           env.addFunction(f, SMTFunctionType(List(SMTInteger), SMTInteger))
-  //           if (incremental)
-  //             prover.addFunction(f)
-  //           env.pushVar(name, SubstExpression(all(eqZero(v(0)) ==> eqZero(f(v(0)))),
-  //             SMTBool))
-  //           all(ITrigger(List(f(v(0))),
-  //             eqZero(v(0)) ==>
-  //               ((eqZero(f(v(0))) & asFormula((s, t))) |
-  //                 ((f(v(0)) === 1) & !asFormula((s, t))))))
-  //         }
-  //         case exprType => {
-  //           val c = new ConstantTerm(letVarName(name))
-  //           addConstant(c, exprType)
-  //           env.pushVar(name, SubstExpression(c, exprType))
-  //           c === asTerm((s, t))
-  //         }
-  //       })
-      
-  //     /*
-  //      val definingEqs = connect(
-  //      for ((v, t, s) <- bindings.iterator) yield
-  //      if (SizeVisitor(s) <= 20) {
-  //      env.pushVar(v, SubstExpression(s, t))
-  //      i(true)
-  //      } else t match {
-  //      case SMTBool => {
-  //      val p = new Predicate(letVarName(v), 0)
-  //      env.addPredicate(p, ())
-  //      env.pushVar(v, SubstExpression(p(), SMTBool))
-  //      asFormula((s, t)) <=> p()
-  //      }
-  //      case SMTInteger => {
-  //      val c = new ConstantTerm(letVarName(v))
-  //      env.addConstant(c, Environment.NullaryFunction, ())
-  //      env.pushVar(v, SubstExpression(c, SMTInteger))
-  //      asTerm((s, t)) === c
-  //      }
-  //      }, IBinJunctor.And)
-  //      */
-      
-  //     val wholeBody = translateTerm(t.term_, polarity)
-      
-  //     /*      val definingEqs =
-  //      connect(for ((v, t, s) <- bindings.reverseIterator) yield {
-  //      (env lookupSym v) match {
-  //      case Environment.Variable(_, IntConstant(c)) =>
-  //      asTerm((s, t)) === c
-  //      case Environment.Variable(_, BooleanConstant(p)) =>
-  //      asFormula((s, t)) <=> p()
-  //      }}, IBinJunctor.And) */
-      
-  //     for (_ <- bindings) env.popVar
-
-  //     wholeBody
-  //   }
-  // }
-  
-  // //////////////////////////////////////////////////////////////////////////////
-
-  // private var tildeWarning = false
   
   protected def symApp(sym : SymbolRef, args : Seq[Term]) 
       : uppsat.ast.AST = {
@@ -1115,39 +771,6 @@ object Interpreter {
       FloatingPointTheory.RoundToPositive
     }    
      
-      // for (Seq(a, b) <- (transArgs map (asFormula(_))) sliding 2)
-      // yield (
-      //   // println("transArgs: " + transArgs.mkString(", "))
-      //   (if (transArgs forall (_._2 == SMTBool)) {
-      //     connect(for (Seq(a, b) <- (transArgs map (asFormula(_))) sliding 2)
-      //     yield (a <===> b),
-      //       IBinJunctor.And)
-      // } else {
-      //   val types = (transArgs map (_._2)).toSet
-      //   if (types.size > 1)
-      //     throw new Parser2InputAbsy.TranslationException(
-      //       "Can only compare terms of same type using =")
-      //   connect(for (Seq(a, b) <- (transArgs map (asTerm(_))) sliding 2)
-      //   yield translateEq(a, b, types.iterator.next, polarity),
-      //     IBinJunctor.And)
-      // },
-      //   SMTBool)
-      
-    // case PlainSymbol("distinct") => {
-    //   val transArgs = for (a <- args) yield translateTerm(a, 0)
-    //   (if (transArgs forall (_._2 == SMTBool)) transArgs.length match {
-    //     case 0 | 1 => true
-    //     case 2 => ~(asFormula(transArgs(0)) <===> asFormula(transArgs(1)))
-    //     case _ => false
-    //   } else {
-    //     val types = (transArgs map (_._2)).toSet
-    //     if (types.size > 1)
-    //       throw new Parser2InputAbsy.TranslationException(
-    //         "Can only compare terms of same type using distinct")
-    //     distinct(for (p <- transArgs.iterator) yield asTerm(p))
-    //   }, SMTBool)
-    // }
-      
     // case PlainSymbol("<=") =>
     //   (translateChainablePred(args, _ <= _), SMTBool)
     // case PlainSymbol("<") =>
@@ -1294,50 +917,12 @@ object Interpreter {
   }
   }
 
-  // private def translateEq(a : ITerm, b : ITerm, t : SMTType,
-  //   polarity : Int) : IFormula =
-  //   t match {
-  //     case SMTArray(argTypes, resType) if (polarity > 0) => {
-  //       val arity = argTypes.size
-  //       val theory = SimpleArray(arity)
-  //       val args = (for (n <- 0 until arity) yield v(n))
-  //       val matrix =
-  //         translateEq(IFunApp(theory.select,
-  //           List(VariableShiftVisitor(a, 0, arity)) ++ args),
-  //           IFunApp(theory.select,
-  //             List(VariableShiftVisitor(b, 0, arity)) ++ args),
-  //           resType, polarity)
-
-  //       quan(for (_ <- 0 until arity) yield Quantifier.ALL, matrix)
-  //     }
-
-  //     case SMTBool =>
-  //       eqZero(a) <=> eqZero(b)
-  //       //        all(all(!((VariableShiftVisitor(a, 0, 2) === v(0)) &
-  //       //                 (VariableShiftVisitor(b, 0, 2) === v(1)) &
-  //       //                 ((eqZero(v(0)) & (v(1) === 1)) | (eqZero(v(1)) & (v(0) === 1))))))
-  //       //                 geqZero(v(0)) & geqZero(v(1)) & (v(0) <= 1) & (v(1) <= 1)) ==>
-  //       //                (v(0) === v(1))))
-
-  //     case _ =>
-  //       a === b
-  //   }
-
   // TODO: What does this do?
-  // GUESS: We are trying to apply "id" to args? What is polarity and sym?
-  // UNINTERPRETED function application
   private def unintFunApp(id : String,
     sym : SymbolRef, args : Seq[Term], polarity : Int)
       : uppsat.ast.AST = {
     val funSort = myEnv.lookup(id)
     throw new Exception("Cannot handle uninterpreted function applications")    
-//    if (args.length > 0) {
-//      val transArgs = args.map(x => translateTerm(x, 0))
-//      (MyConstant(id + "(" + transArgs.mkString(", ") + ")"), SMTUnknown)
-//    } else {
-//      (MyConstant(id), SMTUnknown)
-//
-//    }
   }
 
     // (env lookupSym id) match {
@@ -1371,184 +956,4 @@ object Interpreter {
     //   case Environment.Variable(i, SubstExpression(e, t)) =>
     //     (e, t)
     // }
-  
-  // //////////////////////////////////////////////////////////////////////////////
-  
-  // private def translateTrigger(expr : SExpr) : IExpression = expr match {
-    
-  //   case expr : ConstantSExpr => translateSpecConstant(expr.specconstant_)._1
-      
-  //   case expr : SymbolSExpr => (env lookupSym asString(expr.symbol_)) match {
-  //     case Environment.Function(fun, _) => {
-  //       checkArgNumSExpr(printer print expr.symbol_,
-  //         fun.arity, List[SExpr]())
-  //       IFunApp(fun, List())
-  //     }
-  //     case Environment.Predicate(pred, _, _) => {
-  //       checkArgNumSExpr(printer print expr.symbol_,
-  //         pred.arity, List[SExpr]())
-  //       IAtom(pred, List())
-  //     }
-  //     case Environment.Constant(c, _, _) => c
-  //     case Environment.Variable(i, BoundVariable(t)) if (t != SMTBool) => v(i)
-  //     case _ =>
-  //       throw new Parser2InputAbsy.TranslationException(
-  //         "Unexpected symbol in a trigger: " +
-  //           (printer print expr.symbol_))
-  //   }
-      
-  //   case expr : ParenSExpr => {
-  //     if (expr.listsexpr_.isEmpty)
-  //       throw new Parser2InputAbsy.TranslationException(
-  //         "Expected a function application, not " + (printer print expr))
-      
-  //     expr.listsexpr_.head match {
-  //       case funExpr : SymbolSExpr => asString(funExpr.symbol_) match {
-  //         case "select" =>
-  //           IFunApp(SimpleArray(expr.listsexpr_.size - 2).select,
-  //             translateSExprTail(expr.listsexpr_))
-  //         case "store" =>
-  //           IFunApp(SimpleArray(expr.listsexpr_.size - 3).store,
-  //             translateSExprTail(expr.listsexpr_))
-
-  //         case funName => (env lookupSym funName) match {
-  //           case Environment.Function(fun, _) => {
-  //             checkArgNumSExpr(printer print funExpr.symbol_, fun.arity,
-  //               expr.listsexpr_.tail)
-  //             IFunApp(fun, translateSExprTail(expr.listsexpr_))
-  //           }
-  //           case Environment.Predicate(pred, _, _) => {
-  //             checkArgNumSExpr(printer print funExpr.symbol_, pred.arity,
-  //               expr.listsexpr_.tail)
-  //             IAtom(pred, translateSExprTail(expr.listsexpr_))
-  //           }
-  //           case Environment.Constant(c, _, _) => {
-  //             checkArgNumSExpr(printer print funExpr.symbol_,
-  //               0, expr.listsexpr_.tail)
-  //             c
-  //           }
-  //           case Environment.Variable(i, BoundVariable(t)) if (t != SMTBool) => {
-  //             checkArgNumSExpr(printer print funExpr.symbol_,
-  //               0, expr.listsexpr_.tail)
-  //             v(i)
-  //           }
-  //           case _ =>
-  //             throw new Parser2InputAbsy.TranslationException(
-  //               "Unexpected symbol in a trigger: " +
-  //                 (printer print funExpr.symbol_))
-  //         }
-  //       }
-  //     }
-  //   }
-  // }
-  
-  // private def translateSExprTail(exprs : ListSExpr) : Seq[ITerm] = {
-  //   val args = exprs.tail.toList
-  //   for (e <- args) yield translateTrigger(e) match {
-  //     case ta : ITerm => ta
-  //     case ta : IFormula => ITermITE(ta, i(0), i(1))
-  //   }
-  // }
-
-  // //////////////////////////////////////////////////////////////////////////////
-
-  // private def translateTreeInterpolantSpec(exprs : ListSExpr)
-  //     : List[Tree[Set[Int]]] = {
-  //   var result = List[Tree[Set[Int]]]()
-
-  //   for (p <- exprs) p match {
-  //     case p : SymbolSExpr =>
-  //       result =
-  //         List(Tree(Set(partNameIndexes(
-  //           env.lookupPartName(printer print p.symbol_))),
-  //           result))
-  //     case p : ParenSExpr
-  //         if (!p.listsexpr_.isEmpty &&
-  //           (printer print p.listsexpr_.head) == "and") => {
-  //           val it = p.listsexpr_.iterator
-  //           it.next
-  //           val names = (for (s <- it) yield partNameIndexes(
-  //             env.lookupPartName(printer print s))).toSet
-  //           result = List(Tree(names, result))
-  //         }
-  //     case p : ParenSExpr =>
-  //       result = result ++ translateTreeInterpolantSpec(p.listsexpr_)
-  //   }
-
-  //   result
-  // }
-
-  // //////////////////////////////////////////////////////////////////////////////
-  
-
-  
-  // private def translateChainablePred(args : Seq[Term],
-  //   op : (ITerm, ITerm) => IFormula) : IFormula = {
-  //   val transArgs = for (a <- args) yield asTerm(translateTerm(a, 0))
-  //   connect(for (Seq(a, b) <- transArgs sliding 2) yield op(a, b), IBinJunctor.And)
-  // }
-  
-  // private def flatten(op : String, args : Seq[Term]) : Seq[Term] =
-  //   for (a <- args;
-  //     b <- collectSubExpressions(a, (t:Term) => t match {
-  //       case t : NullaryTerm => t.symbolref_ match {
-  //         case PlainSymbol(`op`) => true
-  //         case _ => false
-  //       }
-  //       case t : FunctionTerm => t.symbolref_ match {
-  //         case PlainSymbol(`op`) => true
-  //         case _ => false
-  //       }
-  //       case _ => false
-  //     }, SMTConnective))
-  //   yield b
-
-  // private def checkArgNumLazy(op : => String, expected : Int, args : Seq[Term]) : Unit =
-  //   if (expected != args.size) checkArgNum(op, expected, args)
-  
-  // protected def checkArgNum(op : String, expected : Int, args : Seq[Term]) : Unit =
-  //   if (expected != args.size)
-  //     throw new Parser2InputAbsy.TranslationException(
-  //       "Operator \"" + op +
-  //         "\" is applied to a wrong number of arguments: " +
-  //         ((for (a <- args) yield (printer print a)) mkString ", "))
-  
-  // private def checkArgNumSExpr(op : => String, expected : Int, args : Seq[SExpr]) : Unit =
-  //   if (expected != args.size)
-  //     throw new Parser2InputAbsy.TranslationException(
-  //       "Operator \"" + op +
-  //         "\" is applied to a wrong number of arguments: " +
-  //         ((for (a <- args) yield (printer print a)) mkString ", "))
-  
-  // private object SMTConnective extends ASTConnective {
-  //   def unapplySeq(t : Term) : scala.Option[Seq[Term]] = t match {
-  //     case t : NullaryTerm => Some(List())
-  //     case t : FunctionTerm => Some(t.listterm_.toList)
-  //   }
-  // }
-
-  // //////////////////////////////////////////////////////////////////////////////
-  
-
-
-//  protected def asTerm(expr : (MyExpression, SMTType)) : MyTerm = expr match {
-//    case (expr : MyTerm, _) =>
-//      expr
-//    // case (expr : MyFormula, SMTBool) =>
-//    //   // ITermITE
-//    //   "ITE(" + expr +", 0, 1)"
-//    case (expr, _) =>
-//      throw new Exception(
-//        "Expected a term, not " + expr)
-//  }
-//
-//  private def asTerm(expr : (MyExpression, SMTType),
-//    expectedSort : SMTType) : MyTerm = expr match {
-//    case (expr : MyTerm, `expectedSort`) =>
-//      expr
-//    case (expr, _) =>
-//      throw new Exception(
-//        "Expected a term of type " + expectedSort + ", not " + expr)
-//  }
-/// EOP
 }
