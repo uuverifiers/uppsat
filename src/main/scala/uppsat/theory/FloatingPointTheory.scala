@@ -41,7 +41,7 @@ object FloatingPointTheory extends Theory {
     }
     
     val rank = 1 // Refers to the sorts
-    override def apply(sorts : Seq[ConcreteSort]) = {
+    def apply(sorts : Seq[ConcreteSort]) = {
       sorts.reverse.head match {
         case fpsort : FPSort => {      
           val argSorts = sorts.take(sorts.length - 1).toList
@@ -123,16 +123,6 @@ case class FPSpecialValuesFactory(symbolName : String) extends IndexedFunctionSy
     newFactory(List(sort))
   }
   
-  
-  
-//  // Concrete sorts
-//  val FPSort_3_3 = FPSortFactory(List(3, 3))
-//  
-//  // Constants, signed zeroes, NaN, infinities
-//  val FPZero = {
-//    val zeroFactory = new FPConstantFactory(0, List(0, 0, 0), List(0, 0))
-//    zeroFactory(List(FPSort_3_3))
-//  }
   
   /////////////////////////////////////////////  
   // SMT-LIB SUPPORTED SYMBOLS

@@ -76,7 +76,9 @@ case class AST(val symbol : ConcreteFunctionSymbol, val label : Label, val child
   
   def symbols : Set[ConcreteFunctionSymbol]= this.toSet.map(_._1)    
   
-  //Syntactic sugar
+  //
+  //  Syntactic sugar
+  //
   def &(that : AST) = {
      (this.symbol.sort, that.symbol.sort) match {
        case (BooleanSort, BooleanSort) => boolAnd(this, that)
