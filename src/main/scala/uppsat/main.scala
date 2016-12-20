@@ -4,6 +4,7 @@ import uppsat.precision.PrecisionMap
 import uppsat.theory.BooleanTheory._
 import uppsat.theory._
 import uppsat.ast._
+import uppsat.parser._
 import uppsat.theory.FloatingPointTheory._
 import uppsat.theory.IntegerTheory._
 import uppsat.solver._
@@ -67,12 +68,8 @@ object main {
 //    ApproximationSolver.loop(formula, translator, approximation)
 //    println("Running time: -- ms")
     
-    import smtlib._
-    import smtlib.Absyn._
     import java.io._
     import scala.collection.JavaConversions._
-    import uppsat.parser._
-    
 
 
     val files = 
@@ -90,7 +87,7 @@ object main {
 //    val reader = () => new java.io.BufferedReader (new java.io.FileReader(new java.io.File("benchmarks/" + files(0))))
     val reader = () => new java.io.BufferedReader (new java.io.FileReader(new java.io.File("fp.smt2")))            
     val l = new smtlib.Yylex(reader())
-    val p = new parser(l)
+    val p = new smtlib.parser(l)
     val script = p.pScriptC
     val result = Interpreter.interpret(script)
   }    
