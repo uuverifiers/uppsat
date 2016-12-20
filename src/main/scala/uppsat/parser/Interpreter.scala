@@ -678,10 +678,9 @@ object Interpreter {
       }
     }
     
-    // TODO: This is wrong!
     case PlainSymbol("-") => {
       if (args.length == 1) {
-        translateTerm(args(0))
+        - translateTerm(args(0))
       } else {
         throw new Exception("Only unary minus supported...")
       }
@@ -705,21 +704,19 @@ object Interpreter {
     //  FLOATING POINT SYMBOLS
     //
 
-    // TODO: This is wrong!
     case PlainSymbol("fp.neg") => {
       if (args.length != 1) {
         throw new Exception("Not one argument for fp.neg...")
       } else {
-        translateTerm(args(0))
+        - translateTerm(args(0))
       }
     }      
     
-    // TODO: This is wrong!
     case PlainSymbol("fp.lt") => {
       if (args.length != 2) {
         throw new Exception("Not two arguments for fp.leq ...")
       } else {
-        translateTerm(args(0)) <= translateTerm(args(1))
+        translateTerm(args(0)) < translateTerm(args(1))
       }
     }    
     
@@ -742,7 +739,6 @@ object Interpreter {
       }
     }
 
-    //TODO: This is wrong!
     case PlainSymbol("fp.div") => {
       if (args.length != 3) {
         throw new Exception("Not two arguments for fp.mul ...")
@@ -750,11 +746,10 @@ object Interpreter {
         if (!(translateTerm(args(0)).symbol.sort == RoundingModeSort))
           throw new Exception("First argument not roundingmode...")
         implicit val roundingMode = args(0)
-        translateTerm(args(1)) + translateTerm(args(2))
+        translateTerm(args(1)) / translateTerm(args(2))
       }
     }      
     
-    // TODO: This is wrong!
     case PlainSymbol("fp.mul") => {
       if (args.length != 3) {
         throw new Exception("Not two arguments for fp.mul ...")
@@ -762,7 +757,7 @@ object Interpreter {
         if (!(translateTerm(args(0)).symbol.sort == RoundingModeSort))
           throw new Exception("First argument not roundingmode...")
         implicit val roundingMode = args(0)
-        translateTerm(args(1)) + translateTerm(args(2))
+        translateTerm(args(1)) * translateTerm(args(2))
       }
     }  
     
@@ -902,7 +897,6 @@ object Interpreter {
       }
     }
     
-    // TODO: This is wrong!
     case _ if ("\\+oo".r.findFirstIn(asString(sym)).isDefined) => {
       val p = "\\+oo_(\\d+)_(\\d+)".r
       asString(sym) match {
@@ -914,7 +908,6 @@ object Interpreter {
       }
     }
     
-    // TODO: This is wrong!
     case _ if ("-oo".r.findFirstIn(asString(sym)).isDefined) => {
       val p = "-oo_(\\d+)_(\\d+)".r
       asString(sym) match {
