@@ -88,20 +88,19 @@ object Interpreter {
       case _ => None
     }
   }
-  protected def translateTerm(t : Term)
-      : uppsat.ast.AST = t match {
-    case t : smtlib.Absyn.ConstantTerm =>
-      translateSpecConstant(t.specconstant_)
-    case t : FunctionTerm => {               
-      symApp(t.symbolref_, t.listterm_)
+  protected def translateTerm(t : Term) : uppsat.ast.AST = {
+      t match {
+      case t : smtlib.Absyn.ConstantTerm =>
+        translateSpecConstant(t.specconstant_)
+      case t : FunctionTerm =>    
+        symApp(t.symbolref_, t.listterm_)
+      case t : NullaryTerm =>
+        symApp(t.symbolref_, List())     
+      case _ => throw new SMTParserException("Unknown term: " + t.toString())
     }
-    case t : NullaryTerm =>
-      symApp(t.symbolref_, List())     
-    case _ => throw new SMTParserException("Unknown term: " + t.toString())
   }
 
-  protected def translateSpecConstant(c : SpecConstant)
-      : uppsat.ast.AST = {
+  protected def translateSpecConstant(c : SpecConstant) : uppsat.ast.AST = {
     c match {
       case c : NumConstant => {
         uppsat.ast.Leaf(uppsat.theory.IntegerTheory.IntLiteral(c.numeral_.toInt))
@@ -328,21 +327,21 @@ object Interpreter {
   protected def translateSort(s : Sort) : uppsat.ast.Sort = {
     val fpPattern = "FloatingPoint\\_(\\d+)\\_(\\d+)".r
     s match {
-    case s : IdentSort => asString(s.identifier_) match {
-      case "Int" => IntegerSort
-      case "Bool" => BooleanSort
-      case "RoundingMode" => RoundingModeSort
-      case fpPattern(eBits, sBits) => uppsat.theory.FloatingPointTheory.FPSortFactory(List(eBits.toInt, sBits.toInt))
-      case id => {
-        throw new Exception("Unknown sort...:" + asString(s.identifier_))
+      case s : IdentSort => asString(s.identifier_) match {
+        case "Int" => IntegerSort
+        case "Bool" => BooleanSort
+        case "RoundingMode" => RoundingModeSort
+        case fpPattern(eBits, sBits) => uppsat.theory.FloatingPointTheory.FPSortFactory(List(eBits.toInt, sBits.toInt))
+        case id => {
+          throw new Exception("Unknown sort...:" + asString(s.identifier_))
+        }
       }
     }
   }
   
   // //////////////////////////////////////////////////////////////////////////////
   
-  protected def symApp(sym : SymbolRef, args : Seq[Term]) 
-      : uppsat.ast.AST = {
+  def symApp(sym : SymbolRef, args : Seq[Term]) : uppsat.ast.AST = {
     sym match {
            
 
