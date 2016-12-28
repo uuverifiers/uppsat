@@ -1,6 +1,7 @@
 package uppsat.parser
 
 import uppsat.theory.IntegerTheory._
+
 import uppsat.theory.FloatingPointTheory.FPSortFactory.FPSort
 import uppsat.theory.BooleanTheory._
 
@@ -342,9 +343,10 @@ object Interpreter {
   }
   
   // //////////////////////////////////////////////////////////////////////////////
-  
-  def symApp(sym : SymbolRef, args : Seq[Term]) : uppsat.ast.AST = {
-    sym match {
+   
+ 
+  def symApp(sym : SymbolRef, args : Seq[Term]) : uppsat.ast.AST =
+  sym match {
            
 
     ////////////////////////////////////////////////////////////////////////////
@@ -363,54 +365,10 @@ object Interpreter {
     
     // TODO: This could be more than 2 arguments!
     case PlainSymbol("and") => {
-       uppsat.ast.AST(BoolConjunction, List(translateTerm(args(0)), translateTerm(args(1))))
+      if (args.length > 2)
+        throw new SMTParserException("and with more than 2 arguments...")
+      uppsat.ast.AST(BoolConjunction, List(translateTerm(args(0)), translateTerm(args(1))))
     }    
-            
-    // case PlainSymbol("or") =>
-    //   (connect(for (s <- flatten("or", args))
-    //   yield asFormula(translateTerm(s, polarity)),
-    //     IBinJunctor.Or),
-    //     SMTBool)
-      
-    // case PlainSymbol("=>") => {
-    //   if (args.size == 0)
-    //     throw new Parser2InputAbsy.TranslationException(
-    //       "Operator \"=>\" has to be applied to at least one argument")
-
-    //   (connect((for (a <- args.init) yield
-    //     !asFormula(translateTerm(a, -polarity))) ++
-    //     List(asFormula(translateTerm(args.last, polarity))),
-    //     IBinJunctor.Or),
-    //     SMTBool)
-    // }
-      
-    // case PlainSymbol("xor") => {
-    //   if (args.size == 0)
-    //     throw new Parser2InputAbsy.TranslationException(
-    //       "Operator \"xor\" has to be applied to at least one argument")
-
-    //   (connect(List(asFormula(translateTerm(args.head, polarity))) ++
-    //     (for (a <- args.tail) yield
-    //       !asFormula(translateTerm(a, -polarity))),
-    //     IBinJunctor.Eqv),
-    //     SMTBool)
-    // }
-      
-    // case PlainSymbol("ite") => {
-    //   checkArgNum("ite", 3, args)
-    //   val transArgs = for (a <- args) yield translateTerm(a, 0)
-    //     (transArgs map (_._2)) match {
-    //     case Seq(SMTBool, SMTBool, SMTBool) =>
-    //       (IFormulaITE(asFormula(transArgs(0)),
-    //         asFormula(transArgs(1)), asFormula(transArgs(2))),
-    //         SMTBool)
-    //     case Seq(SMTBool, t1, t2) =>
-    //       (ITermITE(asFormula(transArgs(0)),
-    //         asTerm(transArgs(1)), asTerm(transArgs(2))),
-    //         t1)
-    //   }
-    // }
-
     
     case PlainSymbol("+") => {
       checkArgs("+", 2, args)
@@ -421,7 +379,7 @@ object Interpreter {
       if (args.length == 1) {
         - translateTerm(args(0))
       } else {
-        throw new Exception("Only unary minus supported...")
+        throw new SMTParserException("Only unary minus supported...")
       }
     }      
     
@@ -430,177 +388,69 @@ object Interpreter {
     //   // Hardcoded predicates (which might also operate on booleans)
       
     case PlainSymbol("=") => {
-      if (args.length != 2) {
-        throw new Exception("Not two arguments for = ...")
-      } else {
-        val lhs = translateTerm(args(0))
-        val rhs = translateTerm(args(1))
-        translateTerm(args(0)) === translateTerm(args(1))
-      }
+      checkArgs("=", 2, args)
+      translateTerm(args(0)) === translateTerm(args(1))
     }
     
     // 
     //  FLOATING POINT SYMBOLS
     //
 
+    
     case PlainSymbol("fp.neg") => {
-      if (args.length != 1) {
-        throw new Exception("Not one argument for fp.neg...")
-      } else {
-        - translateTerm(args(0))
-      }
+      checkArgs("fp.neg", 1, args)
+      -translateTerm(args(0))
     }      
     
     case PlainSymbol("fp.lt") => {
-      if (args.length != 2) {
-        throw new Exception("Not two arguments for fp.leq ...")
-      } else {
-        translateTerm(args(0)) < translateTerm(args(1))
-      }
+      checkArgs("fp.lt", 2, args)
+      translateTerm(args(0)) < translateTerm(args(1))
     }    
     
     case PlainSymbol("fp.leq") => {
-      if (args.length != 2) {
-        throw new Exception("Not two arguments for fp.leq ...")
-      } else {
-        translateTerm(args(0)) <= translateTerm(args(1))
-      }
+      checkArgs("fp.leq", 2, args)
+      translateTerm(args(0)) <= translateTerm(args(1))
     }
 
+    
+    // We can't use syntactic sugar since first leaf might not be a rounding-mode but rather a defined function
     case PlainSymbol("fp.add") => {
       checkArgs("fp.add", 3, args)
-      translateTerm(args(0)).symbol.sort match {
-        case RoundingModeSort => {
-          implicit val roundingMode = args(0)
-          translateTerm(args(1)) + translateTerm(args(2))
-        }
-        case _ => throw new SMTParserException("First argument of fp.add not roundingmode") 
-      }      
+      val ta = args.map(translateTerm)
+      (ta(0).symbol.sort, ta(1).symbol.sort, ta(2).symbol.sort) match {
+        case (RoundingModeSort, fp1 : FPSort, fp2 : FPSort) if (fp1 == fp2) =>
+          uppsat.ast.AST(FloatingPointTheory.FPAdditionFactory(List(fp1, fp1, fp1)), ta.toList)
+        case (s1, s2, s3) => 
+          throw new SMTParserException("Wrong sorts for fp.add: " + ((s1, s2, s3)))
+      }    
     }
-
-    case PlainSymbol("fp.div") => {
-      if (args.length != 3) {
-        throw new Exception("Not two arguments for fp.mul ...")
-      } else {
-        if (!(translateTerm(args(0)).symbol.sort == RoundingModeSort))
-          throw new Exception("First argument not roundingmode...")
-        implicit val roundingMode = args(0)
-        translateTerm(args(1)) / translateTerm(args(2))
-      }
-    }      
     
     case PlainSymbol("fp.mul") => {
-      if (args.length != 3) {
-        throw new Exception("Not two arguments for fp.mul ...")
-      } else {
-        if (!(translateTerm(args(0)).symbol.sort == RoundingModeSort))
-          throw new Exception("First argument not roundingmode...")
-        implicit val roundingMode = args(0)
-        translateTerm(args(1)) * translateTerm(args(2))
-      }
-    }  
-    
-    case PlainSymbol("RTP") => {
-      FloatingPointTheory.RoundToPositive
-    }
-    case PlainSymbol("roundTowardZero") => {
-      FloatingPointTheory.RoundToZero
-    }
-
-    case PlainSymbol("roundNearestTiesToEven") => {
-      FloatingPointTheory.RoundToNearestTiesToEven
+      checkArgs("fp.mul", 3, args)
+      val ta = args.map(translateTerm)
+      (ta(0).symbol.sort, ta(1).symbol.sort, ta(2).symbol.sort) match {
+        case (RoundingModeSort, fp1 : FPSort, fp2 : FPSort) if (fp1 == fp2) =>
+          uppsat.ast.AST(FloatingPointTheory.FPMultiplicationFactory(List(fp1, fp1, fp1)), ta.toList)
+        case (s1, s2, s3) => 
+          throw new SMTParserException("Wrong sorts for fp.mul: " + ((s1, s2, s3)))
+      }    
     }    
-     
-    // case PlainSymbol("<=") =>
-    //   (translateChainablePred(args, _ <= _), SMTBool)
-    // case PlainSymbol("<") =>
-    //   (translateChainablePred(args, _ < _), SMTBool)
-    // case PlainSymbol(">=") =>
-    //   (translateChainablePred(args, _ >= _), SMTBool)
-    // case PlainSymbol(">") =>
-    //   (translateChainablePred(args, _ > _), SMTBool)
-      
-    // case IndexedSymbol("divisible", denomStr) => {
-    //   checkArgNum("divisible", 1, args)
-    //   val denom = i(IdealInt(denomStr))
-    //   val num = VariableShiftVisitor(asTerm(translateTerm(args.head, 0)), 0, 1)
-    //   (ex(num === v(0) * denom), SMTBool)
-    // }
-      
-    //   ////////////////////////////////////////////////////////////////////////////
-    //   // Hardcoded integer operations
-
-
-    // case PlainSymbol("-") if (args.length == 1) =>
-    //   (-asTerm(translateTerm(args.head, 0), SMTInteger), SMTInteger)
-
-    // case PlainSymbol("~") if (args.length == 1) => {
-    //   if (!tildeWarning) {
-    //     warn("interpreting \"~\" as unary minus, like in SMT-LIB 1")
-    //     tildeWarning = true
-    //   }unintFunApp
-    //   (-asTerm(translateTerm(args.head, 0), SMTInteger), SMTInteger)
-    // }
-
-    // case PlainSymbol("-") => {
-    //   (asTerm(translateTerm(args.head, 0), SMTInteger) -
-    //     sum(for (a <- args.tail)
-    //     yield asTerm(translateTerm(a, 0), SMTInteger)),
-    //     SMTInteger)
-    // }
-
-    // case PlainSymbol("*") =>
-    //   ((for (s <- flatten("*", args))
-    //   yield asTerm(translateTerm(s, 0), SMTInteger))
-    //     reduceLeft (mult _),
-    //     SMTInteger)
-
-    // case PlainSymbol("div") => {
-    //   checkArgNum("div", 2, args)
-    //   val Seq(num, denom) = for (a <- args) yield asTerm(translateTerm(a, 0))
-    //   (mulTheory.eDiv(num, denom), SMTInteger)
-    // }
-      
-    // case PlainSymbol("mod") => {
-    //   checkArgNum("mod", 2, args)
-    //   val Seq(num, denom) = for (a <- args) yield asTerm(translateTerm(a, 0))
-    //   (mulTheory.eMod(num, denom), SMTInteger)
-    // }
-
-    // case PlainSymbol("abs") => {
-    //   checkArgNum("abs", 1, args)
-    //   (abs(asTerm(translateTerm(args.head, 0))), SMTInteger)
-    // }
-      
-      ////////////////////////////////////////////////////////////////////////////
-      // Array operations
-      
-    // case PlainSymbol("select") => {
-    //   val transArgs = for (a <- args) yield translateTerm(a, 0)
-    //   transArgs.head._2 match {
-    //     case SMTArray(_, resultType) =>
-    //       (MyFunApp(SimpleArray(args.size - 1).select,
-    //         for (a <- transArgs) yield asTerm(a)),
-    //         resultType)
-    //     case s =>
-    //       throw new Exception(
-    //         "select has to be applied to an array expression, not " + s)
-    //   }
-    // }
-
-    // case PlainSymbol("store") => {
-    //   val transArgs = for (a <- args) yield translateTerm(a, 0)
-    //   transArgs.head._2 match {
-    //     case s : SMTArray =>
-    //       (IFunApp(SimpleArray(args.size - 2).store,
-    //         for (a <- transArgs) yield asTerm(a)),
-    //         s)
-    //     case s =>
-    //       throw new Exception(
-    //         "store has to be applied to an array expression, not " + s)
-    //   }
-    // }
     
+    case PlainSymbol("fp.div") => {
+      checkArgs("fp.div", 3, args)
+      val ta = args.map(translateTerm)
+      (ta(0).symbol.sort, ta(1).symbol.sort, ta(2).symbol.sort) match {
+        case (RoundingModeSort, fp1 : FPSort, fp2 : FPSort) if (fp1 == fp2) =>
+          uppsat.ast.AST(FloatingPointTheory.FPDivisionFactory(List(fp1, fp1, fp1)), ta.toList)
+        case (s1, s2, s3) => 
+          throw new SMTParserException("Wrong sorts for fp.div: " + ((s1, s2, s3)))
+      }    
+    }    
+            
+    case PlainSymbol("RTP") => FloatingPointTheory.RoundToPositive
+    case PlainSymbol("roundTowardZero") => FloatingPointTheory.RoundToZero
+    case PlainSymbol("roundNearestTiesToEven") => FloatingPointTheory.RoundToNearestTiesToEven
+     
     case PlainSymbol("fp") => {
       def bitTermToBitList(term : Term) : List[Int] = {
         term match {
@@ -622,7 +472,8 @@ object Interpreter {
       uppsat.ast.Leaf(uppsat.theory.FloatingPointTheory.FPLiteral(signBit, eBits, sBits, fpsort))
     }
     
-//    case PlainSymbol(ps) if ("to\\_\\fp\\_(\\d+)\\_(\\d+)".r.findFirstIn(asString(sym)).isDefined) => {
+
+    // Floating point functions
     case _ if ("to".r.findFirstIn(asString(sym)).isDefined) => {
       val p = "to_fp_(\\d+)_(\\d+)".r
       asString(sym) match {
@@ -634,6 +485,7 @@ object Interpreter {
       }
     }
     
+    // Floating point special numbers
     case _ if ("\\+oo".r.findFirstIn(asString(sym)).isDefined) => {
       val p = "\\+oo_(\\d+)_(\\d+)".r
       asString(sym) match {
@@ -674,49 +526,6 @@ object Interpreter {
           throw new Exception("Undefined symbol: " + asString(id))
         }
       }
-//      println("Bailing out on uniterpreted formula: " + asString(id))
-//      unintFunApp(asString(id), sym, args, polarity)
     }
   }
-  }
-
-  // TODO: What does this do?
-  private def unintFunApp(id : String,
-    sym : SymbolRef, args : Seq[Term], polarity : Int)
-      : uppsat.ast.AST = {
-    val funSort = myEnv.lookup(id)
-    throw new Exception("Cannot handle uninterpreted function applications")    
-  }
-
-    // (env lookupSym id) match {
-    //   case Environment.Predicate(pred, _, _) => {
-    //     checkArgNumLazy(printer print sym, pred.arity, args)
-    //     (IAtom(pred, for (a <- args) yield asTerm(translateTerm(a, 0))),
-    //       SMTBool)
-    //   }
-        
-    //   case Environment.Function(fun, SMTFunctionType(_, resultType)) => {
-    //     checkArgNumLazy(printer print sym, fun.arity, args)
-    //       (functionDefs get fun) match {
-    //       case Some((body, t)) => {
-    //         var translatedArgs = List[ITerm]()
-    //         for (a <- args)
-    //           translatedArgs = asTerm(translateTerm(a, 0)) :: translatedArgs
-    //         (VariableSubstVisitor(body, (translatedArgs, 0)), t)
-    //       }
-    //       case None =>
-    //         (IFunApp(fun, for (a <- args) yield asTerm(translateTerm(a, 0))),
-    //           resultType)
-    //     }
-    //   }
-
-    //   case Environment.Constant(c, _, t) =>
-    //     (c, t)
-        
-    //   case Environment.Variable(i, BoundVariable(t)) =>
-    //     (v(i), t)
-        
-    //   case Environment.Variable(i, SubstExpression(e, t)) =>
-    //     (e, t)
-    // }
 }
