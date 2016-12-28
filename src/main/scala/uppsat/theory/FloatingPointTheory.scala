@@ -186,7 +186,7 @@ case class FPSpecialValuesFactory(symbolName : String) extends IndexedFunctionSy
     val sort = RoundingModeSort
     val theory = FloatingPointTheory
     val args = List()
-    val name = "RoundTonearestTiesToEven"
+    val name = "RoundToNearestTiesToEven"
   }
   
   // Special Values // 
@@ -513,6 +513,12 @@ case class FPSpecialValuesFactory(symbolName : String) extends IndexedFunctionSy
     val infPattern = "\\(_ ([\\+\\-])oo (\\d+) (\\d+)\\)".r
     val nanPattern = "\\(_ NaN (\\d+) (\\d+)\\)".r
     lit match {
+      case "roundNearestTiesToEven" => RoundToNearestTiesToEven
+      case "roundNearestTiesToAway" => RoundToNearestTiesToAway 
+      case "roundTowardPositive" => RoundToPositive
+      case "roundTowardNegative" => RoundToNegative
+      case "roundTowardZero" => RoundToZero      
+
       case bitPattern(s1, s2, s3) => {
         val sign = 
           if (s1 == "#b0") 0
