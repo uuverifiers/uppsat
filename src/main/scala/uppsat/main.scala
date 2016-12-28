@@ -68,24 +68,18 @@ object main {
 //    ApproximationSolver.loop(formula, translator, approximation)
 //    println("Running time: -- ms")
     
+    println("args: " + args.mkString("|"))
+    
     import java.io._
     import scala.collection.JavaConversions._
 
-
-    val files = 
-      List("fpadd_01_1_1.smt2",
-            "fpdiv.c.3.smt2",
-            "fpmule1.c.smt2",
-            "fpnewton.4.1.i.smt2",
-            "fpsin2.c.5.smt2",
-            "fptest_v3_r3_vr1_c1_s5578.smt2",
-            "fpgaussian.c.25.smt2",
-            "fpmult1.c.3.smt2",
-            "fpqurt.c.20.smt2",
-            "fpsqrt.c.20.smt2")
-    
-//    val reader = () => new java.io.BufferedReader (new java.io.FileReader(new java.io.File("benchmarks/" + files(0))))
-    val reader = () => new java.io.BufferedReader (new java.io.FileReader(new java.io.File("fp.smt2")))            
+    val file =
+      if (args.isEmpty)
+        "benchmarks/fpadd_01_1_1.smt2"
+      else
+        args.toList(0)
+        
+    val reader = () => new java.io.BufferedReader (new java.io.FileReader(new java.io.File(file)))            
     val l = new smtlib.Yylex(reader())
     val p = new smtlib.parser(l)
     val script = p.pScriptC

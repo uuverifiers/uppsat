@@ -13,6 +13,7 @@ import uppsat.theory.FloatingPointTheory
 import uppsat.theory.FloatingPointTheory.RoundingMode
 import uppsat.theory.FloatingPointTheory.FPConstantFactory
 import uppsat.theory.FloatingPointTheory.FPSortFactory
+import uppsat.solver.SMTSolver
 
 case class SMTParserException(msg : String) extends Exception(msg)
 
@@ -43,7 +44,7 @@ object Interpreter {
     for (cmd <- script.listcommand_) parse(cmd)
 
      
-  protected def checkArgNum(op : String, expected : Int, args : Seq[Term]) : Unit =
+  protected def checkArgs(op : String, expected : Int, args : Seq[Term]) : Unit =
     if (expected != args.size)
       throw new SMTParserException(
         "Function \"" + op +
@@ -114,7 +115,8 @@ object Interpreter {
         val eBits = allBits.tail.take(11).map(_.toInt).toList
         val sBits = allBits.tail.drop(11).map(_.toInt).toList
         
-        val fpsort = FPSortFactory(List(52, 11))
+        // TODO: Should this be 53,11 or 52,11?
+        val fpsort = FPSortFactory(List(11, 53))
         uppsat.ast.Leaf(FloatingPointTheory.FPLiteral(sign.toInt, eBits, sBits, fpsort))
       }
   //    case c : HexConstant =>
@@ -411,11 +413,8 @@ object Interpreter {
 
     
     case PlainSymbol("+") => {
-      if (args.length != 2) {
-        throw new Exception("Not two arguments for + ...")
-      } else {
-        translateTerm(args(0)) + translateTerm(args(1))
-      }
+      checkArgs("+", 2, args)
+      translateTerm(args(0)) + translateTerm(args(1))
     }
     
     case PlainSymbol("-") => {
@@ -469,14 +468,14 @@ object Interpreter {
     }
 
     case PlainSymbol("fp.add") => {
-      if (args.length != 3) {
-        throw new Exception("Not two arguments for fp.mul ...")
-      } else {
-        if (!(translateTerm(args(0)).symbol.sort == RoundingModeSort))
-          throw new Exception("First argument not roundingmode...")
-        implicit val roundingMode = args(0)
-        translateTerm(args(1)) + translateTerm(args(2))
-      }
+      checkArgs("fp.add", 3, args)
+      translateTerm(args(0)).symbol.sort match {
+        case RoundingModeSort => {
+          implicit val roundingMode = args(0)
+          translateTerm(args(1)) + translateTerm(args(2))
+        }
+        case _ => throw new SMTParserException("First argument of fp.add not roundingmode") 
+      }      
     }
 
     case PlainSymbol("fp.div") => {
@@ -504,14 +503,12 @@ object Interpreter {
     case PlainSymbol("RTP") => {
       FloatingPointTheory.RoundToPositive
     }
-      // TODO: This is wrong!    
     case PlainSymbol("roundTowardZero") => {
-      FloatingPointTheory.RoundToPositive
+      FloatingPointTheory.RoundToZero
     }
 
-      // TODO: This is wrong!    
     case PlainSymbol("roundNearestTiesToEven") => {
-      FloatingPointTheory.RoundToPositive
+      FloatingPointTheory.RoundToNearestTiesToEven
     }    
      
     // case PlainSymbol("<=") =>

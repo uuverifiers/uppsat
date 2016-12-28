@@ -120,6 +120,12 @@ case class FPSpecialValuesFactory(symbolName : String) extends IndexedFunctionSy
   // TODO: Change to BigInt
   def FPLiteral(sign : Int, eBits : List[Int], sBits : List[Int], sort : FPSort) = {
     val newFactory = new FPConstantFactory(sign, eBits, sBits)
+    if (sort.eBits != eBits.length || sort.sBits != sBits.length + 1) {
+      println(eBits + " >> " + eBits.length)
+      println(sBits + " >> " + sBits.length)
+      println(sort)
+      throw new Exception("Creating literal with wrong sort? " + sort + ", " + eBits + ", " + sBits)
+    }
     newFactory(List(sort))
   }
   
@@ -609,8 +615,8 @@ case class FPSpecialValuesFactory(symbolName : String) extends IndexedFunctionSy
       case RoundToZero => "RTZ"
       case RoundToPositive => "RTP"
       case RoundToNegative => "RTN"
-      case RoundToNearestTiesToAway => "RTA"
-      case RoundToNearestTiesToEven => "RTE"
+      case RoundToNearestTiesToAway => "RNA"
+      case RoundToNearestTiesToEven => "RNE"
       case RoundingModeEquality => "="
       case fpFunSym : FloatingPointFunctionSymbol => {      
         fpFunSym.getFactory match {
