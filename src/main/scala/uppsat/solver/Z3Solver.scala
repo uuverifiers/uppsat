@@ -15,8 +15,13 @@ object Z3Solver extends SMTSolver {
     val stderr = new StringBuilder    
     val is = new ByteArrayInputStream(formula.getBytes("UTF-8"))
     val status = "z3 -in -smt2" #< is ! ProcessLogger(str => stdout append (str + "\n"), str => stderr append (str + "\n"))
-    if (status != 0)
+    if (status != 0) {
+      import java.io._
+      val pw = new PrintWriter(new File("error.smt2"))
+      pw.write(formula)
+      pw.close
       throw new Z3Exception(stdout.toString)
+    }
     stdout.toString
   }
  
