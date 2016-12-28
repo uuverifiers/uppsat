@@ -119,7 +119,8 @@ object SmallFloatsApproximation extends Approximation {
     (symbol.sort, value.symbol) match {
       case (FPSort(e, s), fp : FloatingPointTheory.FloatingPointLiteral)  => {
         val fullEBits = fp.eBits ++ List.fill(e - fp.eBits.length)(0)
-        val fullSBits = fp.sBits ++ List.fill(s - fp.sBits.length)(0)
+        // TODO: Should it be s-1...
+        val fullSBits = fp.sBits ++ List.fill((s - 1) - fp.sBits.length)(0)
         Leaf(FPLiteral(fp.sign, fullEBits, fullSBits, FPSort(e, s)))
       }
       
