@@ -121,9 +121,6 @@ case class FPSpecialValuesFactory(symbolName : String) extends IndexedFunctionSy
   def FPLiteral(sign : Int, eBits : List[Int], sBits : List[Int], sort : FPSort) = {
     val newFactory = new FPConstantFactory(sign, eBits, sBits)
     if (sort.eBits != eBits.length || sort.sBits != sBits.length + 1) {
-      println(eBits + " >> " + eBits.length)
-      println(sBits + " >> " + sBits.length)
-      println(sort)
       throw new Exception("Creating literal with wrong sort? " + sort + ", " + eBits + ", " + sBits)
     }
     newFactory(List(sort))
@@ -468,8 +465,6 @@ case class FPSpecialValuesFactory(symbolName : String) extends IndexedFunctionSy
     val magnitude = if (exponent >= 0) (2.pow(exponent).toInt) else (1.0 / (2.pow(-exponent).toInt))
     // If denormal, etc
     val absVal = (1 + significand) * magnitude
-//    println(eBits.mkString(""))
-//    println(sBits.mkString(""))
     if (sign) absVal else -absVal    
   }
   

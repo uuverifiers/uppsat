@@ -2,6 +2,8 @@ package uppsat.theory
 
 import uppsat.ast._
 
+case class BooleanTheoryException(msg : String) extends Exception("Boolean Theory Exception: " + msg)
+
 object BooleanTheory extends Theory {
   val name = "BooleanTheory"
   
@@ -102,11 +104,11 @@ object BooleanTheory extends Theory {
       case nc : NaryConjunction => "and"
       case BoolDisjunction => "or"
       case BoolEquality => "="
-      // TODO: Is this correct?
       case BoolImplication => "implies"
       case BoolNegation => "not"
       case BoolVar(name) => name
       case bc : BooleanConstant => bc.name 
+      case other => throw new BooleanTheoryException("Unknown symbol: " + symbol)
     }
   }
   

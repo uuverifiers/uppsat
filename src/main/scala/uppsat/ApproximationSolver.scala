@@ -74,7 +74,7 @@ object ApproximationSolver {
       }      
     }    
        
-    // TODO: can we change this into if not maximal pmap    
+   
     while (true) {     
 
       iterations += 1
@@ -101,7 +101,6 @@ object ApproximationSolver {
           return None
         } else {
           println("Approximative model not found: refining precision.")            
-        // TODO: Unsat core reasoning            
           pmap = approximation.unsatRefine(formula, List(), pmap)
         }
       }

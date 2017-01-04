@@ -7,15 +7,13 @@ import scala.collection.mutable.{Map => MMap}
 import uppsat.ast._
 import uppsat.theory._
 
-class SMTTranslator(theory : Theory) {
-  // TODO: Should we make this immutable?  
+class SMTTranslator(theory : Theory) {  
   var nextAST = 0
   val IdToPaths = MMap() : MMap[String, List[Path]]
   val astSymbols = Set() : Set[(String, String)]
   val symbolAssertions = MutableList() : MutableList[String]
   
-  def translateASTaux(ast : AST) : String = {
-     // TODO: Make this proper?  
+  def translateASTaux(ast : AST) : String = { 
      ast match {
        case Leaf(symbol, label) => {
          val smtSort  = symbol.sort.theory.toSMTLib(symbol.sort)           
@@ -48,7 +46,13 @@ class SMTTranslator(theory : Theory) {
      }
   }
   
-  def translateAST(ast : AST) = translateASTaux(ast)
+  def translateAST(ast : AST) = {
+    nextAST = 0
+    IdToPaths.clear()
+    astSymbols.clear()
+    symbolAssertions.clear()    
+    translateASTaux(ast)
+  }
   
   def declarations(symbols : List[ConcreteFunctionSymbol]) = {
     (for (s <- symbols) yield
@@ -62,11 +66,6 @@ class SMTTranslator(theory : Theory) {
     symbolAssertions.map("(assert " + _ + ")").mkString("\n")
   
   def translate(ast : AST, noAssert : Boolean = false, assignments : List[(String, String)] = List()) : String = {
-    nextAST = 0
-    IdToPaths.clear()
-    astSymbols.clear()
-    symbolAssertions.clear()
-    
     val astFormula = translateAST(ast)
     val assertions = if (!noAssert) "(assert " + astFormula + ")" else ""
     
@@ -82,17 +81,11 @@ class SMTTranslator(theory : Theory) {
   }
   
   def evalExpression(ast : AST) : String = {
-    nextAST = 0
-    IdToPaths.clear()
-    astSymbols.clear()
-    symbolAssertions.clear()
-    
-    
-    val astFormula = translateAST( ast)
+    val astFormula = translateAST(ast)
     val eval = "(assert (= answer " + astFormula + "))"
     header + "\n" +
-    symDecs + "\n" +
-    "(declare-fun answer () " + ast.symbol.sort.theory.toSMTLib(ast.symbol.sort) +" )\n" + //TODO: Which theory should we call?
+    symDecs + "\n" + 
+    "(declare-fun answer () " + ast.symbol.sort.theory.toSMTLib(ast.symbol.sort) +" )\n" +
     eval + "\n" +
     footer +  "\n" +
     "(eval answer)"
@@ -107,7 +100,7 @@ class SMTTranslator(theory : Theory) {
   def getModel(ast : AST, stringModel : Map[String, String]) : Model = {
     (for ((k, v) <- stringModel) yield {
       val paths = IdToPaths(k).filter(!_.isEmpty)
-      // TODO: only one path to check?
+      // We only need to extract the value from one of the paths
       if (paths.isEmpty) { 
         List()
       } else {

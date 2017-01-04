@@ -75,7 +75,7 @@ object main {
 
     val file =
       if (args.isEmpty)
-        "bm/div.smt2"
+        "fp.smt2"
       else
         args.toList(0)
         

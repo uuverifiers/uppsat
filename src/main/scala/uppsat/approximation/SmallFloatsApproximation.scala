@@ -114,6 +114,10 @@ object SmallFloatsApproximation extends Approximation {
     encodeAux(ast, List(0), pmap)
   }
   
+  
+  
+  // DECODING
+  
   // TODO: _Symbol should have a sort?
   def decodeSymbolValue(symbol : ConcreteFunctionSymbol, value : AST, p : Int) = {
     (symbol.sort, value.symbol) match {
@@ -123,6 +127,15 @@ object SmallFloatsApproximation extends Approximation {
         val fullSBits = fp.sBits ++ List.fill((s - 1) - fp.sBits.length)(0)
         Leaf(FPLiteral(fp.sign, fullEBits, fullSBits, FPSort(e, s)))
       }
+      
+      // TODO: We have to fix infinity and scale it ... all constants?
+      case (FPSort(e, s), fp : FloatingPointTheory.FloatingPointConstantSymbol)  => {
+        fp.getFactory match {
+          case FPPlusInfinity => Leaf(FPPlusInfinity(List(FPSort(e, s))))
+          case FPMinusInfinity => Leaf(FPMinusInfinity(List(FPSort(e, s))))
+          case _ => throw new Exception("How do we translatee FPConstant Symbol? " + fp)
+        }
+      }      
       
       case _ => value
     }
