@@ -10,11 +10,13 @@ object PrecisionMap {
   def apply[T](implicit precisionOrdering : PrecisionOrdering[T]) = new PrecisionMap[T](Map.empty[Path, T])
 }
 
-// TODO: make map private
-class PrecisionMap[T](val map : Map[Path, T])(implicit val precisionOrdering : PrecisionOrdering[T]) {  
+class PrecisionMap[T](private val map : Map[Path, T])(implicit val precisionOrdering : PrecisionOrdering[T]) {  
   
   def update(path : Path, newP : T) = {
-    new PrecisionMap[T](map + (path -> newP)) //TODO: Check for maximum precision
+    if (precisionOrdering.lt(precisionOrdering.max, newP))
+        throw new Exception("Trying to set precision larger than maximum precision")
+    else
+      new PrecisionMap[T](map + (path -> newP))
   }
   
   
@@ -43,12 +45,12 @@ class PrecisionMap[T](val map : Map[Path, T])(implicit val precisionOrdering : P
   
   // Takes the maximum precision of the two
   def merge(that : PrecisionMap[T]) = {
-    // TODO: Make T ordered
     val newMappings = for ((k, v) <- that.map if (!(this.map contains k) || (this.map(k).asInstanceOf[Int] < v.asInstanceOf[Int]))) yield (k -> v)
     new PrecisionMap[T](map ++ newMappings)
   }
   
-  def apply(path : Path) = map(path) //TODO: getorelse
+  // TODO: Do we want a check here?
+  def apply(path : Path) = map(path)
   
   override def toString() = {
     map.toList.map(x => x match { case (k, v) => k + " => " + v }).mkString("\n")

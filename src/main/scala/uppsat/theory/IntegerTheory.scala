@@ -1,5 +1,7 @@
 package uppsat.theory
 
+case class IntegerTheoryException(msg : String) extends Exception("Integer Theory Exception: " + msg)
+
 import uppsat.theory.BooleanTheory._
 import uppsat.theory.PolymorphicTheory.PolyITE
 import scala.math.BigInt.int2bigInt
@@ -100,7 +102,6 @@ object IntegerTheory extends Theory {
     "(set-logic QF_LIA)" //TODO: Check the actual logic
   }
   
-  //TODO: Fix type-checking
   def toSMTLib(symbol : ConcreteFunctionSymbol) = {
     symbol match {     
       case IntAddition => "+"
@@ -109,6 +110,7 @@ object IntegerTheory extends Theory {
       case IntLessThanOrEqual => "<="
       case IntLiteral(value) => value.toString()
       case IntVar(name) => name
+      case other => throw new IntegerTheoryException("Unknown symbol: " + symbol)
     }
   }
   

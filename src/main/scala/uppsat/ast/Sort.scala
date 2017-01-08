@@ -23,12 +23,12 @@ trait ConstructedSort extends ConcreteSort {
 
 trait IndexedSortFactory {
   type Sort <: IndexedSort
-  val rank : Int
+  val arity : Int
   def apply(idx : Seq[BigInt]) : IndexedSort
 }
 
 trait ConstructedSortFactory {
   type Sort <: ConstructedSort
-  val rank : Int
+  val arity : Int
   def apply(idx : Seq[Sort]) : ConstructedSort
 }

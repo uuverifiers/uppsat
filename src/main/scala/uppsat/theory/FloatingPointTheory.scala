@@ -5,6 +5,8 @@ import scala.math.BigInt.int2bigInt
 import uppsat.ast._
 import uppsat.theory.FloatingPointTheory.FPSortFactory.FPSort
 
+case class FloatingPointTheoryException(msg : String) extends Exception("Floating Point Theory Exception: " + msg)
+
 object FloatingPointTheory extends Theory {
   val name = "FPTheory"
     
@@ -15,8 +17,8 @@ object FloatingPointTheory extends Theory {
       val getFactory = FPSortFactory
     }
   
-    val rank = 2 // TODO: arity
-    def apply(idx : Seq[BigInt]) = { //TODO: BigInt *
+    val arity = 2
+    def apply(idx : Seq[BigInt]) = {
       val eBits = idx(0).toInt
       val sBits = idx(1).toInt
       // TODO: Use HashTable to store and re-use
@@ -40,7 +42,7 @@ object FloatingPointTheory extends Theory {
       val name = symbolName
     }
     
-    val rank = 1 // Refers to the sorts
+    val arity = 1 // Refers to the sorts
     def apply(sorts : Seq[ConcreteSort]) = {
       sorts.reverse.head match {
         case fpsort : FPSort => {      
@@ -64,7 +66,7 @@ object FloatingPointTheory extends Theory {
       val args = List.fill(fpArity)(argSort)
     }
 
-    val rank = 1 // Refers to the sorts
+    val arity = 1 // Refers to the sorts
     override def apply(sort : Seq[ConcreteSort]) = {      
       FPPredicateSymbol(sort.head)  
     }
@@ -82,8 +84,8 @@ object FloatingPointTheory extends Theory {
       val args = List()
     }
 
-    val rank = 1 // Refers to the sorts
-    // TODO:  Remove
+    val arity = 1 // Refers to the sorts
+    // TODO:  Change to repeated arguments
     override def apply(sort : Seq[ConcreteSort]) = {
       sort.head match {
         case fpsort : FPSort => {          
@@ -104,14 +106,13 @@ case class FPSpecialValuesFactory(symbolName : String) extends IndexedFunctionSy
       val args = List()
     }
     
-    val rank = 1 // Refers to the sorts
+    val arity = 1 // Refers to the sorts
     override def apply(sort : Seq[ConcreteSort]) = {
-      // TODO: assert sorts.length == 1
-      sort.head match {
-        case fpsort : FPSort => {      
+      sort match {
+        case List(fpsort : FPSort) => {      
           FPConstantSymbol(fpsort)
         }
-        case _ =>  throw new Exception("Non-FP sort in special values  : " + sort.head)
+        case _ =>  throw new Exception("Non-FP singleton sort in special values  : " + sort.head)
       }  
     }
   }
@@ -424,7 +425,7 @@ case class FPSpecialValuesFactory(symbolName : String) extends IndexedFunctionSy
   
  def floatGreaterThan(left : AST, right : AST) =
     genericPredicate(left, right, FPGreaterThanFactory)
-  // TODO: How to do this translation?
+
   def bitsToInt(bits : List[Int]) : Int = {
     def bti(bs : List[Int], exp : Int, ack : Int) : Int = {
       bs match {
@@ -609,7 +610,6 @@ case class FPSpecialValuesFactory(symbolName : String) extends IndexedFunctionSy
     "(set-logic QF_FP)" //TODO: Check the actual logic
   }
   
-  //TODO: Fix type-checking
   //TODO: Change to SMTLIB names
   def toSMTLib(symbol : ConcreteFunctionSymbol) = { 
     symbol match {
@@ -648,7 +648,7 @@ case class FPSpecialValuesFactory(symbolName : String) extends IndexedFunctionSy
       }
       case uppsat.theory.FloatingPointTheory.RMVar(name) => name
       case FPVar(name, _) => name
-      
+      case other => throw new FloatingPointTheoryException("Unknown symbol: " + symbol)      
     }
   }
   

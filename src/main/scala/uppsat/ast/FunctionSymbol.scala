@@ -13,13 +13,12 @@ trait ConcreteFunctionSymbol extends FunctionSymbol {
   val sort : ConcreteSort
 }
 
-// TODO: Add IndexedFunctionSymbol and mimic Sort hierarchy
 trait ConstructedFunctionSymbol extends ConcreteFunctionSymbol {
   val getFactory : ConstructedFunctionSymbolFactory
 }
 
 trait ConstructedFunctionSymbolFactory {
-  val rank : Int
+  val arity : Int
   def apply(idx : Seq[ConcreteSort]) : ConstructedFunctionSymbol
   def apply(idx : ConcreteSort) : ConstructedFunctionSymbol = 
     apply(idx)
@@ -30,7 +29,7 @@ trait IndexedFunctionSymbol extends ConcreteFunctionSymbol {
 }
 
 trait IndexedFunctionSymbolFactory {
-  val rank : Int
+  val arity : Int
   def apply(idx : Seq[ConcreteSort]) : IndexedFunctionSymbol
 }
 

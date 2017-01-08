@@ -95,7 +95,6 @@ object BooleanTheory extends Theory {
     ""
   }
   
-  //TODO: Fix type-checking
   def toSMTLib(symbol : ConcreteFunctionSymbol) = {
     symbol match {
       case BoolTrue => "true"
