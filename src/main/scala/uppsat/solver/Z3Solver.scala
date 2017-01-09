@@ -3,12 +3,13 @@ package uppsat.solver;
 import java.io.ByteArrayInputStream;
 import scala.sys.process.stringToProcess
 import uppsat.solver._
+import uppsat.Timer
 
 class Z3Exception(msg : String) extends Exception("Z3 error: " + msg)
 
 object Z3Solver extends SMTSolver {
-
-  def runSolver(formula : String) = {
+  
+  def runSolver(formula : String) = Timer.measure("Z3Solver.runSolver") {
     import sys.process._
     
     val stdout = new StringBuilder
