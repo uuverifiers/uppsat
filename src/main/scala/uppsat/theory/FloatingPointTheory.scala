@@ -350,6 +350,26 @@ case class FPSpecialValuesFactory(symbolName : String) extends IndexedFunctionSy
     (sign, ebits, sbits)
   }
   
+  def bitsToDouble(fpLit : FloatingPointLiteral) : Double = {
+    fpLit.getFactory match {
+      case FPNaN => Double.NaN
+      case FPPositiveZero => +0.0
+      case FPNegativeZero => -0.0
+      case FPPlusInfinity => Double.PositiveInfinity
+      case FPMinusInfinity => Double.NegativeInfinity
+      case FPConstantFactory(sign, eBits, sBits) => {
+        //padding to a double
+        if( eBits.length + sBits.length + 1 > 64) 
+          throw new Exception("Converting to a double fpa with more than 64 bits")
+        
+        val exponent = eBits.head :: List.fill(11 - eBits.length)(0) ++ eBits.tail
+        val significand = List.fill(53 - sBits.length)(0) ++ sBits
+        val bits = sign :: exponent ++ significand
+        java.lang.Double.longBitsToDouble(BigInt(bits.mkString(""), 2).toLong)        
+      } 
+    }
+  }
+  
   implicit def floatToAST(float : Float) = {
     val sort = FPSortFactory(List(8,24))
     val (sign, ebits, sbits) = floatToBits(float)

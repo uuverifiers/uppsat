@@ -17,13 +17,89 @@ import uppsat.solver.Z3Solver
 
 
 
+
+
+
+
 object SmallFloatsApproximation extends Approximation {
   type P = Int
   val inputTheory = FloatingPointTheory
   val outputTheory = FloatingPointTheory
-  val precisionOrdering = new IntPrecisionOrdering(0, 10)
-  def satRefine(ast : AST, appModel : Model, failedModel : Model, pmap : PrecisionMap[Int]) : PrecisionMap[Int] = {
-    pmap.map(_ + 1)
+  val precisionOrdering = new IntPrecisionOrdering(0, 5)
+  
+  def satRefine(ast : AST, decodedModel : Model, failedModel : Model, pmap : PrecisionMap[Int]) : PrecisionMap[Int] = {
+    val topTen = 10 // K 
+    val fractionToRefine = 0.3 //K_percentage
+    val precisionIncrement = 1 // 20/100 = 1/5
+    
+    def relativeError(decoded : FloatingPointLiteral, precise : FloatingPointLiteral) : Double = {
+      (decoded.getFactory, precise.getFactory) match {
+        case (x, y) if (x == y) => 0.0 //Values are the same
+        case (FPPlusInfinity, _)    |
+             (_, FPPlusInfinity)    |
+             (FPMinusInfinity, _)   |
+             (_, FPMinusInfinity)   => Double.PositiveInfinity
+        case (x : FPConstantFactory, y : FPConstantFactory) => {
+          val a = bitsToDouble(decoded)
+          val b = bitsToDouble(precise)
+          Math.abs((a - b)/b)
+        }        
+        case _ => 0.0
+      }
+    }
+    
+    def nodeError(accu : Map[Path, Double], ast : AST, path : Path) : Map[Path, Double] = {
+      val AST(symbol, label, children) = ast
+      
+      var err = 0.0
+      
+      
+      (symbol, decodedModel(path).symbol, failedModel(path).symbol)  match {
+        case (s : FloatingPointFunctionSymbol, app : FloatingPointLiteral, ex : FloatingPointLiteral) if (!s.isInstanceOf[FloatingPointLiteral]) => {
+          val outErr = relativeError(app, ex)
+          
+          var sumDescError = 0.0
+          var numFPArgs = 0
+          
+          for ((c, i) <- children zip children.indices) {
+            val a = decodedModel(i :: path)
+            val b = failedModel(i :: path)
+            
+            (a.symbol, b.symbol) match {
+              case (aS : FloatingPointLiteral, bS: FloatingPointLiteral) => {
+                sumDescError +=  relativeError(aS, bS)
+                numFPArgs += 1
+              }                                                                 
+              case  _ => ()
+            }
+          }
+          val inErr = sumDescError / numFPArgs
+          
+          if (numFPArgs == 0) 
+            err = outErr
+          else
+            err = outErr / inErr
+        }
+        case _ => ()
+      }
+      if (err == 0.0)
+        accu
+      else
+        accu + (path -> err)
+    }
+
+    val accu = Map[Path, Double]()
+    val errorRatios = AST.preVisit(ast, List(0), accu, nodeError)
+    
+    val sortedErrRatios = errorRatios.toList.sortWith((x,y) => x._2 > y._2)
+    val k = math.ceil(fractionToRefine * sortedErrRatios.length).toInt //TODO: Assertions
+    
+    for ((path, _) <- sortedErrRatios.take(k)) {
+      val p = pmap(path)
+      pmap.update(path, p + precisionIncrement)
+    }
+    
+    pmap    
   }
 
   def unsatRefine(ast : AST, core : List[AST], pmap : PrecisionMap[Int]) : PrecisionMap[Int] = {

@@ -19,6 +19,15 @@ class PrecisionMap[T](private val map : Map[Path, T])(implicit val precisionOrde
       new PrecisionMap[T](map + (path -> newP))
   }
   
+  //TODO: What do we need to make this work?
+  //  def increment(path : Path, incr : T) = {
+  //    val currentP = map(path)
+  //    val newP = currentP + incr
+  //    if (precisionOrdering.lt(precisionOrdering.max, newP))
+  //        throw new Exception("Trying to set precision larger than maximum precision")
+  //    else
+  //      new PrecisionMap[T](map + (path -> newP))
+  //  }
   
   def isMaximal = {
     map.values.find(x => precisionOrdering.lt(x, precisionOrdering.max)).isEmpty

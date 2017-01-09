@@ -20,6 +20,17 @@ object Leaf {
 object AST {
   type Label = Path
   def apply(symbol : ConcreteFunctionSymbol, children : List[AST]) = new AST(symbol, List(), children)
+  
+  //TODO: Label the AST, makes this code cleaner
+  def preVisit[T]( ast : AST, path : Path, acumulator : T,  work : (T, AST, Path) => T ) : T = {
+    val AST(symbol, label, children) = ast
+    var acu = acumulator
+   
+    for ((c, i) <- children zip children.indices) 
+      acu = preVisit( c, i :: path, acu, work)
+    
+    work(acu, ast, path)
+  }
 }
 
 case class AST(val symbol : ConcreteFunctionSymbol, val label : Label, val children : List[AST]) {
