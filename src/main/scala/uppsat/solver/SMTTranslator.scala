@@ -91,6 +91,11 @@ class SMTTranslator(theory : Theory) {
     "(eval answer)"
   }
   
+  def evaluate(ast : AST) : String = {
+    val astFormula = translateAST(ast)
+    "(eval " + astFormula + ")" 
+  }
+  
   def header = theory.SMTHeader
   
   def footer = "(check-sat)"
