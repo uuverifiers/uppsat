@@ -44,7 +44,7 @@ object ApproximationSolver {
     pmap = pmap.cascadingUpdate(List(0), formula, approximation.precisionOrdering.min)    
     var iterations = 0
     
-    def tryReconstruct(encodedSMT : String) : (Option[ExtModel], Option[PrecisionMap[approximation.P]]) = {
+    def tryReconstruct(encodedSMT : String) : (Option[ExtModel], Option[PrecisionMap[approximation.P]]) = Timer.measure("tryReconstruct") {
       val stringModel = Z3Solver.getModel(encodedSMT, translator.getDefinedSymbols.toList)
       val appModel = translator.getModel(formula, stringModel)
       val decodedModel = approximation.decodeModel(formula, appModel, pmap)

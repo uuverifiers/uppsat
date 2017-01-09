@@ -1,29 +1,49 @@
 package uppsat.solver;
 
 import java.io.ByteArrayInputStream;
+import sys.process._
 import scala.sys.process.stringToProcess
 import uppsat.solver._
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import uppsat.Timer
 
-class Z3Exception(msg : String) extends Exception("Z3 error: " + msg)
+class Z3OnlineException(msg : String) extends Exception("Z3 error: " + msg)
 
-object Z3Solver extends SMTSolver {
+// Starts process at 
+
+class Z3OnlineSolver extends SMTSolver {
+
+  def z3print(str : String) =
+    println("[Z3] " + str)
+  // Starting solver...
+  val process = Runtime.getRuntime().exec("z3 -in")
+  z3print("[Started process: " + process)
+  val stdin = process.getOutputStream ()
+  val stderr = process.getErrorStream ()
+  val stdout = process.getInputStream ()  
   
-  def runSolver(formula : String) = Timer.measure("Z3Solver.runSolver") {
-    import sys.process._
+  def runSolver(formula : String) = Timer.measure("Z3OnlineSolver.runSolver") {
+    z3print("Sending input: " + formula)    
+    stdin.write((formula + "\n").getBytes());
+    stdin.flush();    
     
-    val stdout = new StringBuilder
-    val stderr = new StringBuilder    
-    val is = new ByteArrayInputStream(formula.getBytes("UTF-8"))
-    val status = "z3 -in -smt2" #< is ! ProcessLogger(str => stdout append (str + "\n"), str => stderr append (str + "\n"))
-    if (status != 0) {
-      import java.io._
-      val pw = new PrintWriter(new File("error.smt2"))
-      pw.write(formula)
-      pw.close
-      throw new Z3Exception(stdout.toString)
+    val outReader = new BufferedReader(new InputStreamReader (stdout))
+    var result = None : Option[String]    
+
+    val satPattern = "sat".r
+    val errorPattern = ".*error.*".r
+
+    var line = None : Option[String]
+    while (result.isEmpty) {
+      line = Option(outReader.readLine())
+      line.get match {
+        case satPattern() => {}
+        case errorPattern() => throw new Exception("Z3 error: " + line.get)
+        case other => result = Some(other)
+      }    
     }
-    stdout.toString
+    result.get
   }
  
   

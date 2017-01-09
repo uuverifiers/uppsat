@@ -75,7 +75,7 @@ object main {
 
     val file =
       if (args.isEmpty)
-        "fp.smt2"
+        "benchmarks/fpadd_01_1_1.smt2"
       else
         args.toList(0)
         
@@ -83,6 +83,9 @@ object main {
     val l = new smtlib.Yylex(reader())
     val p = new smtlib.parser(l)
     val script = p.pScriptC
-    val result = Interpreter.interpret(script)
+    Timer.measure("main") {
+      val result = Interpreter.interpret(script)
+    }
+    println(Timer)
   }    
 }

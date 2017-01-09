@@ -8,9 +8,17 @@ import uppsat.approximation.Approximation
 import ast.AST
 import uppsat.solver.SMTSolver
 import uppsat.solver.SMTTranslator
+import uppsat.solver.Z3OnlineSolver
 
 object ModelReconstructor {
   type Model = Map[Path, AST]
+  
+  var onlineSolver = None : Option[SMTSolver]
+  
+  def startOnlineSolver() = {
+    onlineSolver = Some(new Z3OnlineSolver)
+    onlineSolver.get.runSolver("(check-sat)\n(eval true)\n")
+  }
   
   def valAST(ast: AST, assignments: List[(String, String)], theory : Theory, solver : SMTSolver) : Boolean = {
     val translator = new SMTTranslator(theory)
@@ -19,9 +27,12 @@ object ModelReconstructor {
   }
   
   def evalAST(ast : AST, theory : Theory, solver : SMTSolver) : AST = {
+    if (onlineSolver.isEmpty)
+      startOnlineSolver()
+    
     val translator = new SMTTranslator(theory)
-    val formula = translator.evalExpression(ast)
-    val answer = solver.getAnswer(formula)
+    val formula = translator.evaluate(ast)
+    val answer = onlineSolver.get.runSolver(formula)
     ast.symbol.sort.theory.parseLiteral(answer.trim())    
   }
 }

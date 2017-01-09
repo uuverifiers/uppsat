@@ -2,6 +2,7 @@ package uppsat.approximation
 
 
 import uppsat.theory.FloatingPointTheory._
+import uppsat.Timer
 
 import uppsat.ModelReconstructor.Model
 import uppsat.precision.PrecisionMap.Path
@@ -186,7 +187,7 @@ object SmallFloatsApproximation extends Approximation {
     encodeSymbol(symbol, path, newChildren, pmap(path))    
   }
   
-  def encodeFormula(ast : AST, pmap : PrecisionMap[Int]) : AST = {
+  def encodeFormula(ast : AST, pmap : PrecisionMap[Int]) : AST = Timer.measure("SmallFloats.encodeFormula") {
     encodeAux(ast, List(0), pmap)
   }
   
@@ -288,7 +289,7 @@ object SmallFloatsApproximation extends Approximation {
     }
     
     //TODO: Make this check more comprehensive
-    if ( children.length > 0) {
+    if (children.length > 0) {
       val newAST = AST(symbol, label, newChildren.toList)
       val newValue = ModelReconstructor.evalAST(newAST, FloatingPointTheory, Z3Solver)
       currModel + (path -> newValue)
