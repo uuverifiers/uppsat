@@ -54,35 +54,41 @@ object SmallFloatsApproximation extends Approximation {
       
       var err = 0.0
       
-      
-      (symbol, decodedModel(path).symbol, failedModel(path).symbol)  match {
-        case (s : FloatingPointFunctionSymbol, app : FloatingPointLiteral, ex : FloatingPointLiteral) if (!s.isInstanceOf[FloatingPointLiteral]) => {
-          val outErr = relativeError(app, ex)
-          
-          var sumDescError = 0.0
-          var numFPArgs = 0
-          
-          for ((c, i) <- children zip children.indices) {
-            val a = decodedModel(i :: path)
-            val b = failedModel(i :: path)
+      symbol match {
+        case literal : FloatingPointLiteral => ()
+        case fpfs : FloatingPointFunctionSymbol =>
+          (decodedModel(path).symbol, failedModel(path).symbol)  match {
+          case (app : FloatingPointLiteral, ex : FloatingPointLiteral) => {
+            val outErr = relativeError(app, ex)
             
-            (a.symbol, b.symbol) match {
-              case (aS : FloatingPointLiteral, bS: FloatingPointLiteral) => {
-                sumDescError +=  relativeError(aS, bS)
-                numFPArgs += 1
-              }                                                                 
-              case  _ => ()
+            var sumDescError = 0.0
+            var numFPArgs = 0
+            
+            for ((c, i) <- children zip children.indices) {
+              val a = decodedModel(i :: path)
+              val b = failedModel(i :: path)
+              
+              (a.symbol, b.symbol) match {
+                case (aS : FloatingPointLiteral, bS: FloatingPointLiteral) => {
+                  sumDescError +=  relativeError(aS, bS)
+                  numFPArgs += 1
+                }                                                                 
+                case  _ => ()
+              }
             }
+            val inErr = sumDescError / numFPArgs
+            
+            if (numFPArgs == 0) 
+              err = outErr
+            else
+              err = outErr / inErr
           }
-          val inErr = sumDescError / numFPArgs
-          
-          if (numFPArgs == 0) 
-            err = outErr
-          else
-            err = outErr / inErr
+          case _ => ()
         }
         case _ => ()
       }
+      
+      
       if (err == 0.0)
         accu
       else
@@ -90,17 +96,48 @@ object SmallFloatsApproximation extends Approximation {
     }
 
     val accu = Map[Path, Double]()
-    val errorRatios = AST.preVisit(ast, List(0), accu, nodeError)
+    val errorRatios = AST.postVisit(ast, List(0), accu, nodeError)
     
     val sortedErrRatios = errorRatios.toList.sortWith((x,y) => x._2 > y._2)
     val k = math.ceil(fractionToRefine * sortedErrRatios.length).toInt //TODO: Assertions
     
-    for ((path, _) <- sortedErrRatios.take(k)) {
-      val p = pmap(path)
-      pmap.update(path, p + precisionIncrement)
+    def boolCond( accu : List[Path], ast : AST, path : Path) : Boolean = {
+      println("Path : " + path)
+      println("App model : " + decodedModel(path))
+      println("Exact model : " + failedModel(path))
+      println(decodedModel(path) != failedModel(path))
+      decodedModel(path) != failedModel(path)
     }
     
-    pmap    
+    def boolWork( accu : List[Path], ast : AST, path : Path) : List[Path] = {
+      path :: accu
+    }
+    
+    
+    val pathsToRefine = AST.boolVisit(ast, List(0), List(), boolCond, boolWork) 
+    
+    
+    var newPMap = pmap
+    var changed = false
+    for (path <- pathsToRefine) { //.take(k)
+      val p = pmap(path)
+      val newP = p + precisionIncrement
+      if  ( p  != pmap.precisionOrdering.max) {
+        changed = true
+        if (newP < pmap.precisionOrdering.max)
+          newPMap = newPMap.update(path, newP)
+        else  
+          newPMap = newPMap.update(path, pmap.precisionOrdering.max)
+      }        
+    }
+    
+    if (!changed) {
+      println(pathsToRefine)
+      throw new Exception("Nothing changed in pmap")
+    }
+    println("--------------------------------------\nNew precision map :")
+    println(newPMap)
+    newPMap    
   }
 
   def unsatRefine(ast : AST, core : List[AST], pmap : PrecisionMap[Int]) : PrecisionMap[Int] = {
