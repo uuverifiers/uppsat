@@ -54,35 +54,41 @@ object SmallFloatsApproximation extends Approximation {
       
       var err = 0.0
       
-      
-      (symbol, decodedModel(path).symbol, failedModel(path).symbol)  match {
-        case (s : FloatingPointFunctionSymbol, app : FloatingPointLiteral, ex : FloatingPointLiteral) if (!s.isInstanceOf[FloatingPointLiteral]) => {
-          val outErr = relativeError(app, ex)
-          
-          var sumDescError = 0.0
-          var numFPArgs = 0
-          
-          for ((c, i) <- children zip children.indices) {
-            val a = decodedModel(i :: path)
-            val b = failedModel(i :: path)
+      symbol match {
+        case literal : FloatingPointLiteral => ()
+        case fpfs : FloatingPointFunctionSymbol =>
+          (decodedModel(path).symbol, failedModel(path).symbol)  match {
+          case (app : FloatingPointLiteral, ex : FloatingPointLiteral) => {
+            val outErr = relativeError(app, ex)
             
-            (a.symbol, b.symbol) match {
-              case (aS : FloatingPointLiteral, bS: FloatingPointLiteral) => {
-                sumDescError +=  relativeError(aS, bS)
-                numFPArgs += 1
-              }                                                                 
-              case  _ => ()
+            var sumDescError = 0.0
+            var numFPArgs = 0
+            
+            for ((c, i) <- children zip children.indices) {
+              val a = decodedModel(i :: path)
+              val b = failedModel(i :: path)
+              
+              (a.symbol, b.symbol) match {
+                case (aS : FloatingPointLiteral, bS: FloatingPointLiteral) => {
+                  sumDescError +=  relativeError(aS, bS)
+                  numFPArgs += 1
+                }                                                                 
+                case  _ => ()
+              }
             }
+            val inErr = sumDescError / numFPArgs
+            
+            if (numFPArgs == 0) 
+              err = outErr
+            else
+              err = outErr / inErr
           }
-          val inErr = sumDescError / numFPArgs
-          
-          if (numFPArgs == 0) 
-            err = outErr
-          else
-            err = outErr / inErr
+          case _ => ()
         }
         case _ => ()
       }
+      
+      
       if (err == 0.0)
         accu
       else
