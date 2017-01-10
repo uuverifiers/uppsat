@@ -68,7 +68,7 @@ object ApproximationSolver {
           return (None, None)
         } else {
           println("Model reconstruction failed: refining precision")            
-          val newPmap = approximation.satRefine(formula, appModel, decodedModel, pmap)
+          val newPmap = approximation.satRefine(formula, decodedModel, reconstructedModel, pmap)
           (None, Some(newPmap))
         }
       }      

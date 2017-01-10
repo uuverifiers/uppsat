@@ -450,6 +450,7 @@ object Interpreter {
     case PlainSymbol("RTP") => FloatingPointTheory.RoundToPositive
     case PlainSymbol("roundTowardZero") => FloatingPointTheory.RoundToZero
     case PlainSymbol("roundNearestTiesToEven") => FloatingPointTheory.RoundToNearestTiesToEven
+    case PlainSymbol("RNE") => FloatingPointTheory.RoundToNearestTiesToEven
      
     case PlainSymbol("fp") => {
       def bitTermToBitList(term : Term) : List[Int] = {

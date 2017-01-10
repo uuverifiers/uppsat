@@ -96,17 +96,48 @@ object SmallFloatsApproximation extends Approximation {
     }
 
     val accu = Map[Path, Double]()
-    val errorRatios = AST.preVisit(ast, List(0), accu, nodeError)
+    val errorRatios = AST.postVisit(ast, List(0), accu, nodeError)
     
     val sortedErrRatios = errorRatios.toList.sortWith((x,y) => x._2 > y._2)
     val k = math.ceil(fractionToRefine * sortedErrRatios.length).toInt //TODO: Assertions
     
-    for ((path, _) <- sortedErrRatios.take(k)) {
-      val p = pmap(path)
-      pmap.update(path, p + precisionIncrement)
+    def boolCond( accu : List[Path], ast : AST, path : Path) : Boolean = {
+      println("Path : " + path)
+      println("App model : " + decodedModel(path))
+      println("Exact model : " + failedModel(path))
+      println(decodedModel(path) != failedModel(path))
+      decodedModel(path) != failedModel(path)
     }
     
-    pmap    
+    def boolWork( accu : List[Path], ast : AST, path : Path) : List[Path] = {
+      path :: accu
+    }
+    
+    
+    val pathsToRefine = AST.boolVisit(ast, List(0), List(), boolCond, boolWork) 
+    
+    
+    var newPMap = pmap
+    var changed = false
+    for (path <- pathsToRefine) { //.take(k)
+      val p = pmap(path)
+      val newP = p + precisionIncrement
+      if  ( p  != pmap.precisionOrdering.max) {
+        changed = true
+        if (newP < pmap.precisionOrdering.max)
+          newPMap = newPMap.update(path, newP)
+        else  
+          newPMap = newPMap.update(path, pmap.precisionOrdering.max)
+      }        
+    }
+    
+    if (!changed) {
+      println(pathsToRefine)
+      throw new Exception("Nothing changed in pmap")
+    }
+    println("--------------------------------------\nNew precision map :")
+    println(newPMap)
+    newPMap    
   }
 
   def unsatRefine(ast : AST, core : List[AST], pmap : PrecisionMap[Int]) : PrecisionMap[Int] = {
