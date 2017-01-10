@@ -244,7 +244,6 @@ object Interpreter {
       println("-----------------------------------------------")
       println("Starting Approximation Framework")
       println("-----------------------------------------------")        
-      
       uppsat.ApproximationSolver.solve(formula, translator, approximation)
     }
   //     //////////////////////////////////////////////////////////////////////////
@@ -376,11 +375,8 @@ object Interpreter {
     }
     
     case PlainSymbol("-") => {
-      if (args.length == 1) {
-        - translateTerm(args(0))
-      } else {
-        throw new SMTParserException("Only unary minus supported...")
-      }
+      checkArgs("-", 1, args)
+      -translateTerm(args(0))
     }      
     
     

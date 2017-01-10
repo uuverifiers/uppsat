@@ -33,6 +33,10 @@ class PrecisionMap[T](private val map : Map[Path, T])(implicit val precisionOrde
     map.values.find(x => precisionOrdering.lt(x, precisionOrdering.max)).isEmpty
   }
   
+  def maximal = {
+    new PrecisionMap(map.map{ case (k, v) => (k, precisionOrdering.max) })
+  }
+  
   def map(f : T => T) : PrecisionMap[T] = {
     new PrecisionMap[T](map.map(x => {
       val (k, v) = x

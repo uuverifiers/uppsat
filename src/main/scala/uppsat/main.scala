@@ -75,7 +75,7 @@ object main {
 
     val file =
       if (args.isEmpty)
-        "benchmarks/fpadd_01_1_1.smt2"
+        "debug.smt2"
       else
         args.toList(0)
         

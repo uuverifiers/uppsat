@@ -154,13 +154,18 @@ object SmallFloatsApproximation extends Approximation {
     def encodeFunSymbol(symbol : FloatingPointFunctionSymbol, path : Path, children : List[AST], precision : Int) : AST = {
       val newSort = scaleSort(symbol.sort, precision)
       val newChildren = 
-        for ( c <- children) yield {
-          if (c.symbol.sort != RoundingModeSort && c.symbol.sort != newSort ) {
-            val cast = FPToFPFactory(List(c.symbol.sort, newSort))
-            AST(cast, List(), List(AST(RoundToZero, List(), List()), c))
-          } else {
-            c
-          }          
+        if (symbol.getFactory == FPToFPFactory) {
+          // No need to cast, this symbol does this!
+          children
+        } else {
+          for ( c <- children) yield {
+            if (c.symbol.sort != RoundingModeSort && c.symbol.sort != newSort ) {
+              val cast = FPToFPFactory(List(c.symbol.sort, newSort))
+              AST(cast, List(), List(AST(RoundToZero, List(), List()), c))
+            } else {
+              c
+            }          
+          }
         }
       val argSorts = newChildren.map( _.symbol.sort)
       AST(symbol.getFactory(argSorts ++ List(newSort)), path, newChildren)
