@@ -24,6 +24,7 @@ object ModelReconstructor {
     val translator = new SMTTranslator(theory)
     val smtVal = translator.translate(ast, false, assignments)
     println("valAST...")
+    println(smtVal)
     val result = solver.solve(smtVal)
     println("\t" + result)
     result

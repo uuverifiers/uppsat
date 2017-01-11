@@ -121,6 +121,7 @@ object SmallFloatsApproximation extends Approximation {
     
     var newPMap = pmap
     var changed = false
+    println(pathsToRefine.mkString("\n"))
     for (path <- pathsToRefine) { //.take(k)
       val p = pmap(path)
       val newP = p + precisionIncrement
