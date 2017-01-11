@@ -37,6 +37,7 @@ object ModelReconstructor {
     val translator = new SMTTranslator(theory)
     val formula = translator.evaluate(ast)
     val answer = onlineSolver.get.runSolver(formula)
+    println(answer)
     ast.symbol.sort.theory.parseLiteral(answer.trim())    
   }
 }

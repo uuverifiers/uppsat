@@ -106,7 +106,7 @@ object SmallFloatsApproximation extends Approximation {
     def boolCond( accu : List[Path], ast : AST, path : Path) : Boolean = {
       println("Path : " + path)
       println("App model : " + decodedModel(path))
-      println("Exact model : " + failedModel(path))
+      println("Failed model : " + failedModel(path))
       println(decodedModel(path) != failedModel(path))
       decodedModel(path) != failedModel(path)
     }
@@ -342,6 +342,9 @@ object SmallFloatsApproximation extends Approximation {
     if (children.length > 0) {
       val newAST = AST(symbol, label, newChildren.toList)
       val newValue = ModelReconstructor.evalAST(newAST, FloatingPointTheory, Z3Solver)
+      if (newValue != decodedModel(path))
+          println("::" + path + " " + decodedModel(path) + " / " + newValue)
+          
       currModel + (path -> newValue)
     } else { 
       currModel

@@ -78,7 +78,7 @@ object FloatingPointTheory extends Theory {
     
     case class FPConstantSymbol(override val sort : FPSort) extends FloatingPointLiteral(sort, sign, eBits.take(sort.eBits), sBits.take(sort.sBits - 1)) {
       // TODO: Does name have to be SMT-appliant, not nice!
-      val name = fpToDouble(sign, eBits, sBits).toString() 
+      val name = (sign :: eBits ++ sBits).mkString("") //fpToDouble(sign, eBits, sBits).toString() 
       val theory = FloatingPointTheory
       val getFactory = thisFactory
       val args = List()
@@ -484,9 +484,10 @@ case class FPSpecialValuesFactory(symbolName : String) extends IndexedFunctionSy
     val sign = (signBit == 0)
     val exponent = bitsToInt(eBits) - (2.pow(eBits.length - 1).toInt - 1) - sBits.length
     val significand = bitsToInt(1 :: sBits) // Adding the implicit leading bit
-    val magnitude = if (exponent >= 0) (2.pow(exponent).toInt) else (1.0 / (2.pow(-exponent).toInt))
+    val magnitude = if (exponent >= 0) (2.pow(exponent).toDouble) else (1.0 / (2.pow(-exponent).toDouble))
+    
     // If denormal, etc
-    val absVal = significand * magnitude
+    val absVal = significand * magnitude    
     if (sign) absVal else -absVal    
   }
   
@@ -537,6 +538,7 @@ case class FPSpecialValuesFactory(symbolName : String) extends IndexedFunctionSy
       case "roundTowardZero" => RoundToZero      
 
       case bitPattern(s1, s2, s3) => {
+        println("\tBitPattern")
         val sign = 
           if (s1 == "#b0") 0
           else if (s1 == "#b1") 1
