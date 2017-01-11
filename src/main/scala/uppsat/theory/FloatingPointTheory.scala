@@ -78,7 +78,7 @@ object FloatingPointTheory extends Theory {
     
     case class FPConstantSymbol(override val sort : FPSort) extends FloatingPointLiteral(sort, sign, eBits.take(sort.eBits), sBits.take(sort.sBits - 1)) {
       // TODO: Does name have to be SMT-appliant, not nice!
-      val name = fpToFloat(sign, eBits, sBits).toString() 
+      val name = fpToDouble(sign, eBits, sBits).toString() 
       val theory = FloatingPointTheory
       val getFactory = thisFactory
       val args = List()
@@ -479,13 +479,14 @@ case class FPSpecialValuesFactory(symbolName : String) extends IndexedFunctionSy
     }        
    }
   
-  def fpToFloat(signBit : Int, eBits : List[Int], sBits : List[Int]) = {
+  def fpToDouble(signBit : Int, eBits : List[Int], sBits : List[Int]) = {
+    // TODO: subnormal numbers
     val sign = (signBit == 0)
-    val exponent = bitsToInt(eBits) - (2.pow(eBits.length - 1).toInt - 1)
-    val significand = sbitsToFloat(sBits)
+    val exponent = bitsToInt(eBits) - (2.pow(eBits.length - 1).toInt - 1) - sBits.length
+    val significand = bitsToInt(1 :: sBits) // Adding the implicit leading bit
     val magnitude = if (exponent >= 0) (2.pow(exponent).toInt) else (1.0 / (2.pow(-exponent).toInt))
     // If denormal, etc
-    val absVal = (1 + significand) * magnitude
+    val absVal = significand * magnitude
     if (sign) absVal else -absVal    
   }
   
@@ -548,11 +549,11 @@ case class FPSpecialValuesFactory(symbolName : String) extends IndexedFunctionSy
         Leaf(constFactory(List(fpsort)))
       }
       case zeroPattern(sign, eBits, sBits) => {
-        val signBit = if (sign == "+") 0 else 1
         val fpsort = FPSortFactory(List(eBits.toInt, sBits.toInt))
-        // TODO: Aleks, is the number of zeroes correct?
-        val factory = new FPConstantFactory(signBit, List.fill(eBits.toInt)(0), List.fill(sBits.toInt - 1)(0))
-        Leaf(factory(List(fpsort)))
+        if (sign == "+") 
+          Leaf(FPPositiveZero(List(fpsort)))
+        else  
+          Leaf(FPNegativeZero(List(fpsort)))
       }
       case infPattern(sign, eBits, sBits) => {
         val fpsort = FPSortFactory(List(eBits.toInt, sBits.toInt))
@@ -562,12 +563,8 @@ case class FPSpecialValuesFactory(symbolName : String) extends IndexedFunctionSy
           Leaf(FPMinusInfinity(List(fpsort)))
       } 
       case nanPattern(eBits, sBits) => {
-        // TODO: Have special representation for NaN
-        val signBit = 0
         val fpsort = FPSortFactory(List(eBits.toInt, sBits.toInt))
-        // TODO: Aleks, is the number of zeroes correct?
-        val factory = new FPConstantFactory(signBit, List.fill(eBits.toInt)(0), List.fill(sBits.toInt - 1)(0))
-        Leaf(factory(List(fpsort)))        
+        Leaf(FPNaN(List(fpsort)))        
       }
       case _ => throw new Exception("Unknown FP literal: " + lit)
     }
@@ -641,15 +638,17 @@ case class FPSpecialValuesFactory(symbolName : String) extends IndexedFunctionSy
       case RoundingModeEquality => "="
       case fpFunSym : FloatingPointFunctionSymbol => {      
         fpFunSym.getFactory match {
-          case FPPositiveZero => "+0"
+          case FPPositiveZero => "(_ +zero " + fpFunSym.sort.eBits + " " + fpFunSym.sort.sBits + ")"
+          case FPNegativeZero => "(_ -zero " + fpFunSym.sort.eBits + " " + fpFunSym.sort.sBits + ")"
           case FPPlusInfinity => "(_ +oo " + fpFunSym.sort.eBits + " " + fpFunSym.sort.sBits + ")"
           case FPMinusInfinity => "(_ -oo " + fpFunSym.sort.eBits + " " + fpFunSym.sort.sBits + ")"
+          case FPNaN => "(_ NaN " + fpFunSym.sort.eBits + " " + fpFunSym.sort.sBits + ")"
           case FPAdditionFactory => "fp.add"
           case FPSubstractionFactory => "fp.sub"
           case FPMultiplicationFactory => "fp.mul"
           case FPDivisionFactory => "fp.div"
           case FPNegateFactory => "fp.neg"
-          case FPToFPFactory => "(_ to_fp " + fpFunSym.sort.eBits + " " + fpFunSym.sort.sBits + ")"          
+          case FPToFPFactory => "(_ to_fp " + fpFunSym.sort.eBits + " " + fpFunSym.sort.sBits + ")"         
           case FPConstantFactory(sign, eBits, sBits) => {
             "(fp #b" + sign + " #b" + eBits.take(fpFunSym.sort.eBits).mkString("") + " #b" + sBits.take(fpFunSym.sort.sBits - 1).mkString("") + ")" 
           }

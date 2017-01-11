@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-
-=======
 (set-logic QF_FP)
->>>>>>> d09100ea0669498dc0dc4e60ede738747da679ea
 (set-info :smt-lib-version 2.0)
 (set-info :category "crafted")
 (set-info :source |Alberto Griggio <griggio@fbk.eu>. These benchmarks were used for the evaluation in the following paper: L. Haller, A. Griggio, M. Brain, D. Kroening: Deciding floating-point logic with systematic abstraction. FMCAD 2012. Real-numbered literals have been automatically translated by MathSAT|)
@@ -108,7 +104,3 @@
 (define-fun _t_90 () Bool (and _t_19 _t_89))
 (assert _t_90)
 (check-sat)
-<<<<<<< HEAD
-(get-model)
-=======
->>>>>>> d09100ea0669498dc0dc4e60ede738747da679ea

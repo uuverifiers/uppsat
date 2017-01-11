@@ -15,6 +15,8 @@ import uppsat.ModelReconstructor
 import uppsat.ast.AST
 import uppsat.ast._
 import uppsat.solver.Z3Solver
+import uppsat.theory.BooleanTheory.BoolTrue
+import uppsat.theory.BooleanTheory.BoolFalse
 
 
 
@@ -248,10 +250,14 @@ object SmallFloatsApproximation extends Approximation {
       }
       
       // TODO: We have to fix infinity and scale it ... all constants?
+      // TODO:  Signed Zeroes?
       case (FPSort(e, s), fp : FloatingPointTheory.FloatingPointConstantSymbol)  => {
         fp.getFactory match {
           case FPPlusInfinity => Leaf(FPPlusInfinity(List(FPSort(e, s))))
           case FPMinusInfinity => Leaf(FPMinusInfinity(List(FPSort(e, s))))
+          case FPNaN => Leaf(FPNaN(List(FPSort(e, s))))
+          case FPPositiveZero => Leaf(FPPositiveZero(List(FPSort(e, s))))
+          case FPNegativeZero => Leaf(FPNegativeZero(List(FPSort(e, s))))
           case _ => throw new Exception("How do we translatee FPConstant Symbol? " + fp)
         }
       }      
@@ -295,8 +301,8 @@ object SmallFloatsApproximation extends Approximation {
     val AST(symbol, label, children) = ast
     
     var currModel = 
-      symbol match {
-        case fpEq : FPEqualityFactory.FPPredicateSymbol => {
+      (symbol, decodedModel.getOrElse(path, Leaf(BoolFalse)).symbol) match {
+        case (fpEq : FPEqualityFactory.FPPredicateSymbol, BoolTrue) => {
          val v0Path = 0::path
          val v1Path = 1::path
          val v0Defined = candidateModel.contains(v0Path)
@@ -307,7 +313,7 @@ object SmallFloatsApproximation extends Approximation {
                case (false, true) => candidateModel + (v0Path -> candidateModel(v1Path))
                case (true, false) => candidateModel + (v1Path -> candidateModel(v0Path))
                case (false, false) => candidateModel + (v1Path -> decodedModel(v0Path)) + (v0Path -> decodedModel(v0Path)) //TODO: Fancy things could be done here.
-               case (true, true) => candidateModel                   
+               case (true, true) => candidateModel
              }
            }           
            case ( v0 : FPVar, _ ) if (!v0Defined) => { 
@@ -321,7 +327,8 @@ object SmallFloatsApproximation extends Approximation {
            case (_, _) => candidateModel
         }
       }
-      case _ => candidateModel
+      case _ => candidateModel     
+      
     }
     
     val newChildren = for ( i <- 0 until children.length) yield { 
@@ -347,10 +354,11 @@ object SmallFloatsApproximation extends Approximation {
     for ((c, i) <- children zip children.indices) 
       currModel = reconstructAux( c, i :: path, decodedModel, currModel)
     
-    reconstructNode(ast, path, decodedModel, currModel)
-    
+    val res = reconstructNode(ast, path, decodedModel, currModel)
+    res
   }
+  
   def reconstruct(ast : AST, decodedModel : Model) : Model = {
-    reconstructAux(ast, List(0), decodedModel, Map())  
+     reconstructAux(ast, List(0), decodedModel, Map())
   }
 }
