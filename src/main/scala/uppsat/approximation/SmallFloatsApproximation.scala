@@ -244,7 +244,7 @@ object SmallFloatsApproximation extends Approximation {
   def decodeSymbolValue(symbol : ConcreteFunctionSymbol, value : AST, p : Int) = {
     (symbol.sort, value.symbol) match {
       case (FPSort(e, s), fp : FloatingPointTheory.FloatingPointLiteral)  => {
-        val fullEBits = fp.eBits ++ List.fill(e - fp.eBits.length)(0)
+        val fullEBits = fp.eBits.head :: List.fill(e - fp.eBits.length)(0) ++ fp.eBits.tail
         // TODO: Should it be s-1...
         val fullSBits = fp.sBits ++ List.fill((s - 1) - fp.sBits.length)(0)
         Leaf(FPLiteral(fp.sign, fullEBits, fullSBits, FPSort(e, s)))
@@ -343,7 +343,7 @@ object SmallFloatsApproximation extends Approximation {
       val newAST = AST(symbol, label, newChildren.toList)
       val newValue = ModelReconstructor.evalAST(newAST, FloatingPointTheory, Z3Solver)
       if (newValue != decodedModel(path))
-          println("::" + path + " " + decodedModel(path) + " / " + newValue)
+          println("::" + path + " " + decodedModel(path).prettyPrint("") + " / " + newValue.prettyPrint(""))
           
       currModel + (path -> newValue)
     } else { 
