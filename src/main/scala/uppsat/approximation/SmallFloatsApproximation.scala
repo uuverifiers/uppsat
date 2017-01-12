@@ -20,6 +20,7 @@ import uppsat.theory.BooleanTheory.BoolFalse
 import uppsat.theory.BooleanTheory
 import uppsat.theory.BooleanTheory.BooleanFunctionSymbol
 import uppsat.theory.BooleanTheory.BooleanConstant
+import uppsat.theory.BooleanTheory.BoolVar
 
 
 
@@ -223,8 +224,9 @@ object SmallFloatsApproximation extends Approximation {
       case _ => {
         AST(symbol, path, children) 
       }
-    }      
-  }
+    }
+   }
+ 
     
   def encodeAux(ast : AST, path : Path, pmap : PrecisionMap[Int]) : AST = {
     val AST(symbol, label, children) = ast
@@ -296,60 +298,73 @@ object SmallFloatsApproximation extends Approximation {
     } else if (candidateModel.contains(path)) {
       (candidateModel(path), candidateModel)
     } else {
-      //TODO: assert ast is variable
+      if (!ast.symbol.isInstanceOf[FPVar] && !ast.symbol.isInstanceOf[BoolVar] && !ast.symbol.isInstanceOf[RMVar]) {
+        ast.prettyPrint("")
+        println(path)
+        println(candidateModel.mkString("\t"))
+        throw new Exception(ast.symbol + " should be a variable")
+      }
       (decodedModel(path), candidateModel + (path -> decodedModel(path))) 
     }
   }
   
-  def reconstructNode(ast : AST, path : Path, decodedModel : Model, candidateModel : Model) : Model = {
+  def reconstructNode(ast : AST, path : Path, decodedModel : Model, candidateModel : Model, oldStatus : Boolean) : (Model, Boolean) = {
     val AST(symbol, label, children) = ast
     
-    var currModel = 
+    var status = oldStatus
+    var currModel = // candidateModel 
       (symbol, decodedModel.getOrElse(path, Leaf(BoolFalse)).symbol) match {
+          
         case (fpEq : FPEqualityFactory.FPPredicateSymbol, BoolTrue) => {
-         val v0Path = 0::path
-         val v1Path = 1::path
-         val v0Defined = candidateModel.contains(v0Path)
-         val v1Defined = candidateModel.contains(v1Path)
-         (children(0).symbol, children(1).symbol) match {         
-           case ( v0 : FPVar, v1 : FPVar) => {
-             (v0Defined, v1Defined) match {
-               case (false, true) => candidateModel + (v0Path -> candidateModel(v1Path))
-               case (true, false) => candidateModel + (v1Path -> candidateModel(v0Path))
-               case (false, false) => candidateModel + (v1Path -> decodedModel(v0Path)) + (v0Path -> decodedModel(v0Path)) //TODO: Fancy things could be done here.
-               case (true, true) => candidateModel
+           val v0Path = 0::path
+           val v1Path = 1::path
+           val v0Defined = candidateModel.contains(v0Path)
+           val v1Defined = candidateModel.contains(v1Path)
+           
+           (children(0).symbol, children(1).symbol) match {         
+             case ( v0 : FPVar, v1 : FPVar) => {
+               println("Both variables")
+               (v0Defined, v1Defined) match {
+                 case (false, true) => candidateModel + (v0Path -> candidateModel(v1Path))
+                 case (true, false) => candidateModel + (v1Path -> candidateModel(v0Path))
+                 case (false, false) => candidateModel + (v1Path -> decodedModel(v0Path)) + (v0Path -> decodedModel(v0Path)) //TODO: Fancy things could be done here.
+                 case (true, true) => candidateModel
+               }
+             }           
+             case ( v0 : FPVar, _ ) if (!v0Defined) => {
+               println("LHS is undef variable")
+               val (newC, newM) = getCurrentValue(children(1), v1Path, decodedModel, candidateModel)
+               newM + (v0Path -> newC )
              }
-           }           
-           case ( v0 : FPVar, _ ) if (!v0Defined) => { 
-             val (newC, newM) = getCurrentValue(children(1), v1Path, decodedModel, candidateModel)
-             newM + (v0Path -> newC )
-           }
-           case ( _ , v1 : FPVar) if (!v1Defined) =>{
-             val (newC, newM) = getCurrentValue(children(0), v0Path, decodedModel, candidateModel)
-             newM + (v1Path -> newC )           
-           }
-           case (_, _) => candidateModel
+             case ( _ , v1 : FPVar) if (!v1Defined) =>{
+               println("RHS is undef variable")
+               val (newC, newM) = getCurrentValue(children(0), v0Path, decodedModel, candidateModel)
+               newM + (v1Path -> newC )           
+             }
+             case (_, _) => {
+               println("no variables")
+               candidateModel
+             }
+          }
         }
+        case _ => candidateModel
       }
-      case _ => candidateModel     
-      
-    }
-    
-    val newChildren = for ( i <- 0 until children.length) yield { 
-      val (newC, newM) = getCurrentValue(children(i), i :: path, decodedModel, currModel)
-      currModel = newM
-      newC
-    }
-    
-    //TODO: Make this check more comprehensive
+
     if (children.length > 0) {
+      val newChildren = for ( i <- 0 until children. length) yield { 
+        
+        val (newC, newM) = getCurrentValue(children(i), i :: path, decodedModel, currModel)
+        currModel = newM
+        newC
+      }
+      
+      //Evaluation
       val newAST = AST(symbol, label, newChildren.toList)
       val newValue = ModelReconstructor.evalAST(newAST, FloatingPointTheory, Z3Solver)
-      if (newValue != decodedModel(path))
-          println("::" + path + " " + decodedModel(path).prettyPrint("") + " / " + newValue.prettyPrint(""))
-          
+      if (newValue.symbol.sort == BooleanTheory.BooleanSort && newValue != decodedModel(path)) 
+        status = false
       if (symbol.sort == BooleanTheory.BooleanSort) {
-        val assignments = for ((symbol, label) <- ast.subIterator(path) if (!symbol.theory.isDefinedLiteral(symbol))) yield {
+        val assignments = for ((symbol, label) <- ast.subIterator(path) if (symbol.isInstanceOf[FPVar] || symbol.isInstanceOf[BoolVar])) yield {
           val value = currModel(label)
           (symbol.toString(), value.symbol.theory.toSMTLib(value.symbol) )
         }
@@ -360,26 +375,46 @@ object SmallFloatsApproximation extends Approximation {
         if ( backupAnswer != answer )
           throw new Exception("Backup validation failed : \nEval: " + answer + "\nvalAst: " + backupAnswer)
 
-      }
-          
-      currModel + (path -> newValue)
-    } else { 
-      currModel
+      }        
+      currModel = currModel + (path -> newValue)
     }
+//    else { 
+//      currModel
+//    }
+    (currModel, status)
   }
+        
+    
+    
+ 
+        
+//        println("::" + path + " " + decodedModel(path).prettyPrint("") + " / " + newValue.prettyPrint(""))
+//          
+//      
+          
+    
   
-  def reconstructAux(ast : AST, path : Path, decodedModel : Model, candidateModel : Model) : Model = {
+  
+  def reconstructAux(ast : AST, path : Path, decodedModel : Model, candidateModel : Model, oldStatus : Boolean) : (Model, Boolean) = {
     val AST(symbol, label, children) = ast
     var currModel = candidateModel
-   
-    for ((c, i) <- children zip children.indices) 
-      currModel = reconstructAux( c, i :: path, decodedModel, currModel)
-    
-    val res = reconstructNode(ast, path, decodedModel, currModel)
+    var status = oldStatus
+    var currStatus = true
+    for ((c, i) <- children zip children.indices) {
+      val r = reconstructAux( c, i :: path, decodedModel, currModel, status)
+      currModel = r._1
+      status = status && r._2
+    }
+    val res = reconstructNode(ast, path, decodedModel, currModel, status)
     res
   }
   
   def reconstruct(ast : AST, decodedModel : Model) : Model = {
-     reconstructAux(ast, List(0), decodedModel, Map())
+     val (m, s) = reconstructAux(ast, List(0), decodedModel, Map(), true)
+     if (!s) 
+       println("Discrepancies in reconstruction")
+     else
+       println("Reconstruction successful")
+     m
   }
 }

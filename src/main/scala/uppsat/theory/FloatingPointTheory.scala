@@ -538,7 +538,6 @@ case class FPSpecialValuesFactory(symbolName : String) extends IndexedFunctionSy
       case "roundTowardZero" => RoundToZero      
 
       case bitPattern(s1, s2, s3) => {
-        println("\tBitPattern")
         val sign = 
           if (s1 == "#b0") 0
           else if (s1 == "#b1") 1
