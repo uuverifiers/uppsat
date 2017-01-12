@@ -17,6 +17,9 @@ import uppsat.ast._
 import uppsat.solver.Z3Solver
 import uppsat.theory.BooleanTheory.BoolTrue
 import uppsat.theory.BooleanTheory.BoolFalse
+import uppsat.theory.BooleanTheory
+import uppsat.theory.BooleanTheory.BooleanFunctionSymbol
+import uppsat.theory.BooleanTheory.BooleanConstant
 
 
 
@@ -344,6 +347,20 @@ object SmallFloatsApproximation extends Approximation {
       val newValue = ModelReconstructor.evalAST(newAST, FloatingPointTheory, Z3Solver)
       if (newValue != decodedModel(path))
           println("::" + path + " " + decodedModel(path).prettyPrint("") + " / " + newValue.prettyPrint(""))
+          
+      if (symbol.sort == BooleanTheory.BooleanSort) {
+        val assignments = for ((symbol, label) <- ast.subIterator(path) if (!symbol.theory.isDefinedLiteral(symbol))) yield {
+          val value = currModel(label)
+          (symbol.toString(), value.symbol.theory.toSMTLib(value.symbol) )
+        }
+  
+        val backupAnswer = ModelReconstructor.valAST(ast, assignments.toList, this.inputTheory, Z3Solver)
+        
+        val answer = newValue.symbol.asInstanceOf[BooleanConstant] == BoolTrue
+        if ( backupAnswer != answer )
+          throw new Exception("Backup validation failed : \nEval: " + answer + "\nvalAst: " + backupAnswer)
+
+      }
           
       currModel + (path -> newValue)
     } else { 

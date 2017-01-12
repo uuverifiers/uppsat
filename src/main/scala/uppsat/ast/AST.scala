@@ -84,6 +84,17 @@ case class AST(val symbol : ConcreteFunctionSymbol, val label : Label, val child
     }
   }
   
+  def subIterator(path : Path) = new Iterator[(ConcreteFunctionSymbol, Path)] {
+    val todo = new ArrayStack[(AST, Path)]
+    todo push (AST.this, path)
+    def hasNext = !todo.isEmpty
+    def next = {
+      val (AST(data, label, children), path) = todo.pop
+      todo ++= children zip children.indices.map(_ :: path)
+      (data, path)
+    }
+  }
+  
     
   def toSet = iterator.toSet 
     
