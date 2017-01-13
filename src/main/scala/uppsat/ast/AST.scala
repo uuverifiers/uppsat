@@ -73,6 +73,23 @@ case class AST(val symbol : ConcreteFunctionSymbol, val label : Label, val child
     for (c <- children) c foreach f
   }
   
+  
+  // Note: Dual use of path/label
+  def labelAux(path: Path) : AST = {    
+    if (label != List()) 
+      throw new Exception("Trying to label an already labeled AST")
+    
+    val newChildren = 
+      for ((c, i) <- children zip children.indices) yield { 
+      c.labelAux( i :: path)
+    }
+    AST(symbol, path, newChildren)
+  }
+  
+  def labelAST : AST = {
+    this.labelAux(List(0))
+  }
+  
   def iterator = new Iterator[(ConcreteFunctionSymbol, Path)] {
     val todo = new ArrayStack[(AST, Path)]
     todo push (AST.this, List(0))
