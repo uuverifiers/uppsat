@@ -9,8 +9,8 @@ import ast.AST
 import uppsat.solver.SMTSolver
 import uppsat.solver.SMTTranslator
 import uppsat.solver.Z3OnlineSolver
-import uppsat.ast.ConcreteFunctionSymbol
 import uppsat.theory.FloatingPointTheory.FPVar
+import uppsat.ast._
 
 object ModelReconstructor {
   //type Model = Map[Path, AST]
@@ -20,7 +20,11 @@ object ModelReconstructor {
     var subexprValuation : Map[Path, AST] = Map()
     
     
-    def set(ast : AST, value : AST) = {
+    def getModel : Map[ConcreteFunctionSymbol, AST] = {
+      variableValuation
+    }
+    
+    def set(ast : AST, value : AST) : Unit = {
       if (contains(ast)){
         throw new Exception("Reassigning  a model value")
       }
@@ -38,6 +42,7 @@ object ModelReconstructor {
         }
         case _ => throw new Exception("Requesting a non-AST model value!")
       }
+      ()
     }
     
     def contains(ast : AST) : Boolean = {

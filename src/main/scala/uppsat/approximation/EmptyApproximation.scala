@@ -43,6 +43,6 @@ object EmptyApproximation extends Approximation {
     appModel
   }
   def reconstruct(ast : AST, decodedModel : Model)  = {
-    (decodedModel, Map() : Map[ConcreteFunctionSymbol, AST])
+    decodedModel
   }
 }

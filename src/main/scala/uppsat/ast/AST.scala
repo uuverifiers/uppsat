@@ -90,7 +90,18 @@ case class AST(val symbol : ConcreteFunctionSymbol, val label : Label, val child
     this.labelAux(List(0))
   }
   
-  def iterator = new Iterator[(ConcreteFunctionSymbol, Path)] {
+  def iterator = new Iterator[AST] {
+    val todo = new ArrayStack[AST]
+    todo push (AST.this)
+    def hasNext = !todo.isEmpty
+    def next = {
+      val n = todo.pop
+      todo ++ n.children
+      n
+    }
+  }
+  
+  def oldIterator = new Iterator[(ConcreteFunctionSymbol, Path)] {
     val todo = new ArrayStack[(AST, Path)]
     todo push (AST.this, List(0))
     def hasNext = !todo.isEmpty
@@ -113,7 +124,7 @@ case class AST(val symbol : ConcreteFunctionSymbol, val label : Label, val child
   }
   
     
-  def toSet = iterator.toSet 
+  def toSet = oldIterator.toSet 
     
   def prettyPrint : Unit =
     prettyPrint("")
@@ -124,7 +135,7 @@ case class AST(val symbol : ConcreteFunctionSymbol, val label : Label, val child
     for (c <- children) (c prettyPrint newIndent)
   }
   
-  def size = iterator.size  
+  def size = oldIterator.size  
   
   
   def symbols : Set[ConcreteFunctionSymbol]= this.toSet.map(_._1)    

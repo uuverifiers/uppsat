@@ -20,8 +20,7 @@ trait Approximation {
   def unsatRefine(ast : AST, core : List[AST], pmap : PrecisionMap[P]) : PrecisionMap[P]
   def encodeFormula(ast : AST, pmap : PrecisionMap[P]) : AST
   def decodeModel(ast : AST, appModel : Model, pmap : PrecisionMap[P]) : Model
-  def reconstruct(ast : AST, decodedModel : Model) : (Model, Map[ConcreteFunctionSymbol, AST])
-  
+  def reconstruct(ast : AST, decodedModel : Model) : Model
  }
 
 
