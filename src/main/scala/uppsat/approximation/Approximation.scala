@@ -7,7 +7,7 @@ import uppsat.ast.AST
 import uppsat.ast.ConcreteSort
 import uppsat.theory.Theory
 import uppsat.precision.PrecisionOrdering
-import uppsat.ast.FunctionSymbol
+import uppsat.ast._
 import uppsat.precision.PrecisionMap.Path
 
 trait Approximation {
@@ -20,7 +20,7 @@ trait Approximation {
   def unsatRefine(ast : AST, core : List[AST], pmap : PrecisionMap[P]) : PrecisionMap[P]
   def encodeFormula(ast : AST, pmap : PrecisionMap[P]) : AST
   def decodeModel(ast : AST, appModel : Model, pmap : PrecisionMap[P]) : Model
-  def reconstruct(ast : AST, decodedModel : Model) : Model
+  def reconstruct(ast : AST, decodedModel : Model) : (Model, Map[ConcreteFunctionSymbol, AST])
   
  }
 
