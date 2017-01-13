@@ -12,6 +12,7 @@ trait Theory {
     
     def parseLiteral(lit : String) : AST
     def isDefinedLiteral(symbol : ConcreteFunctionSymbol) : Boolean
+    def isVariable(symbol : ConcreteFunctionSymbol) : Boolean
     def SMTHeader : String
     def toSMTLib(symbol : ConcreteFunctionSymbol) : String
     def toSMTLib(sort : ConcreteSort) : String

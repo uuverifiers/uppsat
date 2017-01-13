@@ -624,6 +624,14 @@ case class FPSpecialValuesFactory(symbolName : String) extends IndexedFunctionSy
     }
   }
   
+  def isVariable(symbol : ConcreteFunctionSymbol) = {
+    symbol match {
+      case FPVar(_) |
+           RMVar(_) => true
+      case _ => false
+    }
+  }
+  
   val SMTHeader = {
     "(set-logic QF_FP)" //TODO: Check the actual logic
   }

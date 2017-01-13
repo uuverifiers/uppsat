@@ -98,6 +98,12 @@ object IntegerTheory extends Theory {
     }
   }
   
+  def isVariable(symbol : ConcreteFunctionSymbol) = {
+    symbol match {
+      case IntVar(_) => true
+      case _ => false
+    }
+  }
   val SMTHeader = {
     "(set-logic QF_LIA)" //TODO: Check the actual logic
   }

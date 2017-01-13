@@ -25,6 +25,10 @@ object PolymorphicTheory extends Theory {
     false
   }
   
+  def isVariable(symbol : ConcreteFunctionSymbol) = {
+    false
+  }
+  
   val SMTHeader = {
     "(set-info :source Poly logic needs no theory)"
   }

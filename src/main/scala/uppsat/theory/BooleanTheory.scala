@@ -91,6 +91,13 @@ object BooleanTheory extends Theory {
     }
   }
   
+  def isVariable(symbol : ConcreteFunctionSymbol) = {
+    symbol match {
+      case BoolVar(_) => true
+      case _ => false
+    }
+  }
+  
   val SMTHeader = {
     ""
   }
