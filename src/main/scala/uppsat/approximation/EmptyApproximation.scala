@@ -42,7 +42,7 @@ object EmptyApproximation extends Approximation {
   def decodeModel(ast : AST, appModel : Model, pmap : PrecisionMap[Int]) = {
     appModel
   }
-  def reconstruct(ast : AST, decodedModel : Model) : Model = {
-    decodedModel
+  def reconstruct(ast : AST, decodedModel : Model)  = {
+    (decodedModel, Map() : Map[ConcreteFunctionSymbol, AST])
   }
 }

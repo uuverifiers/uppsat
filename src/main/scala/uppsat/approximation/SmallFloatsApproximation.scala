@@ -292,83 +292,85 @@ object SmallFloatsApproximation extends Approximation {
     decodeAux(ast, List(0), appModel, pmap)
   }
   
-  def getCurrentValue(ast : AST, path : Path, decodedModel : Model, candidateModel : Model) : (AST, Model) = {
+  def getCurrentValue(ast : AST, path : Path, decodedModel : Model, candidateModel : Model, assignments : Map[ConcreteFunctionSymbol, AST]) : (AST, Map[ConcreteFunctionSymbol, AST]) = {
     if (isLiteral(ast.symbol)) {
-      (ast, candidateModel)
-    } else if (candidateModel.contains(path)) {
-      (candidateModel(path), candidateModel)
+      (ast, assignments)
+    } else if (ast.symbol.isInstanceOf[FPVar] || ast.symbol.isInstanceOf[BoolVar] || ast.symbol.isInstanceOf[RMVar]) {
+      if (assignments.contains(ast.symbol)) { 
+          (assignments(ast.symbol), assignments)
+      } else {
+        (decodedModel(path), assignments + (ast.symbol -> decodedModel(path)))
+      }    
     } else {
-      if (!ast.symbol.isInstanceOf[FPVar] && !ast.symbol.isInstanceOf[BoolVar] && !ast.symbol.isInstanceOf[RMVar]) {
-        ast.prettyPrint("")
-        println(path)
-        println(candidateModel.mkString("\t"))
-        throw new Exception(ast.symbol + " should be a variable")
-      }
-      (decodedModel(path), candidateModel + (path -> decodedModel(path))) 
+      (candidateModel(path), assignments)
     }
   }
   
-  def reconstructNode(ast : AST, path : Path, decodedModel : Model, candidateModel : Model, oldStatus : Boolean) : (Model, Boolean) = {
+  def reconstructNode(ast : AST, path : Path, decodedModel : Model, candidateModel : Model, assignments : Map[ConcreteFunctionSymbol, AST] ) : (Model, Map[ConcreteFunctionSymbol, AST]) = {
     val AST(symbol, label, children) = ast
     
-    var status = oldStatus
-    var currModel = // candidateModel 
-      (symbol, decodedModel.getOrElse(path, Leaf(BoolFalse)).symbol) match {
-          
-        case (fpEq : FPEqualityFactory.FPPredicateSymbol, BoolTrue) => {
-           val v0Path = 0::path
-           val v1Path = 1::path
-           val v0Defined = candidateModel.contains(v0Path)
-           val v1Defined = candidateModel.contains(v1Path)
-           
-           (children(0).symbol, children(1).symbol) match {         
-             case ( v0 : FPVar, v1 : FPVar) => {
-               println("Both variables")
-               (v0Defined, v1Defined) match {
-                 case (false, true) => candidateModel + (v0Path -> candidateModel(v1Path))
-                 case (true, false) => candidateModel + (v1Path -> candidateModel(v0Path))
-                 case (false, false) => candidateModel + (v1Path -> decodedModel(v0Path)) + (v0Path -> decodedModel(v0Path)) //TODO: Fancy things could be done here.
-                 case (true, true) => candidateModel
-               }
-             }           
-             case ( v0 : FPVar, _ ) if (!v0Defined) => {
-               println("LHS is undef variable")
-               val (newC, newM) = getCurrentValue(children(1), v1Path, decodedModel, candidateModel)
-               newM + (v0Path -> newC )
-             }
-             case ( _ , v1 : FPVar) if (!v1Defined) =>{
-               println("RHS is undef variable")
-               val (newC, newM) = getCurrentValue(children(0), v0Path, decodedModel, candidateModel)
-               newM + (v1Path -> newC )           
-             }
-             case (_, _) => {
-               println("no variables")
-               candidateModel
-             }
-          }
-        }
-        case _ => candidateModel
-      }
+    var currAssignments = assignments
+    var currModel =  candidateModel 
+//      (symbol, decodedModel.getOrElse(path, Leaf(BoolFalse)).symbol) match {
+//          
+//        case (fpEq : FPEqualityFactory.FPPredicateSymbol, BoolTrue) => {
+//           val v0Path = 0::path
+//           val v1Path = 1::path
+//           val v0Defined = candidateModel.contains(v0Path)
+//           val v1Defined = candidateModel.contains(v1Path)
+//           
+//           (children(0).symbol, children(1).symbol) match {         
+//             case ( v0 : FPVar, v1 : FPVar) => {
+//               println("Both variables")
+//               (v0Defined, v1Defined) match {
+//                 case (false, true) => candidateModel + (v0Path -> candidateModel(v1Path))
+//                 case (true, false) => candidateModel + (v1Path -> candidateModel(v0Path))
+//                 case (false, false) => candidateModel + (v1Path -> decodedModel(v0Path)) + (v0Path -> decodedModel(v0Path)) //TODO: Fancy things could be done here.
+//                 case (true, true) => candidateModel
+//               }
+//             }           
+//             case ( v0 : FPVar, _ ) if (!v0Defined) => {
+//               println("LHS is undef variable")
+//               val (newC, newM) = getCurrentValue(children(1), v1Path, decodedModel, candidateModel)
+//               newM + (v0Path -> newC )
+//             }
+//             case ( _ , v1 : FPVar) if (!v1Defined) =>{
+//               println("RHS is undef variable")
+//               val (newC, newM) = getCurrentValue(children(0), v0Path, decodedModel, candidateModel)
+//               newM + (v1Path -> newC )           
+//             }
+//             case (_, _) => {
+//               println("no variables")
+//               candidateModel
+//             }
+//          }
+//        }
+//        case _ => candidateModel
+//      }
 
     if (children.length > 0) {
       val newChildren = for ( i <- 0 until children. length) yield { 
-        
-        val (newC, newM) = getCurrentValue(children(i), i :: path, decodedModel, currModel)
-        currModel = newM
-        newC
+        val (newC, newA) = getCurrentValue(children(i), i :: path, decodedModel, currModel, currAssignments)
+        currAssignments = newA
+        newC        
       }
       
       //Evaluation
       val newAST = AST(symbol, label, newChildren.toList)
       val newValue = ModelReconstructor.evalAST(newAST, FloatingPointTheory, Z3Solver)
-      if (newValue.symbol.sort == BooleanTheory.BooleanSort && newValue != decodedModel(path)) 
-        status = false
       if (symbol.sort == BooleanTheory.BooleanSort) {
-        val assignments = for ((symbol, label) <- ast.subIterator(path) if (symbol.isInstanceOf[FPVar] || symbol.isInstanceOf[BoolVar])) yield {
-          val value = currModel(label)
+        val assignments = for ((symbol, label) <- ast.subIterator(path) if (symbol.isInstanceOf[FPVar] || symbol.isInstanceOf[BoolVar] || symbol.isInstanceOf[RMVar])) yield {
+          val value = currAssignments(symbol)
           (symbol.toString(), value.symbol.theory.toSMTLib(value.symbol) )
         }
-  
+        
+        if (path.length == 1) {
+          println("Root valAST")
+        }
+        if (path.length == 2) {
+          println("Child valAST")
+        }
+        
         val backupAnswer = ModelReconstructor.valAST(ast, assignments.toList, this.inputTheory, Z3Solver)
         
         val answer = newValue.symbol.asInstanceOf[BooleanConstant] == BoolTrue
@@ -381,7 +383,7 @@ object SmallFloatsApproximation extends Approximation {
 //    else { 
 //      currModel
 //    }
-    (currModel, status)
+    (currModel, currAssignments)
   }
         
     
@@ -395,26 +397,19 @@ object SmallFloatsApproximation extends Approximation {
     
   
   
-  def reconstructAux(ast : AST, path : Path, decodedModel : Model, candidateModel : Model, oldStatus : Boolean) : (Model, Boolean) = {
+  def reconstructAux(ast : AST, path : Path, decodedModel : Model, candidateModel : Model, assignments : Map[ConcreteFunctionSymbol, AST]) : (Model, Map[ConcreteFunctionSymbol, AST]) = {
     val AST(symbol, label, children) = ast
     var currModel = candidateModel
-    var status = oldStatus
-    var currStatus = true
+    var currAssignments = assignments
     for ((c, i) <- children zip children.indices) {
-      val r = reconstructAux( c, i :: path, decodedModel, currModel, status)
+      val r = reconstructAux( c, i :: path, decodedModel, currModel, currAssignments)
       currModel = r._1
-      status = status && r._2
+      currAssignments = r._2
     }
-    val res = reconstructNode(ast, path, decodedModel, currModel, status)
-    res
+    reconstructNode(ast, path, decodedModel, currModel, currAssignments)
   }
   
-  def reconstruct(ast : AST, decodedModel : Model) : Model = {
-     val (m, s) = reconstructAux(ast, List(0), decodedModel, Map(), true)
-     if (!s) 
-       println("Discrepancies in reconstruction")
-     else
-       println("Reconstruction successful")
-     m
+  def reconstruct(ast : AST, decodedModel : Model) : (Model, Map[ConcreteFunctionSymbol, AST]) = {
+     reconstructAux(ast, List(0), decodedModel, Map(), Map()) 
   }
 }

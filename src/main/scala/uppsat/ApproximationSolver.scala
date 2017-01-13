@@ -48,19 +48,17 @@ object ApproximationSolver {
       val stringModel = Z3Solver.getModel(encodedSMT, translator.getDefinedSymbols.toList)
       val appModel = translator.getModel(formula, stringModel)
       val decodedModel = approximation.decodeModel(formula, appModel, pmap)
-      val reconstructedModel = approximation.reconstruct(formula, decodedModel)
+      val (reconstructedModel, varAssignments) = approximation.reconstruct(formula, decodedModel)
       
-      val assignments = for ((symbol, label) <- formula.iterator if (!symbol.theory.isDefinedLiteral(symbol))) yield {
-        val value = reconstructedModel(label)
+      val assignments = for ((symbol, value) <- varAssignments) yield {
         (symbol.toString(), value.symbol.theory.toSMTLib(value.symbol) )
       }
 
       if (ModelReconstructor.valAST(formula, assignments.toList, approximation.inputTheory, Z3Solver)) {
         val extModel =
-          (for ((symbol, label) <- formula.iterator 
-              if (!symbol.theory.isDefinedLiteral(symbol))) yield {
-                (symbol, reconstructedModel(label).toString())
-          }).toMap
+          for ((symbol, value) <- varAssignments) yield {
+          (symbol, value.symbol.theory.toSMTLib(value.symbol) )
+        }
         (Some(extModel), None)
       } else {
         if (pmap.isMaximal) {
