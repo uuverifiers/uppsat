@@ -96,7 +96,7 @@ case class AST(val symbol : ConcreteFunctionSymbol, val label : Label, val child
     def hasNext = !todo.isEmpty
     def next = {
       val n = todo.pop
-      todo ++ n.children
+      todo ++= n.children
       n
     }
   }
