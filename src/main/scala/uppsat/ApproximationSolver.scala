@@ -47,14 +47,19 @@ object ApproximationSolver {
     def tryReconstruct(encodedSMT : String) : (Option[ExtModel], Option[PrecisionMap[approximation.P]]) = Timer.measure("tryReconstruct") {
       val stringModel = Z3Solver.getModel(encodedSMT, translator.getDefinedSymbols.toList)
       val appModel = translator.getModel(formula, stringModel)
-      val decodedModel = approximation.decodeModel(formula, appModel, pmap)
-      val reconstructedModel = approximation.reconstruct(formula, decodedModel)
       
-      val assignments = for ( n <- formula.iterator if n.symbol.theory.isVariable(n.symbol)) yield {
-        val value = reconstructedModel(n)
-        (n.symbol.toString(), value.symbol.theory.toSMTLib(value.symbol) )
-      }
-
+      println("Approximate model: " + appModel.getAssignmentsFor(formula).mkString("\n\t") + "\nDecoding model ... ")
+      
+      val decodedModel = approximation.decodeModel(formula, appModel, pmap)
+      val appAssignments = decodedModel.getAssignmentsFor(formula)
+      
+      println("Decoded model: \n" + appAssignments.mkString("\n\t") + "\nReconstructing model ...")
+      
+      val reconstructedModel = approximation.reconstruct(formula, decodedModel)
+      val assignments = reconstructedModel.getAssignmentsFor(formula)
+      
+      println("Reconstructed model: \n" + appAssignments.mkString("\n\t") + "\nValidating model ...")
+      
       if (ModelReconstructor.valAST(formula, assignments.toList, approximation.inputTheory, Z3Solver)) {
         val extModel =
           for ((symbol, value) <- reconstructedModel.getModel) yield {

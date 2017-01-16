@@ -286,8 +286,9 @@ object SmallFloatsApproximation extends Approximation {
     val decodedValue = decodeSymbolValue(symbol, appModel(ast), pmap(path))
     
     if (decodedModel.contains(ast)){
-      if (decodedModel(ast) != decodedValue) {
-        throw new Exception("Decoding the model results in different values for the same entry")
+      if (decodedModel(ast).toString() != decodedValue.toString()) {
+         ast.prettyPrint("\t") 
+        throw new Exception("Decoding the model results in different values for the same entry : \n" + decodedModel(ast) + " \n" + decodedValue)
       }
     } else {
       decodedModel.set(ast, decodedValue)
@@ -300,24 +301,19 @@ object SmallFloatsApproximation extends Approximation {
     decodedModel
   }
   
-//  def getCurrentValue(ast : AST, path : Path, decodedModel : Model, candidateModel : Model, assignments : Map[ConcreteFunctionSymbol, AST]) : (AST, Map[ConcreteFunctionSymbol, AST]) = {
-//    if (isLiteral(ast.symbol)) {
-//      (ast, assignments)
-//    } else if (ast.symbol.isInstanceOf[FPVar] || ast.symbol.isInstanceOf[BoolVar] || ast.symbol.isInstanceOf[RMVar]) {
-//      if (assignments.contains(ast.symbol)) { 
-//          (assignments(ast.symbol), assignments)
-//      } else {
-//        (decodedModel(path), assignments + (ast.symbol -> decodedModel(path)))
-//      }    
-//    } else {
-//      (candidateModel(path), assignments)
-//    }
-//  }
-//  
-  def reconstructNode(ast : AST, path : Path, decodedModel : Model, candidateModel : Model) : Unit = {
-    val AST(symbol, label, children) = ast
-    
-//    (symbol, decodedModel.getOrElse(path, Leaf(BoolFalse)).symbol) match {
+  def getCurrentValue(ast : AST, decodedModel : Model, candidateModel : Model) : AST = {
+    if (! candidateModel.contains(ast)) {
+          candidateModel.set(ast, decodedModel(ast))
+        } 
+    candidateModel(ast)
+  }
+  
+
+  
+  //******************************************************************//
+  //                    Equality as Assignment                        //
+  //******************************************************************//
+  //    (symbol, decodedModel.getOrElse(path, Leaf(BoolFalse)).symbol) match {
 //      case (fpEq : FPEqualityFactory.FPPredicateSymbol, BoolTrue) => {
 //         val v0Path = 0::path
 //         val v1Path = 1::path
@@ -352,20 +348,24 @@ object SmallFloatsApproximation extends Approximation {
 //      case _ => candidateModel
 //    }
 
+  
+  def reconstructNode(ast : AST, path : Path, decodedModel : Model, candidateModel : Model) : Unit = {
+    val AST(symbol, label, children) = ast
+    
+
     if (children.length > 0) {
       val newChildren = for ( c <- children) yield { 
-        candidateModel(c)        
+        getCurrentValue(c, decodedModel, candidateModel)
       }
       
       //Evaluation
       val newAST = AST(symbol, label, newChildren.toList)
       val newValue = ModelReconstructor.evalAST(newAST, FloatingPointTheory, Z3Solver)
       if (symbol.sort == BooleanTheory.BooleanSort) {
-        val assignments = for ( n <- ast.iterator if n.symbol.theory.isVariable(n.symbol)) yield {
-          val value = candidateModel(n)
-          (n.symbol.toString(), value.symbol.theory.toSMTLib(value.symbol) )
-        }
-        
+        val assignments = candidateModel.getAssignmentsFor(ast).toList
+        ast.prettyPrint("\t")
+        println("Assignments")
+        println(assignments.mkString("\n"))
         if (path.length == 1) {
           println("Root valAST")
         }

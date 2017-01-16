@@ -24,6 +24,13 @@ object ModelReconstructor {
       variableValuation
     }
     
+    def getAssignmentsFor(ast : AST)   = {
+      for ( n <- ast.iterator if n.symbol.theory.isVariable(n.symbol)) yield {
+        val value = this(n)
+        (n.symbol.toString(), value.symbol.theory.toSMTLib(value.symbol) )
+      }      
+    }
+    
     def set(ast : AST, value : AST) : Unit = {
       if (contains(ast)){
         throw new Exception("Reassigning  a model value")
