@@ -15,6 +15,7 @@ import uppsat.ModelReconstructor
 import uppsat.ast.AST
 import uppsat.ast._
 import uppsat.solver.Z3Solver
+import uppsat.solver.Z3OnlineSolver
 import uppsat.theory.BooleanTheory.BoolTrue
 import uppsat.theory.BooleanTheory.BoolFalse
 import uppsat.theory.BooleanTheory
@@ -22,6 +23,8 @@ import uppsat.theory.BooleanTheory.BooleanFunctionSymbol
 import uppsat.theory.BooleanTheory.BooleanConstant
 import uppsat.theory.BooleanTheory.BoolVar
 import uppsat.ModelReconstructor.Model
+import uppsat.solver.Z3OnlineException
+import uppsat.solver.Z3OnlineSolver
 
 
 
@@ -313,45 +316,47 @@ object SmallFloatsApproximation extends Approximation {
   //******************************************************************//
   //                    Equality as Assignment                        //
   //******************************************************************//
-  //    (symbol, decodedModel.getOrElse(path, Leaf(BoolFalse)).symbol) match {
-//      case (fpEq : FPEqualityFactory.FPPredicateSymbol, BoolTrue) => {
-//         val v0Path = 0::path
-//         val v1Path = 1::path
-////         val v0Defined = candidateModel.contains(v0Path)
-////         val v1Defined = candidateModel.contains(v1Path) 
-//         (children(0).symbol, children(1).symbol) match {         
-//           case ( v0 : FPVar, v1 : FPVar) => {
-//             println("Both variables")
-//             (v0Defined, v1Defined) match {
-//               case (false, true) => candidateModel + (v0Path -> candidateModel(v1Path))
-//               case (true, false) => candidateModel + (v1Path -> candidateModel(v0Path))
-//               case (false, false) => candidateModel + (v1Path -> decodedModel(v0Path)) + (v0Path -> decodedModel(v0Path)) //TODO: Fancy things could be done here.
-//               case (true, true) => candidateModel
-//             }
-//           }           
-//           case ( v0 : FPVar, _ ) if (!v0Defined) => {
-//             println("LHS is undef variable")
-//             val (newC, newM) = getCurrentValue(children(1), v1Path, decodedModel, candidateModel)
-//             newM + (v0Path -> newC )
-//           }
-//           case ( _ , v1 : FPVar) if (!v1Defined) =>{
-//             println("RHS is undef variable")
-//             val (newC, newM) = getCurrentValue(children(0), v0Path, decodedModel, candidateModel)
-//             newM + (v1Path -> newC )           
-//           }
-//           case (_, _) => {
-//             println("no variables")
-//             candidateModel
-//           }
-//        }
-//      }
-//      case _ => candidateModel
-//    }
+  def equalityAsAssignment(ast : AST, decodedModel : Model,  candidateModel : Model) = {
+    ast match {
+      case AST(fpEq : FPEqualityFactory.FPPredicateSymbol, path, children) if (decodedModel(ast).symbol == BoolTrue)  => {
+         val lhs = children(0)
+         val rhs = children(1)         
+         val lhsDefined = candidateModel.contains(lhs)
+         val rhsDefined = candidateModel.contains(rhs) 
+         (lhs.symbol, rhs.symbol) match {         
+           case ( _ : FPVar, _ : FPVar) => {
+             println("Both variables")
+             (lhsDefined, rhsDefined) match {
+               case (false, true) => candidateModel.set(lhs, candidateModel(rhs))
+               case (true, false) => candidateModel.set(rhs, candidateModel(lhs))
+               case (false, false) => //TODO: Fancy things could be done here.
+                                      () 
+               case (true, true) => ()
+             }
+           }           
+           case ( _ : FPVar, _ ) if (!lhsDefined) => {
+             println("LHS is undef variable")
+             candidateModel.set(lhs, candidateModel(rhs))
+           }
+           case ( _ , v1 : FPVar) if (!rhsDefined) =>{
+             println("RHS is undef variable")
+             candidateModel.set(rhs, candidateModel(lhs))                        
+           }
+           case (_, _) => {
+             println("no variables")
+             ()
+           }
+        }
+      }
+      case _ => ()
+    }
+  }
 
   
   def reconstructNode(ast : AST, path : Path, decodedModel : Model, candidateModel : Model) : Unit = {
     val AST(symbol, label, children) = ast
     
+    val Z3online = new Z3OnlineSolver()
 
     if (children.length > 0) {
       val newChildren = for ( c <- children) yield { 
@@ -360,7 +365,7 @@ object SmallFloatsApproximation extends Approximation {
       
       //Evaluation
       val newAST = AST(symbol, label, newChildren.toList)
-      val newValue = ModelReconstructor.evalAST(newAST, FloatingPointTheory, Z3Solver)
+      val newValue = ModelReconstructor.evalAST(newAST, FloatingPointTheory, Z3online)
       if (symbol.sort == BooleanTheory.BooleanSort) {
         val assignments = candidateModel.getAssignmentsFor(ast).toList
         ast.prettyPrint("\t")
@@ -373,7 +378,7 @@ object SmallFloatsApproximation extends Approximation {
           println("Child valAST")
         }
         
-        val backupAnswer = ModelReconstructor.valAST(ast, assignments.toList, this.inputTheory, Z3Solver)
+        val backupAnswer = ModelReconstructor.valAST(ast, assignments.toList, this.inputTheory, Z3online)
         
         val answer = newValue.symbol.asInstanceOf[BooleanConstant] == BoolTrue
         if ( backupAnswer != answer )
