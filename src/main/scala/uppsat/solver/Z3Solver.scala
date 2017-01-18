@@ -45,6 +45,7 @@ object Z3Solver extends SMTSolver {
   
   def solve(formula : String) : Boolean = {
     val result = runSolver(formula)  
+    println("Z3 says : " + result)
     val retVal = result.split("\n").head.trim()
     retVal match {
       case "sat" => true

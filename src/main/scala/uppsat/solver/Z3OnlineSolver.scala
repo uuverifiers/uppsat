@@ -35,17 +35,25 @@ class Z3OnlineSolver extends SMTSolver {
     val errorPattern = ".*error.*".r
 
     var line = None : Option[String]
+    println("Z3 says :")
+    var i = 1
     while (result.isEmpty) {
       line = Option(outReader.readLine())
-      line.get match {
-        case satPattern() => {}
+      println(i + " : " + line)
+      i += 1
+      line.get match { //TODO: Remove
+        case satPattern => println("Found sat") // Skip over the sat result of the empty check-sat call
         case errorPattern() => throw new Exception("Z3 error: " + line.get)
-        case other => result = Some(other)
+        case other => println("Non-sat result")
+                      result = Some(other)
       }    
     }
     result.get
   }
  
+  def reset = { //TODO
+    
+  }
   
   def parseOutput(output : String, extractSymbols : List[String]) : Option[Map[String, String]] = {
     val lines = output.split("\n")
