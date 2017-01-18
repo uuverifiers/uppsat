@@ -3,3 +3,5 @@
 *~
 target/
 project/
+
+!project/assembly.sbt
