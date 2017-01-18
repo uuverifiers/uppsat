@@ -1,6 +1,6 @@
 object timeuppsat {
 
-  def runSolver(cmd : String, problem : String, parser : String => String) : (String, String) = {
+  def runSolver(cmd : String, problem : String, parser : String => (String, String)) : (String, String) = {
     import sys.process._
     val stdout = new StringBuilder
     val stderr = new StringBuilder       
