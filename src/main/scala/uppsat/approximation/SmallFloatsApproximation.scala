@@ -365,20 +365,10 @@ object SmallFloatsApproximation extends Approximation {
       
       //Evaluation
       val newAST = AST(symbol, label, newChildren.toList)
-      val newValue = ModelReconstructor.evalAST(newAST, FloatingPointTheory, Z3online)
+      val newValue = ModelReconstructor.evalAST(newAST, FloatingPointTheory)
       if (symbol.sort == BooleanTheory.BooleanSort) {
         val assignments = candidateModel.getAssignmentsFor(ast).toList
-        ast.prettyPrint("\t")
-        println("Assignments")
-        println(assignments.mkString("\n"))
-        if (path.length == 1) {
-          println("Root valAST")
-        }
-        if (path.length == 2) {
-          println("Child valAST")
-        }
-        
-        val backupAnswer = ModelReconstructor.valAST(ast, assignments.toList, this.inputTheory, Z3online)
+        val backupAnswer = ModelReconstructor.valAST(ast, assignments.toList, this.inputTheory, Z3Solver)
         
         val answer = newValue.symbol.asInstanceOf[BooleanConstant] == BoolTrue
         if ( backupAnswer != answer )

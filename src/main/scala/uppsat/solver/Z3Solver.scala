@@ -4,26 +4,53 @@ import java.io.ByteArrayInputStream;
 import scala.sys.process.stringToProcess
 import uppsat.solver._
 import uppsat.Timer
+import sys.process._
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+
 
 class Z3Exception(msg : String) extends Exception("Z3 error: " + msg)
 
 object Z3Solver extends SMTSolver {
   
+  def z3print(str : String) =
+    println("[Z3] " + str)
+    
   def runSolver(formula : String) = Timer.measure("Z3Solver.runSolver") {
     import sys.process._
+  
+    val process = Runtime.getRuntime().exec("z3 -in -smt2")
+    z3print("[Started process: " + process)
+    val stdin = process.getOutputStream ()
+    val stderr = process.getErrorStream ()
+    val stdout = process.getInputStream ()
     
-    val stdout = new StringBuilder
-    val stderr = new StringBuilder    
-    val is = new ByteArrayInputStream(formula.getBytes("UTF-8"))
-    val status = "z3 -in -smt2" #< is ! ProcessLogger(str => stdout append (str + "\n"), str => stderr append (str + "\n")) // TODO:  Use java commands
-    if (status != 0) {
-      import java.io._
-      val pw = new PrintWriter(new File("error.smt2"))
-      pw.write(formula)
-      pw.close
-      throw new Z3Exception(stdout.toString)
+    stdin.write((formula + "\n(exit)\n").getBytes("UTF-8"));    
+    stdin.close();
+    
+    val outReader = new BufferedReader(new InputStreamReader (stdout))
+    var result = List() : List[String] 
+    val errorPattern = ".*error.*".r
+    
+    var line = outReader.readLine()
+    while (line != null) {
+      line match { 
+        case errorPattern() =>  {
+          import java.io._
+          val pw = new PrintWriter(new File("error.smt2"))
+          pw.write(formula)
+          pw.close
+          throw new Z3Exception(stdout.toString)
+        }
+        case other => result = result ++ List(other)        
+      }
+      line = outReader.readLine()
     }
-    stdout.toString
+    process.waitFor();
+    val exitValue = process.exitValue()
+    if (exitValue != 0) 
+      throw new Exception("[Z3] Exited with a non-zero value")
+    result.mkString("\n")
   }
  
   

@@ -21,7 +21,7 @@ class Z3OnlineSolver extends SMTSolver {
   z3print("[Started process: " + process)
   val stdin = process.getOutputStream ()
   val stderr = process.getErrorStream ()
-  val stdout = process.getInputStream ()  
+  val stdout = process.getInputStream () 
   
   def runSolver(formula : String) = Timer.measure("Z3OnlineSolver.runSolver") {
     z3print("Sending input: " + formula)    
@@ -35,22 +35,18 @@ class Z3OnlineSolver extends SMTSolver {
     val errorPattern = ".*error.*".r
 
     var line = None : Option[String]
-    println("Z3 says :")
-    var i = 1
     while (result.isEmpty) {
       line = Option(outReader.readLine())
-      println(i + " : " + line)
-      i += 1
       line.get match { //TODO: Remove
-        case satPattern => println("Found sat") // Skip over the sat result of the empty check-sat call
+        case satPattern() => () // Skip over the sat result of the empty check-sat call in the beginning
         case errorPattern() => throw new Exception("Z3 error: " + line.get)
-        case other => println("Non-sat result")
-                      result = Some(other)
+        case other => result = Some(other)
       }    
     }
     result.get
   }
- 
+
+  
   def reset = { //TODO
     
   }
