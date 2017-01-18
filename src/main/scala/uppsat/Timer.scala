@@ -100,7 +100,8 @@ object Timer {
     
     val totalCalls = (0 /: callCounters.valuesIterator)(_ + _)
     
-    val total = "Total: " + totalCalls + ", " + totalTimeInSec + "s"
+  //val iterations = ":iterations " +  (totalCalls - 1)
+    val total = ":time "  + totalTimeInSec + "s"
     
     table + "\n" + total
   }

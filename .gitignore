@@ -1,7 +1,9 @@
+!project/assembly.sbt
+
 /bin/
 .cache-main
 *~
 target/
 project/
 
-!project/assembly.sbt
+

@@ -23,16 +23,18 @@ object ApproximationSolver {
     val retVal = loop(formula : AST, translator : SMTTranslator, approximation : Approximation) 
     val stopTime = System.currentTimeMillis
     
+    
     println("Solving time: " + (stopTime - startTime) + "ms") 
     
     retVal match {
       case Some(model) => {
-        println("Model found!")
+        println("Model found:")
         println(model.mkString("\t", "\n\t", "\n"))
+        println("sat")
         Some(model)
       }
-      case None => {
-        println("No model found!")
+      case None => {        
+        println("unsat")
         None
       }
     }
@@ -101,7 +103,7 @@ object ApproximationSolver {
         }          
       } else {
         if (pmap.isMaximal) {
-          println("Approximative model not found: maximal precision reached.")
+          println("Approximative model not found: maximal precision reached.")          
           return None
         } else {
           println("Approximative model not found: refining precision.")            
