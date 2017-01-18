@@ -90,17 +90,17 @@ object Timer {
       while (paddedOp.size < 40)
         paddedOp = paddedOp + " "
       
-      val timeInMS = time.toDouble / 1000000.0
+      val timeInSec = time.toDouble / 1000000000.0
           
-      (paddedOp + "\t" + count + "\t" + timeInMS + "ms")
+      (paddedOp + "\t" + count + "\t" + timeInSec + "s")
     }) mkString "\n"
     
     val totalTime = (0l /: accumulatedTimes.valuesIterator)(_ + _)
-    val totalTimeInMS = totalTime.toDouble / 1000000.0
+    val totalTimeInSec = totalTime.toDouble / 1000000000.0
     
     val totalCalls = (0 /: callCounters.valuesIterator)(_ + _)
     
-    val total = "Total: " + totalCalls + ", " + totalTimeInMS + "ms"
+    val total = "Total: " + totalCalls + ", " + totalTimeInSec + "s"
     
     table + "\n" + total
   }
