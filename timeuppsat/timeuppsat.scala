@@ -58,7 +58,8 @@ object timeuppsat {
       for (f <- files) yield {
         val r = 
           for ((solver, (command, parser)) <- solvers) yield {
-            runSolver(command, f, parser)
+            val (answer, time) = runSolver(command, f, parser)
+            answer +  time
           }
         complete += 1
         println("[" + ("|"*complete) + (" "*(count-complete)) + "]")
