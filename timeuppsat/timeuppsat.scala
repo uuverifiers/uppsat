@@ -1,6 +1,6 @@
 object timeuppsat {
 
-  def runSolver(cmd : String, problem : String, parser : String => String) : String = {
+  def runSolver(cmd : String, problem : String, parser : String => String) : (String, String) = {
     import sys.process._
     val stdout = new StringBuilder
     val stderr = new StringBuilder       
@@ -15,9 +15,11 @@ object timeuppsat {
   def z3parse(str : String) : String = {
     // Time or Total time?
     val timePattern = "\\s*:time\\s*([0-9.]+)\\)?".r
+    var answer = "unknown"
     for (l <- str.lines) {
       l match {
-        case timePattern(t) => return t.toFloat.toString
+        case "sat" | "unsat" | "unknown" => answer = l
+        case timePattern(t) => return (answer, t.toFloat.toString)
         case _ => ()
       }
     }
@@ -26,9 +28,11 @@ object timeuppsat {
 
   def uppsatparse(str : String) : String = {
     val timePattern = "Solving time: (\\d+)ms".r
+    var answer = "unknown"
     for (l <- str.lines) {
       l match {
-        case timePattern(t) => return t.toFloat.toString
+        case "sat" | "unsat" | "unknown" => answer = l
+        case timePattern(t) => return (answer, t.toFloat.toString)
         case _ => ()
       }
     }
