@@ -23,7 +23,9 @@ object timeuppsat {
         case _ => ()
       }
     }
-    throw new Exception("Couldn't find time output from Z3: " + str)
+    //throw new Exception("Couldn't find time output from Z3: " + str)
+    println("Z3 time not found" + str)
+    (answer, "-")
   }
 
   def uppsatparse(str : String) : (String, String) = {
@@ -36,7 +38,9 @@ object timeuppsat {
         case _ => ()
       }
     }
-    throw new Exception("Couldn't find time output from uppsat: " + str)
+    //throw new Exception("Couldn't find time output from uppsat: " + str)
+    println("uppsat time not found" + str)
+    (answer, "-")    
   }
 
   def main(args : Array[String]) = {
