@@ -6,7 +6,7 @@ object timeuppsat {
     val stderr = new StringBuilder       
     val status = ("timeout 60s " + cmd + " " + problem) ! ProcessLogger(str => stdout append (str + "\n"), str => stderr append (str + "\n"))
     if (status != 0)
-      "t/o"
+      ("-", t/o")
     // throw new Exception("\"" + cmd + "\" generated " + stderr.toString)
     else
       parser(stdout.toString)
