@@ -316,7 +316,7 @@ object SmallFloatsApproximation extends Approximation {
   //******************************************************************//
   //                    Equality as Assignment                        //
   //******************************************************************//
-  def equalityAsAssignment(ast : AST, decodedModel : Model,  candidateModel : Model) = {
+  def equalityAsAssignment(ast : AST, decodedModel : Model,  candidateModel : Model) : Boolean = {
     ast match {
       case AST(fpEq : FPEqualityFactory.FPPredicateSymbol, path, children) if (decodedModel(ast).symbol == BoolTrue)  => {
          val lhs = children(0)
@@ -328,27 +328,31 @@ object SmallFloatsApproximation extends Approximation {
              println("Both variables")
              (lhsDefined, rhsDefined) match {
                case (false, true) => candidateModel.set(lhs, candidateModel(rhs))
+                                     true
                case (true, false) => candidateModel.set(rhs, candidateModel(lhs))
+                                     true
                case (false, false) => //TODO: Fancy things could be done here.
-                                      () 
-               case (true, true) => ()
+                                      false
+               case (true, true) => false
              }
            }           
            case ( _ : FPVar, _ ) if (!lhsDefined) => {
-             println("LHS is undef variable")
+//             println("LHS is undef variable")
              candidateModel.set(lhs, candidateModel(rhs))
+             true
            }
            case ( _ , v1 : FPVar) if (!rhsDefined) =>{
-             println("RHS is undef variable")
-             candidateModel.set(rhs, candidateModel(lhs))                        
+//             println("RHS is undef variable")
+             candidateModel.set(rhs, candidateModel(lhs))
+             true
            }
            case (_, _) => {
-             println("no variables")
-             ()
+//             println("no variables")
+             false
            }
         }
       }
-      case _ => ()
+      case _ => false
     }
   }
 
@@ -358,10 +362,13 @@ object SmallFloatsApproximation extends Approximation {
     
     val Z3online = new Z3OnlineSolver()
 
-    if (children.length > 0) {
-      val newChildren = for ( c <- children) yield { 
+    
+    if (!equalityAsAssignment(ast, decodedModel, candidateModel) && children.length > 0) {
+      val newChildren = for ( c <- children) yield {        
         getCurrentValue(c, decodedModel, candidateModel)
       }
+      
+      
       
       //Evaluation
       val newAST = AST(symbol, label, newChildren.toList)
