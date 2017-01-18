@@ -27,7 +27,7 @@ object timeuppsat {
   }
 
   def uppsatparse(str : String) : (String, String) = {
-    val timePattern = ":time (\\d+)s".r
+    val timePattern = ":time (\\d+[.]\\d+)s".r
     var answer = "unknown"
     for (l <- str.lines) {
       l match {
