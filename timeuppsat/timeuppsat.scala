@@ -27,7 +27,7 @@ object timeuppsat {
   }
 
   def uppsatparse(str : String) : (String, String) = {
-    val timePattern = ":time (\\d+)s".r
+    val timePattern = ":time (\\d+\.\\d+)s".r
     var answer = "unknown"
     for (l <- str.lines) {
       l match {
@@ -67,9 +67,14 @@ object timeuppsat {
       }
 
     println("<--- RESULTS --->")
-    println(solvers.keys.mkString("\t") + "\t\t" + "Filename")
+    println("Status\t" + solvers.keys.mkString("\t") + "\t\t" + "Filename")
     for ((f, r) <- results) {
-      println(r.mkString("\t") + "\t\t" + f)
+      val (answers, times) = r.unzip
+      val agree = answers.fold true (fun (a, x) => a && x == answers.head)
+      if (agree) 
+        println(answers.head + "\t" + times.mkString("\t") + "\t\t" + f)
+      else
+        println( "Error!\t" + times.mkString("\t") + "\t\t" + f + "\t" + answers.mkString("\t"))
     }
   }
 }
