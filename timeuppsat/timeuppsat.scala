@@ -6,13 +6,13 @@ object timeuppsat {
     val stderr = new StringBuilder       
     val status = ("timeout 60s " + cmd + " " + problem) ! ProcessLogger(str => stdout append (str + "\n"), str => stderr append (str + "\n"))
     if (status != 0)
-      ("-", t/o")
+      ("-", "t/o")
     // throw new Exception("\"" + cmd + "\" generated " + stderr.toString)
     else
       parser(stdout.toString)
   }
 
-  def z3parse(str : String) : String = {
+  def z3parse(str : String) : (String, String) = {
     // Time or Total time?
     val timePattern = "\\s*:time\\s*([0-9.]+)\\)?".r
     var answer = "unknown"
@@ -26,7 +26,7 @@ object timeuppsat {
     throw new Exception("Couldn't find time output from Z3: " + str)
   }
 
-  def uppsatparse(str : String) : String = {
+  def uppsatparse(str : String) : (String, String) = {
     val timePattern = "Solving time: (\\d+)ms".r
     var answer = "unknown"
     for (l <- str.lines) {
@@ -43,7 +43,7 @@ object timeuppsat {
     val solvers = Map(
       "z3" -> (("z3 -smt2 -st", z3parse)),
       "uppsat" -> (("scala uppsat.jar", uppsatparse))
-    ) : Map[String, (String, String => String)]
+    ) : Map[String, (String, String => (String, String))]
 
     println("Trying solvers:")
     for ((solver, (command, _)) <- solvers)
