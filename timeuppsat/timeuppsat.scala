@@ -57,12 +57,9 @@ object timeuppsat {
     val results =
       for (f <- files) yield {
         val r = 
-          for ((solver, (command, parser)) <- solvers) yield {
-	     val res =  runSolver(command, f, parser)
-	     println(res)
-	     res
+          for ((solver, (command, parser)) <- solvers.toList) yield {
+	     runSolver(command, f, parser)
           }
-	println("Result " + r)
         complete += 1
         println("[" + ("|"*complete) + (" "*(count-complete)) + "]")
         (f, r)
@@ -72,13 +69,12 @@ object timeuppsat {
     println("Status\t" + solvers.keys.mkString("\t") + "\t\t" + "Filename")
     for ((f, r) <- results) {
       val (answers : List[String], times : List[String]) = r.unzip
-      println(r)
       val firstAnswer : String = answers.head
       val agree = answers.foldLeft(true){(a : Boolean, x : String) => a && (x == firstAnswer)}
       if (agree) 
         println(answers.head + "\t" + times.mkString("\t") + "\t\t" + f)
       else
-        println( "Error!\t" + times.mkString("\t") + "\t\t" + f + "\t" + answers.mkString("\t"))
+        println( "XXXX\t" + times.mkString("\t") + "\t\t" + f + "\t" + answers.mkString("\t"))
     }
   }
 }
