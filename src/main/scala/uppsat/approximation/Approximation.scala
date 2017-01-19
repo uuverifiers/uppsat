@@ -43,5 +43,10 @@ trait TemplateApproximation extends Approximation {
   
   def encodeFormula(ast : AST, pmap : PrecisionMap[P]) : AST = {
     encodeAux(ast, List(0), pmap)
+  def reconstruct(ast : AST, decodedModel : Model) : Model = {
+    val reconstructedModel = new Model()
+    val accumulator = (decodedModel, reconstructedModel)
+    AST.postVisit(ast, accumulator, reconstructNode)
+    reconstructedModel
   }
 }
