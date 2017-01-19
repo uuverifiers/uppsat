@@ -358,32 +358,7 @@ object SmallFloatsApproximation extends Approximation {
     }
   }
 
-  
-  def reconstructNode(ast : AST, path : Path, decodedModel : Model, candidateModel : Model) : Unit = {
-    val AST(symbol, label, children) = ast
-        
-    if (!equalityAsAssignment(ast, decodedModel, candidateModel) && children.length > 0) {
-      val newChildren = for ( c <- children) yield {        
-        getCurrentValue(c, decodedModel, candidateModel)
-      }
-   
-      //Evaluation
-      val newAST = AST(symbol, label, newChildren.toList)
-      val newValue = ModelReconstructor.evalAST(newAST, FloatingPointTheory)
-      if ( DEBUG && symbol.sort == BooleanTheory.BooleanSort) { // TODO: Talk to Philipp about an elegant way to do flags
-        val assignments = candidateModel.getAssignmentsFor(ast).toList
-        val backupAnswer = ModelReconstructor.valAST(ast, assignments.toList, this.inputTheory, Z3Solver)
-        
-        val answer = newValue.symbol.asInstanceOf[BooleanConstant] == BoolTrue
-        if ( backupAnswer != answer )
-          throw new Exception("Backup validation failed : \nEval: " + answer + "\nvalAst: " + backupAnswer)
-
-      }        
-      candidateModel.set(ast, newValue)
-    }
-  }
-  
-  def reconstructNodeNew(accumulator : (Model, Model), ast : AST) : (Model, Model) = {
+  def reconstructNode(accumulator : (Model, Model), ast : AST) : (Model, Model) = {
     val decodedModel = accumulator._1
     val candidateModel = accumulator._2
     val AST(symbol, label, children) = ast
@@ -410,19 +385,11 @@ object SmallFloatsApproximation extends Approximation {
     accumulator
   }
   
-  def reconstructAux(ast : AST, path : Path, decodedModel : Model, candidateModel : Model) : Unit= {
-    val AST(symbol, label, children) = ast
-    for ((c, i) <- children zip children.indices) {
-      reconstructAux( c, i :: path, decodedModel, candidateModel)
-    } 
-    reconstructNode(ast, path, decodedModel, candidateModel)
-  }
   
   def reconstruct(ast : AST, decodedModel : Model) : Model = {
     val reconstructedModel = new Model()
-    //reconstructAux(ast, List(0), decodedModel, reconstructedModel)
     val accumulator = (decodedModel, reconstructedModel)
-    AST.postVisit(ast, accumulator, reconstructNodeNew)
+    AST.postVisit(ast, accumulator, reconstructNode)
     reconstructedModel
   }
 }
