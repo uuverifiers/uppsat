@@ -50,17 +50,20 @@ object ApproximationSolver {
       val stringModel = Z3Solver.getModel(encodedSMT, translator.getDefinedSymbols.toList)
       val appModel = translator.getModel(formula, stringModel)
       
-      println("Approximate model: " + appModel.getAssignmentsFor(formula).mkString("\n\t") + "\nDecoding model ... ")
+      //println("Approximate model: " + appModel.getAssignmentsFor(formula).mkString("\n\t") + "\n")
+      println("Decoding model ... ")
       
       val decodedModel = approximation.decodeModel(formula, appModel, pmap)
       val appAssignments = decodedModel.getAssignmentsFor(formula)
       
-      println("Decoded model: \n" + appAssignments.mkString("\n\t") + "\nReconstructing model ...")
+      //println("Decoded model: \n" + appAssignments.mkString("\n\t") + "\n)
+      println("Reconstructing model ...")
       
       val reconstructedModel = approximation.reconstruct(formula, decodedModel)
       val assignments = reconstructedModel.getAssignmentsFor(formula)
       
-      println("Reconstructed model: \n" + appAssignments.mkString("\n\t") + "\nValidating model ...")
+      //println("Reconstructed model: \n" + appAssignments.mkString("\n\t") + "\n")
+      println("Validating model ...")
       
       if (ModelReconstructor.valAST(formula, assignments.toList, approximation.inputTheory, Z3Solver)) {
         val extModel =
@@ -89,7 +92,7 @@ object ApproximationSolver {
       println("-----------------------------------------------")
       
       val encodedFormula = approximation.encodeFormula(formula, pmap) 
-      encodedFormula.prettyPrint
+      //encodedFormula.prettyPrint
       val encodedSMT = translator.translate(encodedFormula)
 
       println(encodedSMT)
@@ -103,10 +106,10 @@ object ApproximationSolver {
         }          
       } else {
         if (pmap.isMaximal) {
-          println("Approximative model not found: maximal precision reached.")          
+          println("Approximate model not found: maximal precision reached.")          
           return None
         } else {
-          println("Approximative model not found: refining precision.")            
+          println("Approximate model not found: refining precision.")            
           pmap = approximation.unsatRefine(formula, List(), pmap)
         }
       }

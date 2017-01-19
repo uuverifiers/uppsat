@@ -13,9 +13,16 @@ class Z3OnlineException(msg : String) extends Exception("Z3 error: " + msg)
 // Starts process at 
 
 class Z3OnlineSolver extends SMTSolver {
-
+  var silent = true
+  
+  def setSilent(b : Boolean) = {
+    silent = b
+  }
+  
   def z3print(str : String) =
-    println("[Z3] " + str)
+    if (!silent)
+      println("[Z3] " + str)
+  
   // Starting solver...
   val process = Runtime.getRuntime().exec("z3 -in")
   z3print("[Started process: " + process)
@@ -37,8 +44,8 @@ class Z3OnlineSolver extends SMTSolver {
     var line = None : Option[String]
     while (result.isEmpty) {
       line = Option(outReader.readLine())
-      line.get match { //TODO: Remove
-        case satPattern() => () // Skip over the sat result of the empty check-sat call in the beginning
+      line.get match { 
+        case satPattern() => () // Skip over the sat result of the empty check-sat call when interactive mode is initialized
         case errorPattern() => throw new Exception("Z3 error: " + line.get)
         case other => result = Some(other)
       }    
@@ -47,8 +54,8 @@ class Z3OnlineSolver extends SMTSolver {
   }
 
   
-  def reset = { //TODO
-    
+  def reset = { 
+    stdin.write("(reset)".getBytes)
   }
   
   def parseOutput(output : String, extractSymbols : List[String]) : Option[Map[String, String]] = {

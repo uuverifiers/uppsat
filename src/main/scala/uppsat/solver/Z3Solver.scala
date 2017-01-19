@@ -12,9 +12,15 @@ import java.io.InputStreamReader;
 class Z3Exception(msg : String) extends Exception("Z3 error: " + msg)
 
 object Z3Solver extends SMTSolver {
+  var silent = true
+  
+  def setSilent(b : Boolean) = {
+    silent = b
+  }
   
   def z3print(str : String) =
-    println("[Z3] " + str)
+    if (!silent)
+      println("[Z3] " + str)
     
   def runSolver(formula : String) = Timer.measure("Z3Solver.runSolver") {
     import sys.process._
@@ -71,8 +77,7 @@ object Z3Solver extends SMTSolver {
   }
   
   def solve(formula : String) : Boolean = {
-    val result = runSolver(formula)  
-    println("Z3 says : " + result)
+    val result = runSolver(formula)    
     val retVal = result.split("\n").head.trim()
     retVal match {
       case "sat" => true

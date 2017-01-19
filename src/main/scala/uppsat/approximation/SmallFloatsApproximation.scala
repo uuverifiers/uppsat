@@ -37,118 +37,120 @@ object SmallFloatsApproximation extends Approximation {
   val outputTheory = FloatingPointTheory
   val precisionOrdering = new IntPrecisionOrdering(0, 5)
   
+  val DEBUG = false
+  
   def satRefine(ast : AST, decodedModel : Model, failedModel : Model, pmap : PrecisionMap[Int]) : PrecisionMap[Int] = {
-//    val topTen = 10 // K 
-//    val fractionToRefine = 0.3 //K_percentage
-//    val precisionIncrement = 1 // 20/100 = 1/5
-//    
-//    def relativeError(decoded : FloatingPointLiteral, precise : FloatingPointLiteral) : Double = {
-//      (decoded.getFactory, precise.getFactory) match {
-//        case (x, y) if (x == y) => 0.0 //Values are the same
-//        case (FPPlusInfinity, _)    |
-//             (_, FPPlusInfinity)    |
-//             (FPMinusInfinity, _)   |
-//             (_, FPMinusInfinity)   => Double.PositiveInfinity
-//        case (x : FPConstantFactory, y : FPConstantFactory) => {
-//          val a = bitsToDouble(decoded)
-//          val b = bitsToDouble(precise)
-//          Math.abs((a - b)/b)
-//        }        
-//        case _ => 0.0
-//      }
-//    }
-//    
-//    def nodeError(accu : Map[Path, Double], ast : AST, path : Path) : Map[Path, Double] = {
-//      val AST(symbol, label, children) = ast
-//      
-//      var err = 0.0
-//      
-//      symbol match {
-//        case literal : FloatingPointLiteral => ()
-//        case fpfs : FloatingPointFunctionSymbol =>
-//          (decodedModel(path).symbol, failedModel(path).symbol)  match {
-//          case (app : FloatingPointLiteral, ex : FloatingPointLiteral) => {
-//            val outErr = relativeError(app, ex)
-//            
-//            var sumDescError = 0.0
-//            var numFPArgs = 0
-//            
-//            for ((c, i) <- children zip children.indices) {
-//              val a = decodedModel(i :: path)
-//              val b = failedModel(i :: path)
-//              
-//              (a.symbol, b.symbol) match {
-//                case (aS : FloatingPointLiteral, bS: FloatingPointLiteral) => {
-//                  sumDescError +=  relativeError(aS, bS)
-//                  numFPArgs += 1
-//                }                                                                 
-//                case  _ => ()
-//              }
-//            }
-//            val inErr = sumDescError / numFPArgs
-//            
-//            if (numFPArgs == 0) 
-//              err = outErr
-//            else
-//              err = outErr / inErr
-//          }
-//          case _ => ()
-//        }
-//        case _ => ()
-//      }
-//      
-//      
-//      if (err == 0.0)
-//        accu
-//      else
-//        accu + (path -> err)
-//    }
-//
-//    val accu = Map[Path, Double]()
-//    val errorRatios = AST.postVisit(ast, List(0), accu, nodeError)
-//    
-//    val sortedErrRatios = errorRatios.toList.sortWith((x,y) => x._2 > y._2)
-//    val k = math.ceil(fractionToRefine * sortedErrRatios.length).toInt //TODO: Assertions
-//    
-//    def boolCond( accu : List[Path], ast : AST, path : Path) : Boolean = {
+    val topTen = 10 // K 
+    val fractionToRefine = 0.3 //K_percentage
+    val precisionIncrement = 1 // 20/100 = 1/5
+    
+    def relativeError(decoded : FloatingPointLiteral, precise : FloatingPointLiteral) : Double = {
+      (decoded.getFactory, precise.getFactory) match {
+        case (x, y) if (x == y) => 0.0 //Values are the same
+        case (FPPlusInfinity, _)    |
+             (_, FPPlusInfinity)    |
+             (FPMinusInfinity, _)   |
+             (_, FPMinusInfinity)   => Double.PositiveInfinity
+        case (x : FPConstantFactory, y : FPConstantFactory) => {
+          val a = bitsToDouble(decoded)
+          val b = bitsToDouble(precise)
+          Math.abs((a - b)/b)
+        }        
+        case _ => 0.0
+      }
+    }
+    
+    def nodeError(accu : Map[AST, Double], ast : AST, path : Path) : Map[AST, Double] = {
+      val AST(symbol, label, children) = ast
+      
+      var err = 0.0
+      
+      symbol match {
+        case literal : FloatingPointLiteral => ()
+        case fpfs : FloatingPointFunctionSymbol =>
+          (decodedModel(ast).symbol, failedModel(ast).symbol)  match {
+          case (approximate : FloatingPointLiteral, exact : FloatingPointLiteral) => {
+            val outErr = relativeError(approximate, exact)
+            
+            var sumDescError = 0.0
+            var numFPArgs = 0
+            
+            for (c <- children) {
+              val a = decodedModel(c)
+              val b = failedModel(c)
+              
+              (a.symbol, b.symbol) match {
+                case (aS : FloatingPointLiteral, bS: FloatingPointLiteral) => {
+                  sumDescError +=  relativeError(aS, bS)
+                  numFPArgs += 1
+                }                                                                 
+                case  _ => ()
+              }
+            }
+            val inErr = sumDescError / numFPArgs
+            
+            if (numFPArgs == 0) 
+              err = outErr
+            else
+              err = outErr / inErr
+          }
+          case _ => ()
+        }
+        case _ => ()
+      }
+      
+      
+      if (err == 0.0)
+        accu
+      else
+        accu + (ast -> err)
+    }
+
+    val accu = Map[AST, Double]()
+    val errorRatios = AST.postVisit(ast, List(0), accu, nodeError)
+    
+    val sortedErrRatios = errorRatios.toList.sortWith((x,y) => x._2 > y._2)
+    val k = math.ceil(fractionToRefine * sortedErrRatios.length).toInt //TODO: Assertions
+    
+    def boolCond( accu : List[Path], ast : AST, path : Path) : Boolean = {
 //      println("Path : " + path)
 //      println("App model : " + decodedModel(path))
 //      println("Failed model : " + failedModel(path))
 //      println(decodedModel(path) != failedModel(path))
-//      decodedModel(path) != failedModel(path)
-//    }
-//    
-//    def boolWork( accu : List[Path], ast : AST, path : Path) : List[Path] = {
-//      path :: accu
-//    }
-//    
-//    
-//    val pathsToRefine = AST.boolVisit(ast, List(0), List(), boolCond, boolWork) 
-//    
-//    
-//    var newPMap = pmap
-//    var changed = false
-//    println(pathsToRefine.mkString("\n"))
-//    for (path <- pathsToRefine) { //.take(k)
-//      val p = pmap(path)
-//      val newP = p + precisionIncrement
-//      if  ( p  != pmap.precisionOrdering.max) {
-//        changed = true
-//        if (newP < pmap.precisionOrdering.max)
-//          newPMap = newPMap.update(path, newP)
-//        else  
-//          newPMap = newPMap.update(path, pmap.precisionOrdering.max)
-//      }        
-//    }
-//    
-//    if (!changed) {
-//      println(pathsToRefine)
-//      throw new Exception("Nothing changed in pmap")
-//    }
+      decodedModel(ast) != failedModel(ast)
+    }
+    
+    def boolWork( accu : List[Path], ast : AST, path : Path) : List[Path] = {
+      path :: accu
+    }
+    
+    
+    val pathsToRefine = AST.boolVisit(ast, List(0), List(), boolCond, boolWork) 
+    
+    
+    var newPMap = pmap
+    var changed = false
+    println(pathsToRefine.mkString("\n"))
+    for (path <- pathsToRefine) { //.take(k)
+      val p = pmap(path)
+      val newP = p + precisionIncrement
+      if  ( p  != pmap.precisionOrdering.max) {
+        changed = true
+        if (newP < pmap.precisionOrdering.max)
+          newPMap = newPMap.update(path, newP)
+        else  
+          newPMap = newPMap.update(path, pmap.precisionOrdering.max)
+      }        
+    }
+    
+    if (!changed) {
+      println(pathsToRefine)
+      throw new Exception("Nothing changed in pmap")
+    }
 //    println("--------------------------------------\nNew precision map :")
 //    println(newPMap)
-//    newPMap    
-        pmap.map(_ + 1)
+    newPMap    
+    //    pmap.map(_ + 1)
   }
 
   def unsatRefine(ast : AST, core : List[AST], pmap : PrecisionMap[Int]) : PrecisionMap[Int] = {
@@ -325,7 +327,7 @@ object SmallFloatsApproximation extends Approximation {
          val rhsDefined = candidateModel.contains(rhs) 
          (lhs.symbol, rhs.symbol) match {         
            case ( _ : FPVar, _ : FPVar) => {
-             println("Both variables")
+//             println("Both variables")
              (lhsDefined, rhsDefined) match {
                case (false, true) => candidateModel.set(lhs, candidateModel(rhs))
                                      true
@@ -359,21 +361,16 @@ object SmallFloatsApproximation extends Approximation {
   
   def reconstructNode(ast : AST, path : Path, decodedModel : Model, candidateModel : Model) : Unit = {
     val AST(symbol, label, children) = ast
-    
-    val Z3online = new Z3OnlineSolver()
-
-    
+        
     if (!equalityAsAssignment(ast, decodedModel, candidateModel) && children.length > 0) {
       val newChildren = for ( c <- children) yield {        
         getCurrentValue(c, decodedModel, candidateModel)
       }
-      
-      
-      
+   
       //Evaluation
       val newAST = AST(symbol, label, newChildren.toList)
       val newValue = ModelReconstructor.evalAST(newAST, FloatingPointTheory)
-      if (symbol.sort == BooleanTheory.BooleanSort) {
+      if ( DEBUG && symbol.sort == BooleanTheory.BooleanSort) { // TODO: Talk to Philipp about an elegant way to do flags
         val assignments = candidateModel.getAssignmentsFor(ast).toList
         val backupAnswer = ModelReconstructor.valAST(ast, assignments.toList, this.inputTheory, Z3Solver)
         
