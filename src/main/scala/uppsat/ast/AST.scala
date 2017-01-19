@@ -100,31 +100,8 @@ case class AST(val symbol : ConcreteFunctionSymbol, val label : Label, val child
       n
     }
   }
-  
-  def oldIterator = new Iterator[(ConcreteFunctionSymbol, Path)] {
-    val todo = new ArrayStack[(AST, Path)]
-    todo push (AST.this, List(0))
-    def hasNext = !todo.isEmpty
-    def next = {
-      val (AST(data, label, children), path) = todo.pop
-      todo ++= children zip children.indices.map(_ :: path)
-      (data, path)
-    }
-  }
-  
-  def subIterator(path : Path) = new Iterator[(ConcreteFunctionSymbol, Path)] {
-    val todo = new ArrayStack[(AST, Path)]
-    todo push (AST.this, path)
-    def hasNext = !todo.isEmpty
-    def next = {
-      val (AST(data, label, children), path) = todo.pop
-      todo ++= children zip children.indices.map(_ :: path)
-      (data, path)
-    }
-  }
-  
     
-  def toSet = oldIterator.toSet 
+  def toSet = iterator.toSet 
     
   def prettyPrint : Unit =
     prettyPrint("")
@@ -135,10 +112,14 @@ case class AST(val symbol : ConcreteFunctionSymbol, val label : Label, val child
     for (c <- children) (c prettyPrint newIndent)
   }
   
-  def size = oldIterator.size  
+  def size = iterator.size  
   
   
-  def symbols : Set[ConcreteFunctionSymbol]= this.toSet.map(_._1)    
+  def symbols : Set[ConcreteFunctionSymbol]= this.toSet.map(_.symbol)
+  
+  def isVariable = {
+    symbol.theory.isVariable(symbol)
+  }
   
   //
   //  Syntactic sugar

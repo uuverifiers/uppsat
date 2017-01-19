@@ -325,8 +325,8 @@ object SmallFloatsApproximation extends Approximation {
          val rhs = children(1)         
          val lhsDefined = candidateModel.contains(lhs)
          val rhsDefined = candidateModel.contains(rhs) 
-         (lhs.symbol, rhs.symbol) match {         
-           case ( _ : FPVar, _ : FPVar) => {
+         (lhs, rhs) match {         
+           case ( _ , _ ) if (lhs.isVariable && rhs.isVariable) => {
 //             println("Both variables")
              (lhsDefined, rhsDefined) match {
                case (false, true) => candidateModel.set(lhs, candidateModel(rhs))
@@ -338,12 +338,12 @@ object SmallFloatsApproximation extends Approximation {
                case (true, true) => false
              }
            }           
-           case ( _ : FPVar, _ ) if (!lhsDefined) => {
+           case ( _ , _ ) if (lhs.isVariable && !lhsDefined) => {
 //             println("LHS is undef variable")
              candidateModel.set(lhs, candidateModel(rhs))
              true
            }
-           case ( _ , v1 : FPVar) if (!rhsDefined) =>{
+           case ( _ , _) if (rhs.isVariable && !rhsDefined) =>{
 //             println("RHS is undef variable")
              candidateModel.set(rhs, candidateModel(lhs))
              true
