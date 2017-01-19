@@ -27,6 +27,7 @@ trait Approximation {
 
 trait TemplateApproximation extends Approximation {  
   def encodeNode(symbol : FunctionSymbol, children : List[AST], precision : P) : AST
+  def reconstructNode(accumulator : (Model, Model), ast :  AST) : (Model, Model)  
   def cast(ast : AST, source : ConcreteSort, target : ConcreteSort  ) : AST
   //errorFunction
   //nodeByNodeTranslationFunctions
