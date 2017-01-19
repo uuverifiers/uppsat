@@ -60,7 +60,7 @@ object SmallFloatsApproximation extends Approximation {
       }
     }
     
-    def nodeError(accu : Map[AST, Double], ast : AST, path : Path) : Map[AST, Double] = {
+    def nodeError(accu : Map[AST, Double], ast : AST) : Map[AST, Double] = {
       val AST(symbol, label, children) = ast
       
       var err = 0.0
@@ -107,7 +107,7 @@ object SmallFloatsApproximation extends Approximation {
     }
 
     val accu = Map[AST, Double]()
-    val errorRatios = AST.postVisit(ast, List(0), accu, nodeError)
+    val errorRatios = AST.postVisit(ast, accu, nodeError)
     
     val sortedErrRatios = errorRatios.toList.sortWith((x,y) => x._2 > y._2)
     val k = math.ceil(fractionToRefine * sortedErrRatios.length).toInt //TODO: Assertions
@@ -120,12 +120,12 @@ object SmallFloatsApproximation extends Approximation {
       decodedModel(ast) != failedModel(ast)
     }
     
-    def boolWork( accu : List[Path], ast : AST, path : Path) : List[Path] = {
-      path :: accu
+    def boolWork( accu : List[Path], ast : AST) : List[Path] = {      
+      ast.label :: accu
     }
     
     
-    val pathsToRefine = AST.boolVisit(ast, List(0), List(), boolCond, boolWork) 
+    val pathsToRefine = AST.boolVisit(ast, List(), boolCond, boolWork) 
     
     
     var newPMap = pmap
@@ -383,6 +383,33 @@ object SmallFloatsApproximation extends Approximation {
     }
   }
   
+  def reconstructNodeNew(accumulator : (Model, Model), ast : AST) : (Model, Model) = {
+    val decodedModel = accumulator._1
+    val candidateModel = accumulator._2
+    val AST(symbol, label, children) = ast
+        
+    if (!equalityAsAssignment(ast, decodedModel, candidateModel) && children.length > 0) {
+      val newChildren = for ( c <- children) yield {        
+        getCurrentValue(c, decodedModel, candidateModel)
+      }
+   
+      //Evaluation
+      val newAST = AST(symbol, label, newChildren.toList)
+      val newValue = ModelReconstructor.evalAST(newAST, FloatingPointTheory)
+      if ( DEBUG && symbol.sort == BooleanTheory.BooleanSort) { // TODO: Talk to Philipp about an elegant way to do flags
+        val assignments = candidateModel.getAssignmentsFor(ast).toList
+        val backupAnswer = ModelReconstructor.valAST(ast, assignments.toList, this.inputTheory, Z3Solver)
+        
+        val answer = newValue.symbol.asInstanceOf[BooleanConstant] == BoolTrue
+        if ( backupAnswer != answer )
+          throw new Exception("Backup validation failed : \nEval: " + answer + "\nvalAst: " + backupAnswer)
+
+      }        
+      candidateModel.set(ast, newValue)
+    }
+    accumulator
+  }
+  
   def reconstructAux(ast : AST, path : Path, decodedModel : Model, candidateModel : Model) : Unit= {
     val AST(symbol, label, children) = ast
     for ((c, i) <- children zip children.indices) {
@@ -393,7 +420,9 @@ object SmallFloatsApproximation extends Approximation {
   
   def reconstruct(ast : AST, decodedModel : Model) : Model = {
     val reconstructedModel = new Model()
-    reconstructAux(ast, List(0), decodedModel, reconstructedModel)
+    //reconstructAux(ast, List(0), decodedModel, reconstructedModel)
+    val accumulator = (decodedModel, reconstructedModel)
+    AST.postVisit(ast, accumulator, reconstructNodeNew)
     reconstructedModel
   }
 }

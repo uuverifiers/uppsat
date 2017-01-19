@@ -22,26 +22,26 @@ object AST {
   def apply(symbol : ConcreteFunctionSymbol, children : List[AST]) = new AST(symbol, List(), children)
   
   //TODO: Label the AST, makes this code cleaner
-  def postVisit[T]( ast : AST, path : Path, acumulator : T,  work : (T, AST, Path) => T ) : T = {
+  def postVisit[T]( ast : AST, acumulator : T,  work : (T, AST) => T ) : T = {
     val AST(symbol, label, children) = ast
     var acu = acumulator
    
     for ((c, i) <- children zip children.indices) 
-      acu = postVisit( c, i :: path, acu, work)
+      acu = postVisit( c, acu, work)
     
-    work(acu, ast, path)
+    work(acu, ast)
   }
 
 
-def boolVisit[T]( ast : AST, path : Path, accumulator : T, cond : (T, AST, Path) => Boolean, work : (T, AST, Path) => T ) : T = {
+def boolVisit[T]( ast : AST, accumulator : T, cond : (T, AST, Path) => Boolean, work : (T, AST) => T ) : T = {
     val AST(symbol, label, children) = ast
     var accu = accumulator
     
-    if (cond(accu, ast, path)) {
-      accu = work(accu, ast, path)
+    if (cond(accu, ast, label)) {
+      accu = work(accu, ast)
       
       for ((c, i) <- children zip children.indices) 
-        accu = postVisit( c, i :: path, accu, work)
+        accu = postVisit( c, accu, work)
     }
     accu
   }
