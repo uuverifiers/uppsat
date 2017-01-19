@@ -22,6 +22,17 @@ object AST {
   def apply(symbol : ConcreteFunctionSymbol, children : List[AST]) = new AST(symbol, List(), children)
   
   //TODO: Label the AST, makes this code cleaner
+  
+  def postVisit[A]( ast : AST, accumulator : A,  work : (A, AST) => A ) : A = {
+    val AST(symbol, label, children) = ast
+    var accu = accumulator
+   
+    for ((c, i) <- children zip children.indices) 
+      accu = postVisit( c, accu, work)
+    
+    work(accu, ast)
+  }
+  
   def postVisit[A,B]( ast : AST, accumulator : A, args : B,  work : (B, A, AST) => A ) : A = {
     val AST(symbol, label, children) = ast
     var accu = accumulator

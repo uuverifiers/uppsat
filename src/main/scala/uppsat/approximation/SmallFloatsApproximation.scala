@@ -358,9 +358,7 @@ object SmallFloatsApproximation extends Approximation {
     }
   }
 
-  def reconstructNode(accumulator : (Model, Model), ast : AST) : (Model, Model) = {
-    val decodedModel = accumulator._1
-    val candidateModel = accumulator._2
+  def reconstructNode( decodedModel  : Model, candidateModel : Model, ast : AST) : Model = {
     val AST(symbol, label, children) = ast
         
     if (!equalityAsAssignment(ast, decodedModel, candidateModel) && children.length > 0) {
@@ -382,14 +380,13 @@ object SmallFloatsApproximation extends Approximation {
       }        
       candidateModel.set(ast, newValue)
     }
-    accumulator
+    candidateModel
   }
   
-  
+  // TODO: Remove when SmallFloats extends Template Approximation
   def reconstruct(ast : AST, decodedModel : Model) : Model = {
-    val reconstructedModel = new Model()
-    val accumulator = (decodedModel, reconstructedModel)
-    AST.postVisit(ast, accumulator, reconstructNode)
+    val reconstructedModel = new Model()    
+    AST.postVisit(ast, reconstructedModel, decodedModel, reconstructNode)
     reconstructedModel
   }
 }
