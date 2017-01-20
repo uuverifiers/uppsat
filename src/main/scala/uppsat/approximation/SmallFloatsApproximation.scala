@@ -250,8 +250,6 @@ object SmallFloatsApproximation extends Approximation {
   
   
   // DECODING
-  
-  // TODO: _Symbol should have a sort?
   def decodeSymbolValue(symbol : ConcreteFunctionSymbol, value : AST, p : Int) = {
     (symbol.sort, value.symbol) match {
       case (FPSort(e, s), fp : FloatingPointTheory.FloatingPointLiteral)  => {
@@ -278,17 +276,11 @@ object SmallFloatsApproximation extends Approximation {
     }
   }
   
-  def decodeAux(ast : AST, path : Path, appModel : Model, decodedModel : Model, pmap : PrecisionMap[Int]) : Unit = {
-    val AST(symbol, label, children) = ast
+  def decodeNode( args : (Model, PrecisionMap[P]), decodedModel : Model, ast : AST) : Model = {
+    val appModel = args._1
+    val pmap = args._2
     
-    
-    val partialModels = 
-      for ((c, i) <- children zip children.indices) yield {
-        decodeAux( c, i :: path, appModel, decodedModel, pmap)
-      }    
-    
-    
-    val decodedValue = decodeSymbolValue(symbol, appModel(ast), pmap(path))
+    val decodedValue = decodeSymbolValue(ast.symbol, appModel(ast), pmap(ast.label))
     
     if (decodedModel.contains(ast)){
       if (decodedModel(ast).toString() != decodedValue.toString()) {
@@ -298,11 +290,12 @@ object SmallFloatsApproximation extends Approximation {
     } else {
       decodedModel.set(ast, decodedValue)
     }
+    decodedModel
   }
   
   def decodeModel(ast : AST, appModel : Model, pmap : PrecisionMap[Int]) = {
     val decodedModel = new Model()
-    decodeAux(ast, List(0), appModel, decodedModel, pmap)
+    AST.postVisit(ast, decodedModel, (appModel, pmap), decodeNode)
     decodedModel
   }
   
