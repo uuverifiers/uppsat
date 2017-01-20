@@ -52,7 +52,7 @@ def boolVisit[T]( ast : AST, accumulator : T, cond : (T, AST, Path) => Boolean, 
       accu = work(accu, ast)
       
       for ((c, i) <- children zip children.indices) 
-        accu = boolVisit( c, accu, cond, work)
+        accu = postVisit( c, accu, work)
     }
     accu
   }
