@@ -26,26 +26,26 @@ trait Approximation {
 
 
 trait TemplateApproximation extends Approximation {  
-  def encodeNode(symbol : FunctionSymbol, children : List[AST], precision : P) : AST
+  //def encodeNode(ast : AST, children : List[AST], precision : P) : AST
   def reconstructNode( decodedM : Model,  candidateM : Model, ast :  AST) : Model 
-  def cast(ast : AST, source : ConcreteSort, target : ConcreteSort  ) : AST
+  def cast(ast : AST, target : ConcreteSort  ) : AST
   //errorFunction
   //nodeByNodeTranslationFunctions
   
-  def encodeAux(ast : AST, path : Path, pmap : PrecisionMap[P]) : AST = {
-    val AST(symbol, label, children) = ast
-    val newChildren = 
-      for ((c, i) <- children zip children.indices) yield {
-        encodeAux( c, i :: path, pmap)
-      }    
-    val AST(functionSymbol, _, encChildren) = encodeNode(symbol, newChildren, pmap(path))
-    AST(functionSymbol, path, encChildren)
-  }
-  
-  def encodeFormula(ast : AST, pmap : PrecisionMap[P]) : AST = {
-    encodeAux(ast, List(0), pmap)
-    
-  }
+//  def encodeAux(ast : AST, path : Path, pmap : PrecisionMap[P]) : AST = {
+//    val AST(symbol, label, children) = ast
+//    val newChildren = 
+//      for ((c, i) <- children zip children.indices) yield {
+//        encodeAux( c, i :: path, pmap)
+//      }    
+//    val AST(functionSymbol, _, encChildren) = encodeNode(ast, newChildren, pmap(path))
+//    AST(functionSymbol, path, encChildren)
+//  }
+//  
+//  def encodeFormula(ast : AST, pmap : PrecisionMap[P]) : AST = {
+//    encodeAux(ast, List(0), pmap)
+//    
+//  }
   
   def reconstruct(ast : AST, decodedModel : Model) : Model = {
     val reconstructedModel = new Model()    

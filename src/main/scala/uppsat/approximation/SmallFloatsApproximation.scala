@@ -31,7 +31,7 @@ import uppsat.solver.Z3OnlineSolver
 
 
 
-object SmallFloatsApproximation extends Approximation {
+object SmallFloatsApproximation extends TemplateApproximation {
   type P = Int
   val inputTheory = FloatingPointTheory
   val outputTheory = FloatingPointTheory
@@ -163,21 +163,25 @@ object SmallFloatsApproximation extends Approximation {
     sort.getFactory(List(eBits, sBits))
   }
   
+  def cast(ast : AST, target : ConcreteSort  ) : AST = {
+    val source = ast.symbol.sort
+    if (ast.symbol.sort != RoundingModeSort && source != target ) {      
+      val cast = FPToFPFactory(List(ast.symbol.sort, target))
+      val rtzNode = AST(RoundToZero, List(), List())
+      AST(cast, List(), List(rtzNode, ast))
+    } else {
+      ast
+    } 
+  }
   
-    def encodeFunSymbol(symbol : FloatingPointFunctionSymbol, path : Path, children : List[AST], precision : Int) : AST = {
+  def encodeFunSymbol(symbol : FloatingPointFunctionSymbol, path : Path, children : List[AST], precision : Int) : AST = {
       val newSort = scaleSort(symbol.sort, precision)
       val newChildren = 
-        if (symbol.getFactory == FPToFPFactory) {
-          // No need to cast, this symbol does this!
+        if (symbol.getFactory == FPToFPFactory) {// No need to cast, this symbol does this!
           children
         } else {
           for ( c <- children) yield {
-            if (c.symbol.sort != RoundingModeSort && c.symbol.sort != newSort ) {
-              val cast = FPToFPFactory(List(c.symbol.sort, newSort))
-              AST(cast, List(), List(AST(RoundToZero, List(), List()), c))
-            } else {
-              c
-            }          
+             cast(c, newSort)                   
           }
         }
       val argSorts = newChildren.map( _.symbol.sort)
@@ -195,12 +199,7 @@ object SmallFloatsApproximation extends Approximation {
       val newSort = children.tail.foldLeft(children.head.symbol.sort)((x,y) => if (compareSorts(x, y.symbol.sort)) x else  y.symbol.sort)
       val newChildren = 
         for ( c <- children) yield {
-          if (c.symbol.sort != newSort) {
-            val cast = FPToFPFactory(List(c.symbol.sort, newSort))
-            AST(cast, List(), List(AST(RoundToZero, List(), List()), c))
-          } else {
-            c
-          }          
+          cast(c, newSort)          
         }
       val argSorts = newChildren.map( _.symbol.sort)
       AST(symbol.getFactory(argSorts ++ List(symbol.sort)), path, newChildren)      
@@ -213,41 +212,39 @@ object SmallFloatsApproximation extends Approximation {
       uppsat.ast.Leaf(newVar, path)     
     }
     
-   def encodeSymbol(symbol : ConcreteFunctionSymbol, path : Path, children : List[AST], precision : Int) : AST = {
-    symbol match {
+   def encodeSymbol(ast : AST, children : List[AST], precision : Int) : AST = {
+    ast.symbol match {
       case fpLit : FloatingPointConstantSymbol => {
-        AST(symbol, path, children) 
+        ast 
       }
       case fpSym : FloatingPointFunctionSymbol => {
-        encodeFunSymbol(fpSym, path, children, precision)
+        encodeFunSymbol(fpSym, ast.label, children, precision)
       }
       case fpPred : FloatingPointPredicateSymbol => {
-        encodePredSymbol(fpPred, path, children, precision)
+        encodePredSymbol(fpPred, ast.label, children, precision)
       }
       case fpVar : FPVar => {
-        encodeVar(fpVar, path, precision)
+        encodeVar(fpVar, ast.label, precision)
       }
       case _ => {
-        AST(symbol, path, children) 
+        AST(ast.symbol, ast.label, children) 
       }
     }
    }
  
     
-  def encodeAux(ast : AST, path : Path, pmap : PrecisionMap[Int]) : AST = {
+  def encodeAux(ast : AST, pmap : PrecisionMap[Int]) : AST = {
     val AST(symbol, label, children) = ast
     val newChildren = 
       for ((c, i) <- children zip children.indices) yield {
-        encodeAux( c, i :: path, pmap)
+        encodeAux( c, pmap)
       }    
-    encodeSymbol(symbol, path, newChildren, pmap(path))    
+    encodeSymbol(ast, newChildren, pmap(ast.label))    
   }
   
   def encodeFormula(ast : AST, pmap : PrecisionMap[Int]) : AST = Timer.measure("SmallFloats.encodeFormula") {
-    encodeAux(ast, List(0), pmap)
+    encodeAux(ast, pmap)    
   }
-  
-  
   
   // DECODING
   def decodeSymbolValue(symbol : ConcreteFunctionSymbol, value : AST, p : Int) = {
@@ -377,9 +374,9 @@ object SmallFloatsApproximation extends Approximation {
   }
   
   // TODO: Remove when SmallFloats extends Template Approximation
-  def reconstruct(ast : AST, decodedModel : Model) : Model = {
-    val reconstructedModel = new Model()    
-    AST.postVisit(ast, reconstructedModel, decodedModel, reconstructNode)
-    reconstructedModel
-  }
+//  def reconstruct(ast : AST, decodedModel : Model) : Model = {
+//    val reconstructedModel = new Model()    
+//    AST.postVisit(ast, reconstructedModel, decodedModel, reconstructNode)
+//    reconstructedModel
+//  }
 }

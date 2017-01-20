@@ -21,8 +21,6 @@ object AST {
   type Label = Path
   def apply(symbol : ConcreteFunctionSymbol, children : List[AST]) = new AST(symbol, List(), children)
   
-  //TODO: Label the AST, makes this code cleaner
-  
   def postVisit[A]( ast : AST, accumulator : A,  work : (A, AST) => A ) : A = {
     val AST(symbol, label, children) = ast
     var accu = accumulator
