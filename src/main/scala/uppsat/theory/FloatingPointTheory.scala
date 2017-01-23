@@ -78,7 +78,7 @@ object FloatingPointTheory extends Theory {
     
     case class FPConstantSymbol(override val sort : FPSort) extends FloatingPointLiteral(sort, sign, eBits.take(sort.eBits), sBits.take(sort.sBits - 1)) {
       // TODO: Does name have to be SMT-appliant, not nice!
-      val name = (sign :: eBits ++ sBits).mkString("") //fpToDouble(sign, eBits, sBits).toString() 
+      val name = sign + " " + eBits.mkString("") + " " + sBits.mkString("") //fpToDouble(sign, eBits, sBits).toString() 
       val theory = FloatingPointTheory
       val getFactory = thisFactory
       val args = List()

@@ -95,10 +95,10 @@ object ModelReconstructor {
   def valAST(ast: AST, assignments: List[(String, String)], theory : Theory, solver : SMTSolver) : Boolean = {
     val translator = new SMTTranslator(theory)
     val smtVal = translator.translate(ast, false, assignments)
-    println("valAST...")
-    println(smtVal)
+//    println("valAST...")
+//    println(smtVal)
     val result = solver.solve(smtVal)
-    println("\t" + result)
+//    println("\t" + result)
     result
   }
   

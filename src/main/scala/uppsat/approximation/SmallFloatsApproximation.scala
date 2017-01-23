@@ -112,39 +112,32 @@ object SmallFloatsApproximation extends TemplateApproximation {
     val sortedErrRatios = errorRatios.toList.sortWith((x,y) => x._2 > y._2)
     val k = math.ceil(fractionToRefine * sortedErrRatios.length).toInt //TODO: Assertions
     
-    def boolCond( accu : List[Path], ast : AST, path : Path) : Boolean = {
-//      println("Path : " + path)
-//      println("App model : " + decodedModel(path))
-//      println("Failed model : " + failedModel(path))
-//      println(decodedModel(path) != failedModel(path))
+    def boolCond( accu : List[AST], ast : AST, path : Path) : Boolean = {
       decodedModel(ast) != failedModel(ast)
     }
     
-    def boolWork( accu : List[Path], ast : AST) : List[Path] = {      
-      ast.label :: accu
+    def boolWork( accu : List[AST], ast : AST) : List[AST] = {      
+      ast :: accu
     }
     
     
-    val pathsToRefine = AST.boolVisit(ast, List(), boolCond, boolWork) 
+    val nodesToRefine = AST.boolVisit(ast, List(), boolCond, boolWork).toSet
     
     
     var newPMap = pmap
-    var changed = false
-    println(pathsToRefine.mkString("\n"))
-    for (path <- pathsToRefine) { //.take(k)
-      val p = pmap(path)
-      val newP = p + precisionIncrement
+    var changes = 0
+    println(nodesToRefine.mkString("\n"))
+    for (path <- nodesToRefine) { //.take(k)
+      val p =  newPMap(ast.label)
+      val newP = (p + precisionIncrement) max p
+      newPMap = newPMap.update(ast.label , newP min pmap.precisionOrdering.max)
       if  ( p  != pmap.precisionOrdering.max) {
-        changed = true
-        if (newP < pmap.precisionOrdering.max)
-          newPMap = newPMap.update(path, newP)
-        else  
-          newPMap = newPMap.update(path, pmap.precisionOrdering.max)
+        changes += 1
       }        
     }
     
-    if (!changed) {
-      println(pathsToRefine)
+    if (changes == 0) {
+      println(nodesToRefine)
       throw new Exception("Nothing changed in pmap")
     }
 //    println("--------------------------------------\nNew precision map :")

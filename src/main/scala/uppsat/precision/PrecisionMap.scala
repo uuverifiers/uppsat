@@ -3,6 +3,7 @@ package uppsat.precision
 import PrecisionMap._
 import uppsat.ast.AST
 import uppsat.ast.Leaf
+import uppsat.ast.ConcreteFunctionSymbol
 
 object PrecisionMap {
   type Path = List[Int]
@@ -10,13 +11,20 @@ object PrecisionMap {
   def apply[T](implicit precisionOrdering : PrecisionOrdering[T]) = new PrecisionMap[T](Map.empty[Path, T])
 }
 
+
+
 class PrecisionMap[T](private val map : Map[Path, T])(implicit val precisionOrdering : PrecisionOrdering[T]) {  
+  
+  var varToPaths : Map[ConcreteFunctionSymbol, Set[Path]] = Map()
+  var pathsToVar : Map[Path,ConcreteFunctionSymbol] = Map()
+  var pathToPath : Map[Path, Path] = Map()
   
   def update(path : Path, newP : T) = {
     if (precisionOrdering.lt(precisionOrdering.max, newP))
         throw new Exception("Trying to set precision larger than maximum precision")
-    else
-      new PrecisionMap[T](map + (path -> newP))
+    else      
+        new PrecisionMap[T](map + (pathToPath(path) -> newP))
+      
   }
   
   //TODO: What do we need to make this work?
@@ -43,15 +51,52 @@ class PrecisionMap[T](private val map : Map[Path, T])(implicit val precisionOrde
       (k, f(v))
       }))
   }
+
+  def init(formula : AST, initPrecision : T) = {
+    def collectPathVarPairs (a : Map[Path, ConcreteFunctionSymbol], ast : AST) : Map[Path, ConcreteFunctionSymbol] = {
+      if (ast.isVariable)
+          a + (ast.label -> ast.symbol)
+      else
+          a   
+    }
+    
+    pathsToVar = AST.postVisit(formula, Map[Path, ConcreteFunctionSymbol](), collectPathVarPairs)
+    varToPaths = pathsToVar.groupBy(_._2).mapValues(_.keySet)
+    val allPaths = formula.iterator.map { x => x.label }
+    val pathToPathIterator = for (path <- allPaths) yield {
+      if (pathsToVar.contains(path)) {
+        val variable = pathsToVar(path)
+        
+        if (!varToPaths.contains(variable))
+          throw new Exception("Precision map's variable to path consistency is compromised")
+        
+        (path, varToPaths(variable).head)
+      } else
+        (path,  path)
+    }
+    pathToPath = pathToPathIterator.toMap[Path, Path]
+    
+    println("var2P\n" + varToPaths.mkString("\n"))
+    println("path2Var\n" + pathsToVar.mkString("\n"))
+    println("path2Path\n" + pathToPath.mkString("\n"))
+    
+    println(allPaths.mkString("\n"))
+    for (p <- allPaths) {
+      if (!pathToPath.contains(p))
+        throw new Exception("Init failed for " + p)
+    }
+    
+    cascadingUpdate(formula, initPrecision)
+  }
   
-  def cascadingUpdate(prefix : Path, ast : AST, newPrecision : T) : PrecisionMap[T]= {
+  def cascadingUpdate(ast : AST, newPrecision : T) : PrecisionMap[T]= {
     ast match {
-      case Leaf(_) => update(prefix, newPrecision)
+      case Leaf(_) => update(ast.label, newPrecision)
       case AST(_, _, children) => {
          var pmap = this
          for ( i <- children.indices)
-           pmap = pmap.cascadingUpdate(i :: prefix, children(i), newPrecision)
-         pmap.update(prefix, newPrecision)
+           pmap = pmap.cascadingUpdate(children(i), newPrecision)
+         pmap.update(ast.label, newPrecision)
       }      
     }
   }
@@ -63,7 +108,9 @@ class PrecisionMap[T](private val map : Map[Path, T])(implicit val precisionOrde
   }
   
   // TODO: Do we want a check here?
-  def apply(path : Path) = map(path)
+  def apply(path : Path) = { 
+      map(pathToPath(path))      
+  }
   
   override def toString() = {
     map.toList.map(x => x match { case (k, v) => k + " => " + v }).mkString("\n")

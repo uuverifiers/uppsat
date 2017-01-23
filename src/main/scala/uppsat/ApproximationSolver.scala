@@ -40,10 +40,11 @@ object ApproximationSolver {
     }
   }
   
+  
+  
   def loop(formula : AST, translator : SMTTranslator, approximation : Approximation) : Option[ExtModel] = {  
-    
     var pmap = PrecisionMap[approximation.P](approximation.precisionOrdering)
-    pmap = pmap.cascadingUpdate(List(0), formula, approximation.precisionOrdering.min)
+    pmap = pmap.init(formula, approximation.precisionOrdering.min)
     var iterations = 0
     
     def tryReconstruct(encodedSMT : String) : (Option[ExtModel], Option[PrecisionMap[approximation.P]]) = Timer.measure("tryReconstruct") {
@@ -65,6 +66,8 @@ object ApproximationSolver {
       //println("Reconstructed model: \n" + appAssignments.mkString("\n\t") + "\n")
       println("Validating model ...")
       
+      println("Model comparison : ")
+      formula.ppWithModels("", appModel, reconstructedModel)
       if (ModelReconstructor.valAST(formula, assignments.toList, approximation.inputTheory, Z3Solver)) {
         val extModel =
           for ((symbol, value) <- reconstructedModel.getModel) yield {

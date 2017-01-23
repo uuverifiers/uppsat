@@ -1,6 +1,7 @@
 package uppsat.ast
 
 import uppsat.theory.BooleanTheory._
+import uppsat.ModelReconstructor.Model
 import scala.collection.mutable.ArrayStack
 import uppsat.precision.PrecisionMap.Path
 import uppsat.theory.IntegerTheory._
@@ -50,7 +51,7 @@ def boolVisit[T]( ast : AST, accumulator : T, cond : (T, AST, Path) => Boolean, 
       accu = work(accu, ast)
       
       for ((c, i) <- children zip children.indices) 
-        accu = postVisit( c, accu, work)
+        accu = boolVisit( c, accu, cond, work)
     }
     accu
   }
@@ -96,7 +97,7 @@ case class AST(val symbol : ConcreteFunctionSymbol, val label : Label, val child
   }
   
   def labelAST : AST = {
-    this.labelAux(List(0))
+     this.labelAux(List(0))
   }
   
   def iterator = new Iterator[AST] {
@@ -119,6 +120,12 @@ case class AST(val symbol : ConcreteFunctionSymbol, val label : Label, val child
     val newIndent = indent + "   "
     println(indent + symbol + " [" + label.mkString(",") + "] //" + symbol.sort)
     for (c <- children) (c prettyPrint newIndent)
+  }
+  
+  def ppWithModels(indent : String, smallModel : Model, bigModel : Model) : Unit = {
+    val newIndent = indent + "   "
+    println(indent + symbol + " [" + label.mkString(",") + "] //" + symbol.sort + " " + smallModel(this).symbol + " -> " + bigModel(this).symbol)
+    for (c <- children) (c ppWithModels(newIndent, smallModel, bigModel) )
   }
   
   def size = iterator.size  
