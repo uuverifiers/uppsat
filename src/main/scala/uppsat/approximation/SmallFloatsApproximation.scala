@@ -126,14 +126,17 @@ object SmallFloatsApproximation extends TemplateApproximation {
     
     var newPMap = pmap
     var changes = 0
-    println(nodesToRefine.mkString("\n"))
-    for (path <- nodesToRefine) { //.take(k)
-      val p =  newPMap(ast.label)
+    println("Nodes to refine ")
+    println(nodesToRefine.map(_.ppWithModels("", decodedModel, failedModel)).mkString("\n\n"))
+    for (node <- nodesToRefine) { //.take(k)
+      val p =  newPMap(node.label)
       val newP = (p + precisionIncrement) max p
-      newPMap = newPMap.update(ast.label , newP min pmap.precisionOrdering.max)
+      newPMap = newPMap.update(node.label , newP min pmap.precisionOrdering.max)
       if  ( p  != pmap.precisionOrdering.max) {
         changes += 1
-      }        
+      } else {
+        println("Already at max precision " + node.label)
+      }
     }
     
     if (changes == 0) {
