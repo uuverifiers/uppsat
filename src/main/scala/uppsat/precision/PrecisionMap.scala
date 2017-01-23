@@ -8,21 +8,56 @@ import uppsat.ast.ConcreteFunctionSymbol
 object PrecisionMap {
   type Path = List[Int]
   
-  def apply[T](implicit precisionOrdering : PrecisionOrdering[T]) = new PrecisionMap[T](Map.empty[Path, T])
+  //def apply[T](implicit pathToPath : Map[Path, Path], precisionOrdering : PrecisionOrdering[T]) = new PrecisionMap[T](Map.empty[Path, T])
+  
+  def apply[T](formula : AST)(implicit precisionOrdering : PrecisionOrdering[T]) = {
+    def collectPathVarPairs (a : Map[Path, ConcreteFunctionSymbol], ast : AST) : Map[Path, ConcreteFunctionSymbol] = {
+      if (ast.isVariable)
+          a + (ast.label -> ast.symbol)
+      else
+          a   
+    }
+    
+    val pathsToVar = AST.postVisit(formula, Map[Path, ConcreteFunctionSymbol](), collectPathVarPairs)
+    val varToPaths = pathsToVar.groupBy(_._2).mapValues(_.keySet)
+    val allPaths = formula.iterator.map { x => x.label }
+    val pathToPathIterator = for (path <- allPaths) yield {
+      if (pathsToVar.contains(path)) {
+        val variable = pathsToVar(path)
+        
+        if (!varToPaths.contains(variable))
+          throw new Exception("Precision map's variable to path consistency is compromised")
+        
+        (path, varToPaths(variable).head)
+      } else
+        (path,  path)
+    }
+    implicit val pathToPath = pathToPathIterator.toMap[Path, Path]
+    
+//    println("var2P\n" + varToPaths.mkString("\n"))
+//    println("path2Var\n" + pathsToVar.mkString("\n"))
+//    println("path2Path\n" + pathToPath.mkString("\n"))
+//    
+//    println(allPaths.mkString("\n"))
+//    for (p <- allPaths) {
+//      if (!pathToPath.contains(p))
+//        throw new Exception("Init failed for " + p)
+//    }
+   new PrecisionMap[T](Map.empty[Path, T])
+  }
 }
 
 
 
-class PrecisionMap[T](private val map : Map[Path, T])(implicit val precisionOrdering : PrecisionOrdering[T]) {  
-  
-  var varToPaths : Map[ConcreteFunctionSymbol, Set[Path]] = Map()
-  var pathsToVar : Map[Path,ConcreteFunctionSymbol] = Map()
-  var pathToPath : Map[Path, Path] = Map()
+class PrecisionMap[T] private (val map : Map[Path, T])(implicit val pathToPath : Map[Path, Path], val precisionOrdering : PrecisionOrdering[T]) {  
   
   def update(path : Path, newP : T) = {
     if (precisionOrdering.lt(precisionOrdering.max, newP))
         throw new Exception("Trying to set precision larger than maximum precision")
     else      
+//        println("Update : " + path)
+//        if (!pathToPath.contains(path))
+//          throw new Exception("Path " + path + " not found in " + pathToPath.mkString("\n"))
         new PrecisionMap[T](map + (pathToPath(path) -> newP))
       
   }
@@ -53,39 +88,7 @@ class PrecisionMap[T](private val map : Map[Path, T])(implicit val precisionOrde
   }
 
   def init(formula : AST, initPrecision : T) = {
-    def collectPathVarPairs (a : Map[Path, ConcreteFunctionSymbol], ast : AST) : Map[Path, ConcreteFunctionSymbol] = {
-      if (ast.isVariable)
-          a + (ast.label -> ast.symbol)
-      else
-          a   
-    }
-    
-    pathsToVar = AST.postVisit(formula, Map[Path, ConcreteFunctionSymbol](), collectPathVarPairs)
-    varToPaths = pathsToVar.groupBy(_._2).mapValues(_.keySet)
-    val allPaths = formula.iterator.map { x => x.label }
-    val pathToPathIterator = for (path <- allPaths) yield {
-      if (pathsToVar.contains(path)) {
-        val variable = pathsToVar(path)
-        
-        if (!varToPaths.contains(variable))
-          throw new Exception("Precision map's variable to path consistency is compromised")
-        
-        (path, varToPaths(variable).head)
-      } else
-        (path,  path)
-    }
-    pathToPath = pathToPathIterator.toMap[Path, Path]
-    
-    println("var2P\n" + varToPaths.mkString("\n"))
-    println("path2Var\n" + pathsToVar.mkString("\n"))
-    println("path2Path\n" + pathToPath.mkString("\n"))
-    
-    println(allPaths.mkString("\n"))
-    for (p <- allPaths) {
-      if (!pathToPath.contains(p))
-        throw new Exception("Init failed for " + p)
-    }
-    
+
     cascadingUpdate(formula, initPrecision)
   }
   
