@@ -31,7 +31,7 @@ import uppsat.solver.Z3OnlineSolver
 
 
 
-object SmallFloatsApproximation extends TemplateApproximation {
+object SmallFloatsApproximation extends NodeByNodeApproximation {
   type P = Int
   val inputTheory = FloatingPointTheory
   val outputTheory = FloatingPointTheory
@@ -208,7 +208,7 @@ object SmallFloatsApproximation extends TemplateApproximation {
       uppsat.ast.Leaf(newVar, path)     
     }
     
-   def encodeSymbol(ast : AST, children : List[AST], precision : Int) : AST = {
+   def encodeNode(ast : AST, children : List[AST], precision : Int) : AST = {
     ast.symbol match {
       case fpLit : FloatingPointConstantSymbol => {
         ast 
@@ -227,33 +227,16 @@ object SmallFloatsApproximation extends TemplateApproximation {
       }
     }
    }
- 
-    
-  def encodeAux(ast : AST, pmap : PrecisionMap[Int]) : AST = {
-    val AST(symbol, label, children) = ast
-    val newChildren = 
-      for ((c, i) <- children zip children.indices) yield {
-        encodeAux( c, pmap)
-      }    
-    encodeSymbol(ast, newChildren, pmap(ast.label))    
-  }
-  
-  def encodeFormula(ast : AST, pmap : PrecisionMap[Int]) : AST = Timer.measure("SmallFloats.encodeFormula") {
-    encodeAux(ast, pmap)    
-  }
-  
+   
   // DECODING
   def decodeSymbolValue(symbol : ConcreteFunctionSymbol, value : AST, p : Int) = {
     (symbol.sort, value.symbol) match {
       case (FPSort(e, s), fp : FloatingPointTheory.FloatingPointLiteral)  => {
         val fullEBits = fp.eBits.head :: List.fill(e - fp.eBits.length)(0) ++ fp.eBits.tail
-        // TODO: Should it be s-1...
         val fullSBits = fp.sBits ++ List.fill((s - 1) - fp.sBits.length)(0)
         Leaf(FPLiteral(fp.sign, fullEBits, fullSBits, FPSort(e, s)))
       }
       
-      // TODO: We have to fix infinity and scale it ... all constants?
-      // TODO:  Signed Zeroes?
       case (FPSort(e, s), fp : FloatingPointTheory.FloatingPointConstantSymbol)  => {
         fp.getFactory match {
           case FPPlusInfinity => Leaf(FPPlusInfinity(List(FPSort(e, s))))
@@ -286,64 +269,6 @@ object SmallFloatsApproximation extends TemplateApproximation {
     decodedModel
   }
   
-  def decodeModel(ast : AST, appModel : Model, pmap : PrecisionMap[Int]) = {
-    val decodedModel = new Model()
-    AST.postVisit(ast, decodedModel, (appModel, pmap), decodeNode)
-    decodedModel
-  }
-  
-  def getCurrentValue(ast : AST, decodedModel : Model, candidateModel : Model) : AST = {
-    if (! candidateModel.contains(ast)) {
-          candidateModel.set(ast, decodedModel(ast))
-        } 
-    candidateModel(ast)
-  }
-  
-
-  
-  //******************************************************************//
-  //                    Equality as Assignment                        //
-  //******************************************************************//
-  def equalityAsAssignment(ast : AST, decodedModel : Model,  candidateModel : Model) : Boolean = {
-    ast match {
-      case AST(fpEq : FPEqualityFactory.FPPredicateSymbol, path, children) if (decodedModel(ast).symbol == BoolTrue)  => {
-         val lhs = children(0)
-         val rhs = children(1)         
-         val lhsDefined = candidateModel.contains(lhs)
-         val rhsDefined = candidateModel.contains(rhs) 
-         (lhs, rhs) match {         
-           case ( _ , _ ) if (lhs.isVariable && rhs.isVariable) => {
-//             println("Both variables")
-             (lhsDefined, rhsDefined) match {
-               case (false, true) => candidateModel.set(lhs, candidateModel(rhs))
-                                     true
-               case (true, false) => candidateModel.set(rhs, candidateModel(lhs))
-                                     true
-               case (false, false) => //TODO: Fancy things could be done here.
-                                      false
-               case (true, true) => false
-             }
-           }           
-           case ( _ , _ ) if (lhs.isVariable && !lhsDefined) => {
-//             println("LHS is undef variable")
-             candidateModel.set(lhs, candidateModel(rhs))
-             true
-           }
-           case ( _ , _) if (rhs.isVariable && !rhsDefined) =>{
-//             println("RHS is undef variable")
-             candidateModel.set(rhs, candidateModel(lhs))
-             true
-           }
-           case (_, _) => {
-//             println("no variables")
-             false
-           }
-        }
-      }
-      case _ => false
-    }
-  }
-
   def reconstructNode( decodedModel  : Model, candidateModel : Model, ast : AST) : Model = {
     val AST(symbol, label, children) = ast
         
@@ -368,11 +293,4 @@ object SmallFloatsApproximation extends TemplateApproximation {
     }
     candidateModel
   }
-  
-  // TODO: Remove when SmallFloats extends Template Approximation
-//  def reconstruct(ast : AST, decodedModel : Model) : Model = {
-//    val reconstructedModel = new Model()    
-//    AST.postVisit(ast, reconstructedModel, decodedModel, reconstructNode)
-//    reconstructedModel
-//  }
 }
