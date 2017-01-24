@@ -36,7 +36,7 @@ object AST {
     val AST(symbol, label, children) = ast
     var accu = accumulator
    
-    for ((c, i) <- children zip children.indices) 
+    for (c <- children) 
       accu = postVisit( c, accu, args, work)
     
     work(args, accu, ast)
@@ -50,7 +50,7 @@ def boolVisit[T]( ast : AST, accumulator : T, cond : (T, AST, Path) => Boolean, 
     if (cond(accu, ast, label)) {
       accu = work(accu, ast)
       
-      for ((c, i) <- children zip children.indices) 
+      for (c <- children) 
         accu = boolVisit( c, accu, cond, work)
     }
     accu
