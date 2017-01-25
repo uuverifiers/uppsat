@@ -94,13 +94,15 @@ object SmallFloatsApproximation extends NodeByNodeApproximation {
         accu + (ast -> err)
     }
   
-  def satRefinePrecision[Int]( node : AST, pmap : PrecisionMap[Int]) : Int = {
-    val p =  pmap(node.label)
+  def satRefinePrecision( node : AST, pmap : PrecisionMap[Int]) : Int = {
+    val p =  pmap(node.label)    
     val newP = (p + precisionIncrement) max p
     newP min pmap.precisionOrdering.maximalPrecision // TODO:  This check should be in the ordering somewhere?
   }
   
-
+  def unsatRefinePrecision( p : Int) : Int = {
+    p + 1
+  }
   
   
   def cast(ast : AST, target : ConcreteSort  ) : AST = {

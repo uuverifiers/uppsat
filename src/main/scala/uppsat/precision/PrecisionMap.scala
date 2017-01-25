@@ -111,7 +111,7 @@ class PrecisionMap[T] private (val map : Map[Path, T])(implicit val pathToPath :
   }
   
   // TODO: Do we want a check here?
-  def apply(path : Path) = { 
+  def apply(path : Path) : T = { 
       map(pathToPath(path))      
   }
   
