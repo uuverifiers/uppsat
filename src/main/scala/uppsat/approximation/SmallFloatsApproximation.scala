@@ -26,16 +26,10 @@ import uppsat.ModelReconstructor.Model
 import uppsat.solver.Z3OnlineException
 import uppsat.solver.Z3OnlineSolver
 
-
-
-
-
-
 object SmallFloatsApproximation extends NodeByNodeApproximation {
   // Input and output languages
   val inputTheory = FloatingPointTheory
   val outputTheory = FloatingPointTheory
-  
   
   //Precision type and ordering
   type P = Int  
@@ -49,8 +43,7 @@ object SmallFloatsApproximation extends NodeByNodeApproximation {
   val precisionIncrement = 1 // 20/100 = 1/5
   
   def nodeError(decodedModel : Model)(failedModel : Model)(accu : Map[AST, Double], ast : AST) : Map[AST, Double] = {
-      val AST(symbol, label, children) = ast
-      
+      val AST(symbol, label, children) = ast      
       var err = 0.0
       
       symbol match {
@@ -105,7 +98,7 @@ object SmallFloatsApproximation extends NodeByNodeApproximation {
   }
   
   
-  def cast(ast : AST, target : ConcreteSort  ) : AST = {
+  def cast(ast : AST, target : ConcreteSort) : AST = {
     val source = ast.symbol.sort
     if (ast.symbol.sort != RoundingModeSort && source != target ) {      
       val cast = FPToFPFactory(List(ast.symbol.sort, target))
@@ -115,11 +108,7 @@ object SmallFloatsApproximation extends NodeByNodeApproximation {
       ast
     } 
   }
-  
-  
-  
-
-  
+    
   def encodeNode(ast : AST, children : List[AST], precision : Int) : AST = {
     ast.symbol match {
       case fpLit : FloatingPointConstantSymbol => {
@@ -167,6 +156,7 @@ object SmallFloatsApproximation extends NodeByNodeApproximation {
     val appModel = args._1
     val pmap = args._2
     
+    println("Decoding " + ast + " " + appModel(ast))
     val decodedValue = decodeSymbolValue(ast.symbol, appModel(ast), pmap(ast.label))
     
     if (decodedModel.contains(ast)){
@@ -205,8 +195,8 @@ object SmallFloatsApproximation extends NodeByNodeApproximation {
     candidateModel
   }
   
+    
   // Helper functions  
-  
   def compareSorts(s1 : Sort, s2 : Sort) = {
     (s1, s2) match {
       case (FPSort(eb1, sb1), FPSort(eb2, sb2)) => eb1 + sb1 > eb2 + sb2
@@ -241,26 +231,22 @@ object SmallFloatsApproximation extends NodeByNodeApproximation {
       
       case _ => value
     }
-  }
-  
+  }  
   
   def relativeError(decoded : FloatingPointLiteral, precise : FloatingPointLiteral) : Double = {
-      (decoded.getFactory, precise.getFactory) match {
-        case (x, y) if (x == y) => 0.0 //Values are the same
-        case (FPPlusInfinity, _)    |
-             (_, FPPlusInfinity)    |
-             (FPMinusInfinity, _)   |
-             (_, FPMinusInfinity)   => Double.PositiveInfinity
-        case (x : FPConstantFactory, y : FPConstantFactory) => {
-          val a = bitsToDouble(decoded)
-          val b = bitsToDouble(precise)
-          Math.abs((a - b)/b)
-        }        
-        case _ => 0.0
-      }
+    (decoded.getFactory, precise.getFactory) match {
+      case (x, y) if (x == y) => 0.0 //Values are the same
+      case (FPPlusInfinity, _)    |
+           (_, FPPlusInfinity)    |
+           (FPMinusInfinity, _)   |
+           (_, FPMinusInfinity)   => Double.PositiveInfinity
+      case (x : FPConstantFactory, y : FPConstantFactory) => {
+        val a = bitsToDouble(decoded)
+        val b = bitsToDouble(precise)
+        Math.abs((a - b)/b)
+      }        
+      case _ => 0.0
     }
-  
-  
-  
+  }
 }
 
