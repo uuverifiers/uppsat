@@ -52,7 +52,7 @@ object PrecisionMap {
 class PrecisionMap[T] private (val map : Map[Path, T])(implicit val pathToPath : Map[Path, Path], val precisionOrdering : PrecisionOrdering[T]) {  
   
   def update(path : Path, newP : T) = {
-    if (precisionOrdering.lt(precisionOrdering.max, newP))
+    if (precisionOrdering.lt(precisionOrdering.maximalPrecision, newP))
         throw new Exception("Trying to set precision larger than maximum precision")
     else      
 //        println("Update : " + path)
@@ -73,17 +73,17 @@ class PrecisionMap[T] private (val map : Map[Path, T])(implicit val pathToPath :
   //  }
   
   def isMaximal = {
-    map.values.find(x => precisionOrdering.lt(x, precisionOrdering.max)).isEmpty
+    map.values.find(x => precisionOrdering.lt(x, precisionOrdering.maximalPrecision)).isEmpty
   }
   
   def maximal = {
-    new PrecisionMap(map.map{ case (k, v) => (k, precisionOrdering.max) })
+    new PrecisionMap(map.map{ case (k, v) => (k, precisionOrdering.maximalPrecision) })
   }
   
   def map(f : T => T) : PrecisionMap[T] = {
     new PrecisionMap[T](map.map(x => {
       val (k, v) = x
-      (k, f(v))
+      (k, precisionOrdering.min(f(v), precisionOrdering.maximalPrecision))
       }))
   }
 

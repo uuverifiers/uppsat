@@ -44,7 +44,7 @@ object ApproximationSolver {
   
   def loop(formula : AST, translator : SMTTranslator, approximation : Approximation) : Option[ExtModel] = {  
     var pmap = PrecisionMap[approximation.P](formula)(approximation.precisionOrdering)
-    pmap = pmap.cascadingUpdate(formula, approximation.precisionOrdering.min)
+    pmap = pmap.cascadingUpdate(formula, approximation.precisionOrdering.minimalPrecision)
     var iterations = 0
     
     def tryReconstruct(encodedSMT : String) : (Option[ExtModel], Option[PrecisionMap[approximation.P]]) = Timer.measure("tryReconstruct") {

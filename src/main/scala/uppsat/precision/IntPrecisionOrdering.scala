@@ -1,6 +1,6 @@
 package uppsat.precision
 
-class IntPrecisionOrdering(val min : Int, val max : Int) extends PrecisionOrdering[Int] {
+class IntPrecisionOrdering(val minimalPrecision : Int, val maximalPrecision : Int) extends PrecisionOrdering[Int] {
   type P = Int
   val order = SingleIntOrdering
   

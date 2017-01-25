@@ -32,35 +32,23 @@ import uppsat.solver.Z3OnlineSolver
 
 
 object SmallFloatsApproximation extends NodeByNodeApproximation {
-  type P = Int
+  // Input and output languages
   val inputTheory = FloatingPointTheory
   val outputTheory = FloatingPointTheory
+  
+  
+  //Precision type and ordering
+  type P = Int  
   val precisionOrdering = new IntPrecisionOrdering(0, 5)
   
   val DEBUG = false
+
+  // Parameters of satRefine, can be overriden to provide differen values
+  val topK = 10 // K 
+  val fractionToRefine = 0.3 //K_percentage
+  val precisionIncrement = 1 // 20/100 = 1/5
   
-  def satRefine(ast : AST, decodedModel : Model, failedModel : Model, pmap : PrecisionMap[Int]) : PrecisionMap[Int] = {
-    val topTen = 10 // K 
-    val fractionToRefine = 0.3 //K_percentage
-    val precisionIncrement = 1 // 20/100 = 1/5
-    
-    def relativeError(decoded : FloatingPointLiteral, precise : FloatingPointLiteral) : Double = {
-      (decoded.getFactory, precise.getFactory) match {
-        case (x, y) if (x == y) => 0.0 //Values are the same
-        case (FPPlusInfinity, _)    |
-             (_, FPPlusInfinity)    |
-             (FPMinusInfinity, _)   |
-             (_, FPMinusInfinity)   => Double.PositiveInfinity
-        case (x : FPConstantFactory, y : FPConstantFactory) => {
-          val a = bitsToDouble(decoded)
-          val b = bitsToDouble(precise)
-          Math.abs((a - b)/b)
-        }        
-        case _ => 0.0
-      }
-    }
-    
-    def nodeError(accu : Map[AST, Double], ast : AST) : Map[AST, Double] = {
+  def nodeError(decodedModel : Model)(failedModel : Model)(accu : Map[AST, Double], ast : AST) : Map[AST, Double] = {
       val AST(symbol, label, children) = ast
       
       var err = 0.0
@@ -105,59 +93,15 @@ object SmallFloatsApproximation extends NodeByNodeApproximation {
       else
         accu + (ast -> err)
     }
-
-    val accu = Map[AST, Double]()
-    val errorRatios = AST.postVisit(ast, accu, nodeError)
-    
-    val sortedErrRatios = errorRatios.toList.sortWith((x,y) => x._2 > y._2)
-    val k = math.ceil(fractionToRefine * sortedErrRatios.length).toInt //TODO: Assertions
-    
-    def boolCond( accu : List[AST], ast : AST, path : Path) : Boolean = {
-      decodedModel(ast) != failedModel(ast)
-    }
-    
-    def boolWork( accu : List[AST], ast : AST) : List[AST] = {      
-      ast :: accu
-    }
-    
-    
-    val nodesToRefine = AST.boolVisit(ast, List(), boolCond, boolWork).toSet
-    
-    
-    var newPMap = pmap
-    var changes = 0
-    println("Nodes to refine ")
-    println(nodesToRefine.map(_.ppWithModels("", decodedModel, failedModel)).mkString("\n\n"))
-    for (node <- nodesToRefine) { //.take(k)
-      val p =  newPMap(node.label)
-      val newP = (p + precisionIncrement) max p
-      newPMap = newPMap.update(node.label , newP min pmap.precisionOrdering.max)
-      if  ( p  != pmap.precisionOrdering.max) {
-        changes += 1
-      } else {
-        println("Already at max precision " + node.label)
-      }
-    }
-    
-    if (changes == 0) {
-      println(nodesToRefine)
-      throw new Exception("Nothing changed in pmap")
-    }
-//    println("--------------------------------------\nNew precision map :")
-//    println(newPMap)
-    newPMap    
-    //    pmap.map(_ + 1)
-  }
-
-  def unsatRefine(ast : AST, core : List[AST], pmap : PrecisionMap[Int]) : PrecisionMap[Int] = {
-    pmap.map(_ + 1)
+  
+  def satRefinePrecision[Int]( node : AST, pmap : PrecisionMap[Int]) : Int = {
+    val p =  pmap(node.label)
+    val newP = (p + precisionIncrement) max p
+    newP min pmap.precisionOrdering.maximalPrecision // TODO:  This check should be in the ordering somewhere?
   }
   
-  def scaleSort(sort : FPSort, p : Int) = {
-    val eBits = 3 + ((sort.eBits - 3) * p)/precisionOrdering.max
-    val sBits = 3 + ((sort.sBits - 3) * p)/precisionOrdering.max
-    sort.getFactory(List(eBits, sBits))
-  }
+
+  
   
   def cast(ast : AST, target : ConcreteSort  ) : AST = {
     val source = ast.symbol.sort
@@ -170,87 +114,52 @@ object SmallFloatsApproximation extends NodeByNodeApproximation {
     } 
   }
   
-  def encodeFunSymbol(symbol : FloatingPointFunctionSymbol, path : Path, children : List[AST], precision : Int) : AST = {
-      val newSort = scaleSort(symbol.sort, precision)
-      val newChildren = 
-        if (symbol.getFactory == FPToFPFactory) {// No need to cast, this symbol does this!
-          children
-        } else {
-          for ( c <- children) yield {
-             cast(c, newSort)                   
-          }
-        }
-      val argSorts = newChildren.map( _.symbol.sort)
-      AST(symbol.getFactory(argSorts ++ List(newSort)), path, newChildren)
-    }
   
-    def compareSorts(s1 : Sort, s2 : Sort) = {
-      (s1, s2) match {
-        case (FPSort(eb1, sb1), FPSort(eb2, sb2)) => eb1 + sb1 > eb2 + sb2
-        case (FPSort(_, _), _) | (_, FPSort(_, _)) => true        
-      }
-    }
-    
-    def encodePredSymbol(symbol : FloatingPointPredicateSymbol, path : Path, children : List[AST], precision : Int) : AST = {
-      val newSort = children.tail.foldLeft(children.head.symbol.sort)((x,y) => if (compareSorts(x, y.symbol.sort)) x else  y.symbol.sort)
-      val newChildren = 
-        for ( c <- children) yield {
-          cast(c, newSort)          
-        }
-      val argSorts = newChildren.map( _.symbol.sort)
-      AST(symbol.getFactory(argSorts ++ List(symbol.sort)), path, newChildren)      
-    }
-    
-    def encodeVar(fpVar : FPVar, path : Path, precision : Int) = {
-      // TODO: Do not convert if sorts are the same
-      val newSort = scaleSort(fpVar.sort, precision)
-      val newVar = FPVar(fpVar.name)(newSort)
-      uppsat.ast.Leaf(newVar, path)     
-    }
-    
-   def encodeNode(ast : AST, children : List[AST], precision : Int) : AST = {
+  
+
+  
+  def encodeNode(ast : AST, children : List[AST], precision : Int) : AST = {
     ast.symbol match {
       case fpLit : FloatingPointConstantSymbol => {
         ast 
       }
+      
       case fpSym : FloatingPointFunctionSymbol => {
-        encodeFunSymbol(fpSym, ast.label, children, precision)
+          val newSort = scaleSort(fpSym.sort, precision)
+          val newChildren = 
+            if (fpSym.getFactory == FPToFPFactory) {// No need to cast, this symbol does this!
+              children
+            } else {
+              for ( c <- children) yield {
+                 cast(c, newSort)                   
+              }
+            }
+          val argSorts = newChildren.map( _.symbol.sort)
+          AST(fpSym.getFactory(argSorts ++ List(newSort)), ast.label, newChildren) 
       }
+      
       case fpPred : FloatingPointPredicateSymbol => {
-        encodePredSymbol(fpPred, ast.label, children, precision)
+        val newSort = children.tail.foldLeft(children.head.symbol.sort)((x,y) => if (compareSorts(x, y.symbol.sort)) x else  y.symbol.sort)
+        val newChildren = 
+          for ( c <- children) yield {
+            cast(c, newSort)          
+          }
+        val argSorts = newChildren.map( _.symbol.sort)
+        AST(fpPred.getFactory(argSorts ++ List(fpPred.sort)), ast.label, newChildren)
       }
+      
       case fpVar : FPVar => {
-        encodeVar(fpVar, ast.label, precision)
+        val newSort = scaleSort(fpVar.sort, precision)
+        val newVar = FPVar(fpVar.name)(newSort)
+        uppsat.ast.Leaf(newVar, fpVar.label)
       }
+      
       case _ => {
         AST(ast.symbol, ast.label, children) 
       }
     }
-   }
-   
-  // DECODING
-  def decodeSymbolValue(symbol : ConcreteFunctionSymbol, value : AST, p : Int) = {
-    (symbol.sort, value.symbol) match {
-      case (FPSort(e, s), fp : FloatingPointTheory.FloatingPointLiteral)  => {
-        val fullEBits = fp.eBits.head :: List.fill(e - fp.eBits.length)(0) ++ fp.eBits.tail
-        val fullSBits = fp.sBits ++ List.fill((s - 1) - fp.sBits.length)(0)
-        Leaf(FPLiteral(fp.sign, fullEBits, fullSBits, FPSort(e, s)))
-      }
-      
-      case (FPSort(e, s), fp : FloatingPointTheory.FloatingPointConstantSymbol)  => {
-        fp.getFactory match {
-          case FPPlusInfinity => Leaf(FPPlusInfinity(List(FPSort(e, s))))
-          case FPMinusInfinity => Leaf(FPMinusInfinity(List(FPSort(e, s))))
-          case FPNaN => Leaf(FPNaN(List(FPSort(e, s))))
-          case FPPositiveZero => Leaf(FPPositiveZero(List(FPSort(e, s))))
-          case FPNegativeZero => Leaf(FPNegativeZero(List(FPSort(e, s))))
-          case _ => throw new Exception("How do we translatee FPConstant Symbol? " + fp)
-        }
-      }      
-      
-      case _ => value
-    }
   }
+   
   
   def decodeNode( args : (Model, PrecisionMap[P]), decodedModel : Model, ast : AST) : Model = {
     val appModel = args._1
@@ -259,7 +168,7 @@ object SmallFloatsApproximation extends NodeByNodeApproximation {
     val decodedValue = decodeSymbolValue(ast.symbol, appModel(ast), pmap(ast.label))
     
     if (decodedModel.contains(ast)){
-      if (decodedModel(ast).toString() != decodedValue.toString()) {
+      if (!ast.symbol.equals(decodedValue.symbol)) {
          ast.prettyPrint("\t") 
         throw new Exception("Decoding the model results in different values for the same entry : \n" + decodedModel(ast) + " \n" + decodedValue)
       }
@@ -293,4 +202,63 @@ object SmallFloatsApproximation extends NodeByNodeApproximation {
     }
     candidateModel
   }
+  
+  // Helper functions  
+  
+  def compareSorts(s1 : Sort, s2 : Sort) = {
+    (s1, s2) match {
+      case (FPSort(eb1, sb1), FPSort(eb2, sb2)) => eb1 + sb1 > eb2 + sb2
+      case (FPSort(_, _), _) | (_, FPSort(_, _)) => true        
+    }
+  }
+  
+  def scaleSort(sort : FPSort, p : Int) = {
+    val eBits = 3 + ((sort.eBits - 3) * p)/precisionOrdering.maximalPrecision
+    val sBits = 3 + ((sort.sBits - 3) * p)/precisionOrdering.maximalPrecision
+    sort.getFactory(List(eBits, sBits))
+  }
+    
+  def decodeSymbolValue(symbol : ConcreteFunctionSymbol, value : AST, p : Int) = {
+    (symbol.sort, value.symbol) match {
+      case (FPSort(e, s), fp : FloatingPointTheory.FloatingPointLiteral)  => {
+        val fullEBits = fp.eBits.head :: List.fill(e - fp.eBits.length)(0) ++ fp.eBits.tail
+        val fullSBits = fp.sBits ++ List.fill((s - 1) - fp.sBits.length)(0)
+        Leaf(FPLiteral(fp.sign, fullEBits, fullSBits, FPSort(e, s)))
+      }
+      
+      case (FPSort(e, s), fp : FloatingPointTheory.FloatingPointConstantSymbol)  => {
+        fp.getFactory match {
+          case FPPlusInfinity => Leaf(FPPlusInfinity(List(FPSort(e, s))))
+          case FPMinusInfinity => Leaf(FPMinusInfinity(List(FPSort(e, s))))
+          case FPNaN => Leaf(FPNaN(List(FPSort(e, s))))
+          case FPPositiveZero => Leaf(FPPositiveZero(List(FPSort(e, s))))
+          case FPNegativeZero => Leaf(FPNegativeZero(List(FPSort(e, s))))
+          case _ => throw new Exception("How do we translatee FPConstant Symbol? " + fp)
+        }
+      }      
+      
+      case _ => value
+    }
+  }
+  
+  
+  def relativeError(decoded : FloatingPointLiteral, precise : FloatingPointLiteral) : Double = {
+      (decoded.getFactory, precise.getFactory) match {
+        case (x, y) if (x == y) => 0.0 //Values are the same
+        case (FPPlusInfinity, _)    |
+             (_, FPPlusInfinity)    |
+             (FPMinusInfinity, _)   |
+             (_, FPMinusInfinity)   => Double.PositiveInfinity
+        case (x : FPConstantFactory, y : FPConstantFactory) => {
+          val a = bitsToDouble(decoded)
+          val b = bitsToDouble(precise)
+          Math.abs((a - b)/b)
+        }        
+        case _ => 0.0
+      }
+    }
+  
+  
+  
 }
+
