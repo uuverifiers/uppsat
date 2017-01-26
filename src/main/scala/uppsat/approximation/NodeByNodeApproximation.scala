@@ -75,7 +75,7 @@ trait NodeByNodeApproximation extends Approximation {
     
     var newPMap = pmap
     var changes = 0
-    for (node <- nodesToRefine.filter( x => precisionOrdering.lt(newPMap(x.label),  pmap.precisionOrdering.max)).take(k)) { 
+    for (node <- nodesToRefine.filter( x => precisionOrdering.lt(newPMap(x.label),  pmap.precisionOrdering.maximalPrecision)).take(k)) { 
       newPMap = newPMap.update(node.label, satRefinePrecision(node, newPMap))
       changes += 1      
     }

@@ -18,9 +18,9 @@ class SMTTranslator(theory : Theory) {
        case Leaf(symbol, label) => {
          val smtSort  = symbol.sort.theory.toSMTLib(symbol.sort)           
          val smtSymbol = symbol.theory.toSMTLib(symbol)         
-
+         println("I2P << " + smtSymbol + "-> " + label )
          if (ast.isVariable) { //(!BooleanTheory.isDefinedLiteral(symbol) || !theory.isDefinedLiteral(symbol)) {
-           println("I2P " + smtSymbol + "-> " + label )
+           println("+")
            IdToPaths += smtSymbol -> (label :: (IdToPaths.getOrElse(smtSymbol, List())))
            astSymbols += ((smtSymbol, smtSort))
          }
