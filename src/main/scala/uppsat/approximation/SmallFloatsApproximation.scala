@@ -161,9 +161,10 @@ object SmallFloatsApproximation extends NodeByNodeApproximation {
     val decodedValue = decodeSymbolValue(ast.symbol, appModel(ast), pmap(ast.label))
     
     if (decodedModel.contains(ast)){
-      if (decodedModel(ast).symbol.equals(decodedValue.symbol)) {
+      val existingValue = decodedModel(ast).symbol 
+      if ( existingValue.toString() != decodedValue.symbol.toString()) {
          ast.prettyPrint("\t") 
-        throw new Exception("Decoding the model results in different values for the same entry : \n" + decodedModel(ast) + " \n" + decodedValue)
+        throw new Exception("Decoding the model results in different values for the same entry : \n" + existingValue + " \n" + decodedValue.symbol)
       }
     } else {
       decodedModel.set(ast, decodedValue)

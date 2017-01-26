@@ -18,9 +18,7 @@ class SMTTranslator(theory : Theory) {
        case Leaf(symbol, label) => {
          val smtSort  = symbol.sort.theory.toSMTLib(symbol.sort)           
          val smtSymbol = symbol.theory.toSMTLib(symbol)         
-         println("I2P << " + smtSymbol + "-> " + label )
          if (ast.isVariable) { //(!BooleanTheory.isDefinedLiteral(symbol) || !theory.isDefinedLiteral(symbol)) {
-           println("+")
            IdToPaths += smtSymbol -> (label :: (IdToPaths.getOrElse(smtSymbol, List())))
            astSymbols += ((smtSymbol, smtSort))
          }
@@ -106,8 +104,6 @@ class SMTTranslator(theory : Theory) {
   def getModel(ast : AST, stringModel : Map[String, String]) : Model = {
     val model = new Model()
     
-    println("String model \n" + stringModel.mkString("\n"))
-    println("Id2Paths \n" + IdToPaths.mkString("\n"))
     (for ((k, v) <- stringModel) {
       val paths = IdToPaths(k).filter(!_.isEmpty)
       // We only need to extract the value from one of the paths
@@ -116,7 +112,6 @@ class SMTTranslator(theory : Theory) {
       } else {
         val valAST = ast(paths.head).symbol.sort.theory.parseLiteral(v.trim()) //AZ: Should the trim call go elsewhere?
         val n = ast.getPath(paths.head)
-        println(">> " + n + " -> " + valAST)
         model.set(n, valAST)
         //(for (p <- paths) yield p -> valAST)
       }
