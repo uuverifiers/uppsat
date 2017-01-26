@@ -110,7 +110,7 @@ object SmallFloatsApproximation extends NodeByNodeApproximation {
   }
     
   def encodeNode(ast : AST, children : List[AST], precision : Int) : AST = {
-    ast.symbol match {
+      ast.symbol match {
       case fpLit : FloatingPointConstantSymbol => {
         ast 
       }
@@ -142,7 +142,7 @@ object SmallFloatsApproximation extends NodeByNodeApproximation {
       case fpVar : FPVar => {
         val newSort = scaleSort(fpVar.sort, precision)
         val newVar = FPVar(fpVar.name)(newSort)
-        uppsat.ast.Leaf(newVar, fpVar.label)
+        uppsat.ast.Leaf(newVar, ast.label)
       }
       
       case _ => {
@@ -161,7 +161,7 @@ object SmallFloatsApproximation extends NodeByNodeApproximation {
     val decodedValue = decodeSymbolValue(ast.symbol, appModel(ast), pmap(ast.label))
     
     if (decodedModel.contains(ast)){
-      if (decodedModel(ast).symbol != decodedValue.symbol) {
+      if (decodedModel(ast).symbol.equals(decodedValue.symbol)) {
          ast.prettyPrint("\t") 
         throw new Exception("Decoding the model results in different values for the same entry : \n" + decodedModel(ast) + " \n" + decodedValue)
       }
