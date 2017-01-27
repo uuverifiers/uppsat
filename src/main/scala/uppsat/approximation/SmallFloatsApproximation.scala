@@ -207,8 +207,8 @@ object SmallFloatsApproximation extends NodeByNodeApproximation {
   }
   
   def scaleSort(sort : FPSort, p : Int) = {
-    val eBits = 3 + ((sort.eBits - 3) * p)/precisionOrdering.maximalPrecision
-    val sBits = 3 + ((sort.sBits - 3) * p)/precisionOrdering.maximalPrecision
+    val eBits = 3 + ((sort.eBitWidth - 3) * p)/precisionOrdering.maximalPrecision
+    val sBits = 3 + ((sort.sBitWidth - 3) * p)/precisionOrdering.maximalPrecision
     sort.getFactory(List(eBits, sBits))
   }
     

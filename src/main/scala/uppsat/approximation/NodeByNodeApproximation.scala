@@ -15,6 +15,7 @@ import uppsat.precision.PrecisionMap.Path
 
 import uppsat.theory.BooleanTheory.BoolTrue
 import uppsat.theory.FloatingPointTheory.FPEqualityFactory // TODO: isEquality method should be added so that Equality as assignment is not tied to any particular Theory
+import uppsat.theory.FloatingPointTheory
 
 trait NodeByNodeApproximation extends Approximation {  
   def encodeNode(ast : AST, children : List[AST], precision : P) : AST
@@ -96,7 +97,9 @@ trait NodeByNodeApproximation extends Approximation {
   //******************************************************************//
   def equalityAsAssignment(ast : AST, decodedModel : Model,  candidateModel : Model) : Boolean = {
     ast match {
-      case AST(fpEq : FPEqualityFactory.FPPredicateSymbol, path, children) if (decodedModel(ast).symbol == BoolTrue)  => {
+      case AST(fpEq : FloatingPointTheory.FPPredicateSymbol, path, children) 
+        if (fpEq.getFactory == FloatingPointTheory.FPEqualityFactory 
+            && decodedModel(ast).symbol == BoolTrue)  => {
          val lhs = children(0)
          val rhs = children(1)         
          val lhsDefined = candidateModel.contains(lhs)

@@ -11,13 +11,13 @@ object FloatingPointTheory extends Theory {
   val name = "FPTheory"
     
   object FPSortFactory extends IndexedSortFactory { 
-    case class FPSort(eBits : Int, sBits : Int) extends IndexedSort {
-      val name = "Floating Point (" + eBits + ", " + sBits + ")"
+    case class FPSort(eBitWidth : Int, sBitWidth : Int) extends IndexedSort {
+      val name = "Floating Point (" + eBitWidth + ", " + sBitWidth + ")"
       val theory = FloatingPointTheory
       val getFactory = FPSortFactory
     }
   
-    val arity = 2
+    val arity = 2 
     def apply(idx : Seq[BigInt]) = {
       val eBits = idx(0).toInt
       val sBits = idx(1).toInt
@@ -27,8 +27,9 @@ object FloatingPointTheory extends Theory {
   }
   
   abstract class FloatingPointFunctionSymbol(val sort : FPSort) extends IndexedFunctionSymbol
-  abstract class FloatingPointConstantSymbol(override val sort : FPSort) extends FloatingPointFunctionSymbol(sort)
   abstract class FloatingPointPredicateSymbol extends IndexedFunctionSymbol
+  abstract class FloatingPointConstantSymbol(override val sort : FPSort) extends FloatingPointFunctionSymbol(sort)
+  
 
   abstract class FPGenConstantFactory extends IndexedFunctionSymbolFactory {
     def getName(sort : FPSort) : String
@@ -37,7 +38,7 @@ object FloatingPointTheory extends Theory {
   object FloatingPointLiteral {
     def apply(sign : Int, eBits : List[Int], sBits : List[Int], sort : FPSort) : FloatingPointLiteral = {
       val newFactory = new FPConstantFactory(sign, eBits, sBits)
-      if (sort.eBits != eBits.length || sort.sBits != sBits.length + 1) {
+      if (sort.eBitWidth != eBits.length || sort.sBitWidth != sBits.length + 1) {
         throw new Exception("Creating literal with wrong sort? " + sort + ", " + eBits + ", " + sBits)
       }
       newFactory(List(sort)).asInstanceOf[FloatingPointLiteral]
@@ -45,25 +46,30 @@ object FloatingPointTheory extends Theory {
   }
 
   case class FloatingPointLiteral(_sort : FPSort, getFactory : FPGenConstantFactory)
-             extends FloatingPointFunctionSymbol(_sort) {
+             extends FloatingPointConstantSymbol(_sort) {
     val name = getFactory getName sort
     val theory = FloatingPointTheory
     val args = List()
     lazy val sign = getFactory.asInstanceOf[FPConstantFactory].sign
-    lazy val eBits = getFactory.asInstanceOf[FPConstantFactory].eBits take sort.eBits
-    lazy val sBits = getFactory.asInstanceOf[FPConstantFactory].sBits take (sort.sBits - 1)
+    lazy val eBits = getFactory.asInstanceOf[FPConstantFactory].eBits take sort.eBitWidth
+    lazy val sBits = getFactory.asInstanceOf[FPConstantFactory].sBits take (sort.sBitWidth - 1)
   }
   
+  case class FPFunctionSymbol(val args : Seq[ConcreteSort], _sort : FPSort, val getFactory : FPFunctionSymbolFactory) 
+             extends FloatingPointFunctionSymbol(_sort) {   
+    val theory = FloatingPointTheory
+    val name = getFactory symbolName
+  }
   
-  case class FPOperatorSymbolFactory(symbolName : String, isRounding : Boolean, fpArity : Int) extends IndexedFunctionSymbolFactory {
+  case class FPPredicateSymbol( val argSort : ConcreteSort, val getFactory : FPPredicateSymbolFactory) extends FloatingPointPredicateSymbol {   
+    val theory = FloatingPointTheory    
+    val name = getFactory symbolName
+    val sort = BooleanSort
+    val args = List.fill(getFactory fpArity)(argSort)
+  }
+  
+  case class FPFunctionSymbolFactory(symbolName : String, isRounding : Boolean, fpArity : Int) extends IndexedFunctionSymbolFactory {
     val thisFactory = this
-    
-    // TODO: This should only be Symbol, since each instance of the factory will have it's own instance of the class
-    case class FPFunctionSymbol(val args : Seq[ConcreteSort], override val sort : FPSort) extends FloatingPointFunctionSymbol(sort) {   
-      val theory = FloatingPointTheory
-      val getFactory = thisFactory
-      val name = symbolName
-    }
     
     val arity = 1 // Refers to the sorts
     def apply(sorts : Seq[ConcreteSort]) = {
@@ -71,7 +77,7 @@ object FloatingPointTheory extends Theory {
         case fpsort : FPSort => {      
           val argSorts = sorts.take(sorts.length - 1).toList
           val args = if (isRounding) RoundingModeSort :: argSorts else argSorts
-          FPFunctionSymbol(args, fpsort)
+          FPFunctionSymbol(args, fpsort, this)
         }
         case _ =>  throw new Exception("Non-FP sort : " + sorts.head)
       }  
@@ -79,19 +85,9 @@ object FloatingPointTheory extends Theory {
   }
 
   case class FPPredicateSymbolFactory(symbolName : String, fpArity : Int) extends IndexedFunctionSymbolFactory {
-    val thisFactory = this
-    
-    case class FPPredicateSymbol( val argSort : ConcreteSort) extends FloatingPointPredicateSymbol {   
-      val theory = FloatingPointTheory
-      val getFactory = thisFactory
-      val name = symbolName
-      val sort = BooleanSort
-      val args = List.fill(fpArity)(argSort)
-    }
-
     val arity = 1 // Refers to the sorts
     override def apply(sort : Seq[ConcreteSort]) = {      
-      FPPredicateSymbol(sort.head)  
+      FPPredicateSymbol(sort.head, this)  
     }
   }
 
@@ -101,8 +97,8 @@ object FloatingPointTheory extends Theory {
 
     def getName(sort : FPSort) = {
       sign + " " +
-      eBits.take(sort.eBits).mkString("") + " " +
-      sBits.take(sort.sBits - 1).mkString("")
+      eBits.take(sort.eBitWidth).mkString("") + " " +
+      sBits.take(sort.sBitWidth - 1).mkString("")
     }
     
     val arity = 1 // Refers to the sorts
@@ -211,44 +207,44 @@ case class FPSpecialValuesFactory(symbolName : String) extends FPGenConstantFact
   // Operations //
   //     ; absolute value 
   //   (fp.abs (_ FloatingPoint eb sb) (_ FloatingPoint eb sb))
-  val FPAbsFactory = new FPOperatorSymbolFactory("abs", false, 1)
+  val FPAbsFactory = new FPFunctionSymbolFactory("abs", false, 1)
   //   ; negation (no rounding needed) 
   //   (fp.neg (_ FloatingPoint eb sb) (_ FloatingPoint eb sb))
-  val FPNegateFactory = new FPOperatorSymbolFactory("negate", false, 1)
+  val FPNegateFactory = new FPFunctionSymbolFactory("negate", false, 1)
   //   ; addition
   //   (fp.add RoundingMode (_ FloatingPoint eb sb) (_ FloatingPoint eb sb)
   //     (_ FloatingPoint eb sb)) 
-  val FPAdditionFactory = new FPOperatorSymbolFactory("addition", true, 2)   
+  val FPAdditionFactory = new FPFunctionSymbolFactory("addition", true, 2)   
   //   ; subtraction
   //   (fp.sub RoundingMode (_ FloatingPoint eb sb) (_ FloatingPoint eb sb)
   //     (_ FloatingPoint eb sb)) 
-  val FPSubstractionFactory = new FPOperatorSymbolFactory("subtraction", true, 2)   
+  val FPSubstractionFactory = new FPFunctionSymbolFactory("subtraction", true, 2)   
   //   ; multiplication
   //   (fp.mul RoundingMode (_ FloatingPoint eb sb) (_ FloatingPoint eb sb)
   //     (_ FloatingPoint eb sb)) 
-  val FPMultiplicationFactory = new FPOperatorSymbolFactory("multiplication", true, 2)     
+  val FPMultiplicationFactory = new FPFunctionSymbolFactory("multiplication", true, 2)     
   //   ; division
   //   (fp.div RoundingMode (_ FloatingPoint eb sb) (_ FloatingPoint eb sb)
   //     (_ FloatingPoint eb sb))
-  val FPDivisionFactory = new FPOperatorSymbolFactory("division", true, 2)
+  val FPDivisionFactory = new FPFunctionSymbolFactory("division", true, 2)
   //   ; fused multiplication and addition; (x * y) + z 
   //   (fp.fma RoundingMode (_ FloatingPoint eb sb) (_ FloatingPoint eb sb) (_ FloatingPoint eb sb)
   //     (_ FloatingPoint eb sb))
-  val FPFusedMultiplyAddFactory = new FPOperatorSymbolFactory("fused multiply add", true, 3)
+  val FPFusedMultiplyAddFactory = new FPFunctionSymbolFactory("fused multiply add", true, 3)
   //   ; square root 
   //   (fp.sqrt RoundingMode (_ FloatingPoint eb sb) (_ FloatingPoint eb sb))
-  val FPSquareRootFactory = new FPOperatorSymbolFactory("square root", true, 1)
+  val FPSquareRootFactory = new FPFunctionSymbolFactory("square root", true, 1)
   //   ; remainder: x - y * n, where n in Z is nearest to x/y 
   //   (fp.rem (_ FloatingPoint eb sb) (_ FloatingPoint eb sb) (_ FloatingPoint eb sb))
-  val FPRemainderFactory = new FPOperatorSymbolFactory("remainder", false, 2)
+  val FPRemainderFactory = new FPFunctionSymbolFactory("remainder", false, 2)
   //   ; rounding to integral
   //   (fp.roundToIntegral RoundingMode (_ FloatingPoint eb sb) (_ FloatingPoint eb sb))
-  val FPRoundToIntegralFactory = new FPOperatorSymbolFactory("round to integral", true, 1)
+  val FPRoundToIntegralFactory = new FPFunctionSymbolFactory("round to integral", true, 1)
   //   ; minimum and maximum
   //   (fp.min (_ FloatingPoint eb sb) (_ FloatingPoint eb sb) (_ FloatingPoint eb sb))
-  val FPMinimumFactory = new FPOperatorSymbolFactory("minimum", false, 2)
+  val FPMinimumFactory = new FPFunctionSymbolFactory("minimum", false, 2)
   //   (fp.max (_ FloatingPoint eb sb) (_ FloatingPoint eb sb) (_ FloatingPoint eb sb))
-  val FPMaximumFactory = new FPOperatorSymbolFactory("maximum", false, 2)
+  val FPMaximumFactory = new FPFunctionSymbolFactory("maximum", false, 2)
   
   // PREDICATES //
   
@@ -290,20 +286,20 @@ case class FPSpecialValuesFactory(symbolName : String) extends FPGenConstantFact
   //   ; from single bitstring representation in IEEE 754-2008 interchange format,
   //   ; with m = eb + sb
   //   ((_ to_fp eb sb) (_ BitVec m) (_ FloatingPoint eb sb))
-  val IEEEInterchangeToFPFactory = new FPOperatorSymbolFactory("ieee-to-fp", true, 1) // TODO: This requires Bit-Vectors, so it's not a pure FPOperatorSymbol
+  val IEEEInterchangeToFPFactory = new FPFunctionSymbolFactory("ieee-to-fp", true, 1) // TODO: This requires Bit-Vectors, so it's not a pure FPOperatorSymbol
   //   ; from another floating point sort
   //   ((_ to_fp eb sb) RoundingMode (_ FloatingPoint mb nb) (_ FloatingPoint eb sb))
-  val FPToFPFactory = new FPOperatorSymbolFactory("fp-to-fp", true, 1)
+  val FPToFPFactory = new FPFunctionSymbolFactory("fp-to-fp", true, 1)
   //   ; from real
   //   ((_ to_fp eb sb) RoundingMode Real (_ FloatingPoint eb sb))
-  val RealToFPFactory = new FPOperatorSymbolFactory("real-to-fp", true, 1) // TODO: This requires Reals, so it's not a pure FPOperatorSymbol
+  val RealToFPFactory = new FPFunctionSymbolFactory("real-to-fp", true, 1) // TODO: This requires Reals, so it's not a pure FPOperatorSymbol
   //   ; from signed machine integer, represented as a 2's complement bit vector
   //   ((_ to_fp eb sb) RoundingMode (_ BitVec m) (_ FloatingPoint eb sb))
-  val SBVToFPFactory = new FPOperatorSymbolFactory("sbv-to-fp", true, 1) // TODO: This requires Bit-Vectors, so it's not a pure FPOperatorSymbol
+  val SBVToFPFactory = new FPFunctionSymbolFactory("sbv-to-fp", true, 1) // TODO: This requires Bit-Vectors, so it's not a pure FPOperatorSymbol
   //   ; from unsigned machine integer, represented as bit vector
   //   ((_ to_fp_unsigned eb sb) RoundingMode (_ BitVec m) (_ FloatingPoint eb sb))
   // "
-  val UBVToFPFactory = new FPOperatorSymbolFactory("ubv-to-fp", true, 1) // TODO: This requires Bit-Vectors, so it's not a pure FPOperatorSymbol
+  val UBVToFPFactory = new FPFunctionSymbolFactory("ubv-to-fp", true, 1) // TODO: This requires Bit-Vectors, so it's not a pure FPOperatorSymbol
   
   //    :funs_description "All function symbols with declarations of the form below
   //   where m is a numeral greater than 0 and  eb and sb are numerals greater than 1.
@@ -385,7 +381,7 @@ case class FPSpecialValuesFactory(symbolName : String) extends FPGenConstantFact
   implicit def RoundingModeToAST(rm : RoundingMode) = Leaf(rm)
 
   
-  def genericOperation(left : AST, right : AST, rm : RoundingMode, factory : FPOperatorSymbolFactory) = {
+  def genericOperation(left : AST, right : AST, rm : RoundingMode, factory : FPFunctionSymbolFactory) = {
     (left.symbol.sort, right.symbol.sort) match {
       case (l : FPSort, r : FPSort) => {
         if (l != r)
@@ -652,19 +648,19 @@ case class FPSpecialValuesFactory(symbolName : String) extends FPGenConstantFact
       case RoundingModeEquality => "="
       case fpFunSym : FloatingPointFunctionSymbol => {      
         fpFunSym.getFactory match {
-          case FPPositiveZero => "(_ +zero " + fpFunSym.sort.eBits + " " + fpFunSym.sort.sBits + ")"
-          case FPNegativeZero => "(_ -zero " + fpFunSym.sort.eBits + " " + fpFunSym.sort.sBits + ")"
-          case FPPlusInfinity => "(_ +oo " + fpFunSym.sort.eBits + " " + fpFunSym.sort.sBits + ")"
-          case FPMinusInfinity => "(_ -oo " + fpFunSym.sort.eBits + " " + fpFunSym.sort.sBits + ")"
-          case FPNaN => "(_ NaN " + fpFunSym.sort.eBits + " " + fpFunSym.sort.sBits + ")"
+          case FPPositiveZero => "(_ +zero " + fpFunSym.sort.eBitWidth + " " + fpFunSym.sort.sBitWidth + ")"
+          case FPNegativeZero => "(_ -zero " + fpFunSym.sort.eBitWidth + " " + fpFunSym.sort.sBitWidth + ")"
+          case FPPlusInfinity => "(_ +oo " + fpFunSym.sort.eBitWidth + " " + fpFunSym.sort.sBitWidth + ")"
+          case FPMinusInfinity => "(_ -oo " + fpFunSym.sort.eBitWidth + " " + fpFunSym.sort.sBitWidth + ")"
+          case FPNaN => "(_ NaN " + fpFunSym.sort.eBitWidth + " " + fpFunSym.sort.sBitWidth + ")"
           case FPAdditionFactory => "fp.add"
           case FPSubstractionFactory => "fp.sub"
           case FPMultiplicationFactory => "fp.mul"
           case FPDivisionFactory => "fp.div"
           case FPNegateFactory => "fp.neg"
-          case FPToFPFactory => "(_ to_fp " + fpFunSym.sort.eBits + " " + fpFunSym.sort.sBits + ")"         
+          case FPToFPFactory => "(_ to_fp " + fpFunSym.sort.eBitWidth + " " + fpFunSym.sort.sBitWidth + ")"         
           case FPConstantFactory(sign, eBits, sBits) => {
-            "(fp #b" + sign + " #b" + eBits.take(fpFunSym.sort.eBits).mkString("") + " #b" + sBits.take(fpFunSym.sort.sBits - 1).mkString("") + ")" 
+            "(fp #b" + sign + " #b" + eBits.take(fpFunSym.sort.eBitWidth).mkString("") + " #b" + sBits.take(fpFunSym.sort.sBitWidth - 1).mkString("") + ")" 
           }
           case str => throw new Exception("Unsupported FP symbol: " + str)
         }
