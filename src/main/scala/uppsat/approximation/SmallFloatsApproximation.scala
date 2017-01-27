@@ -162,7 +162,7 @@ object SmallFloatsApproximation extends NodeByNodeApproximation {
     
     if (decodedModel.contains(ast)){
       val existingValue = decodedModel(ast).symbol 
-      if ( existingValue.toString() != decodedValue.symbol.toString()) {
+      if ( existingValue != decodedValue.symbol) {
          ast.prettyPrint("\t") 
         throw new Exception("Decoding the model results in different values for the same entry : \n" + existingValue + " \n" + decodedValue.symbol)
       }
@@ -214,20 +214,19 @@ object SmallFloatsApproximation extends NodeByNodeApproximation {
     
   def decodeSymbolValue(symbol : ConcreteFunctionSymbol, value : AST, p : Int) = {
     (symbol.sort, value.symbol) match {
-      case (FPSort(e, s), fp : FloatingPointTheory.FloatingPointLiteral)  => {
-        val fullEBits = fp.eBits.head :: List.fill(e - fp.eBits.length)(0) ++ fp.eBits.tail
-        val fullSBits = fp.sBits ++ List.fill((s - 1) - fp.sBits.length)(0)
-        Leaf(FPLiteral(fp.sign, fullEBits, fullSBits, FPSort(e, s)))
-      }
-      
-      case (FPSort(e, s), fp : FloatingPointTheory.FloatingPointConstantSymbol)  => {
+      case (FPSort(e, s), fp : FloatingPointTheory.FloatingPointLiteral) => {
         fp.getFactory match {
           case FPPlusInfinity => Leaf(FPPlusInfinity(List(FPSort(e, s))))
           case FPMinusInfinity => Leaf(FPMinusInfinity(List(FPSort(e, s))))
           case FPNaN => Leaf(FPNaN(List(FPSort(e, s))))
           case FPPositiveZero => Leaf(FPPositiveZero(List(FPSort(e, s))))
           case FPNegativeZero => Leaf(FPNegativeZero(List(FPSort(e, s))))
-          case _ => throw new Exception("How do we translatee FPConstant Symbol? " + fp)
+          case _ => {
+            val fullEBits = fp.eBits.head :: List.fill(e - fp.eBits.length)(0) ++ fp.eBits.tail
+            val fullSBits = fp.sBits ++ List.fill((s - 1) - fp.sBits.length)(0)
+            Leaf(FloatingPointLiteral(fp.sign, fullEBits, fullSBits, FPSort(e, s)))
+          }
+//          case _ => throw new Exception("How do we translatee FPConstant Symbol? " + fp)
         }
       }      
       

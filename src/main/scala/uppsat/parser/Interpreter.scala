@@ -118,7 +118,7 @@ object Interpreter {
         
         // TODO: Should this be 53,11 or 52,11?
         val fpsort = FPSortFactory(List(11, 53))
-        uppsat.ast.Leaf(FloatingPointTheory.FPLiteral(sign.toInt, eBits, sBits, fpsort))
+        uppsat.ast.Leaf(FloatingPointTheory.FloatingPointLiteral(sign.toInt, eBits, sBits, fpsort))
       }
   //    case c : HexConstant =>
   //      (MyIntLit(c.hexadecimal_ substring (2, 16)), SMTInteger)
@@ -466,7 +466,7 @@ object Interpreter {
       val eBits = transArgs(1)
       val sBits = transArgs(2)
       val fpsort = uppsat.theory.FloatingPointTheory.FPSortFactory(List(eBits.length, sBits.length+1))
-      uppsat.ast.Leaf(uppsat.theory.FloatingPointTheory.FPLiteral(signBit, eBits, sBits, fpsort))
+      uppsat.ast.Leaf(uppsat.theory.FloatingPointTheory.FloatingPointLiteral(signBit, eBits, sBits, fpsort))
     }
     
 

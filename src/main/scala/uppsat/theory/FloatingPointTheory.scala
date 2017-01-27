@@ -28,8 +28,31 @@ object FloatingPointTheory extends Theory {
   
   abstract class FloatingPointFunctionSymbol(val sort : FPSort) extends IndexedFunctionSymbol
   abstract class FloatingPointConstantSymbol(override val sort : FPSort) extends FloatingPointFunctionSymbol(sort)
-  abstract class FloatingPointLiteral(override val sort : FPSort, val sign : Int, val eBits : List[Int], val sBits : List[Int]) extends FloatingPointFunctionSymbol(sort)
   abstract class FloatingPointPredicateSymbol extends IndexedFunctionSymbol
+
+  abstract class FPGenConstantFactory extends IndexedFunctionSymbolFactory {
+    def getName(sort : FPSort) : String
+  }
+
+  object FloatingPointLiteral {
+    def apply(sign : Int, eBits : List[Int], sBits : List[Int], sort : FPSort) : FloatingPointLiteral = {
+      val newFactory = new FPConstantFactory(sign, eBits, sBits)
+      if (sort.eBits != eBits.length || sort.sBits != sBits.length + 1) {
+        throw new Exception("Creating literal with wrong sort? " + sort + ", " + eBits + ", " + sBits)
+      }
+      newFactory(List(sort)).asInstanceOf[FloatingPointLiteral]
+    }
+  }
+
+  case class FloatingPointLiteral(_sort : FPSort, getFactory : FPGenConstantFactory)
+             extends FloatingPointFunctionSymbol(_sort) {
+    val name = getFactory getName sort
+    val theory = FloatingPointTheory
+    val args = List()
+    lazy val sign = getFactory.asInstanceOf[FPConstantFactory].sign
+    lazy val eBits = getFactory.asInstanceOf[FPConstantFactory].eBits take sort.eBits
+    lazy val sBits = getFactory.asInstanceOf[FPConstantFactory].sBits take (sort.sBits - 1)
+  }
   
   
   case class FPOperatorSymbolFactory(symbolName : String, isRounding : Boolean, fpArity : Int) extends IndexedFunctionSymbolFactory {
@@ -73,60 +96,42 @@ object FloatingPointTheory extends Theory {
   }
 
   // TODO: Bitset instead of List[Int]
-  case class FPConstantFactory(sign : Int, eBits: List[Int], sBits : List[Int]) extends IndexedFunctionSymbolFactory {
+  case class FPConstantFactory(sign : Int, eBits: List[Int], sBits : List[Int]) extends FPGenConstantFactory {
     val thisFactory = this
-    
-    case class FPConstantSymbol(override val sort : FPSort) extends FloatingPointLiteral(sort, sign, eBits.take(sort.eBits), sBits.take(sort.sBits - 1)) {
-      // TODO: Does name have to be SMT-appliant, not nice!
-      val name = sign + " " + eBits.mkString("") + " " + sBits.mkString("") //fpToDouble(sign, eBits, sBits).toString() 
-      val theory = FloatingPointTheory
-      val getFactory = thisFactory
-      val args = List()
-    }
 
+    def getName(sort : FPSort) = {
+      sign + " " +
+      eBits.take(sort.eBits).mkString("") + " " +
+      sBits.take(sort.sBits - 1).mkString("")
+    }
+    
     val arity = 1 // Refers to the sorts
     // TODO:  Change to repeated arguments
     override def apply(sort : Seq[ConcreteSort]) = {
       sort.head match {
-        case fpsort : FPSort => {          
-          FPConstantSymbol(fpsort)
-        }
+        case fpsort : FPSort =>
+          FloatingPointLiteral(fpsort, this)
         case _ =>  throw new Exception("Non-FP sort : " + sort.head)
       }  
     }    
   }
 
-case class FPSpecialValuesFactory(symbolName : String) extends IndexedFunctionSymbolFactory {
+case class FPSpecialValuesFactory(symbolName : String) extends FPGenConstantFactory {
     val thisFactory = this
-    
-    case class FPConstantSymbol(override val sort : FPSort) extends FloatingPointConstantSymbol(sort) {
-      val theory = FloatingPointTheory
-      val getFactory = thisFactory
-      val name = symbolName
-      val args = List()
-    }
+
+    def getName(sort : FPSort) = symbolName
     
     val arity = 1 // Refers to the sorts
     override def apply(sort : Seq[ConcreteSort]) = {
       sort match {
         case List(fpsort : FPSort) => {      
-          FPConstantSymbol(fpsort)
+          FloatingPointLiteral(fpsort, this)
         }
         case _ =>  throw new Exception("Non-FP singleton sort in special values  : " + sort.head)
       }  
     }
   }
 
-  
-  // TODO: Change to BigInt
-  def FPLiteral(sign : Int, eBits : List[Int], sBits : List[Int], sort : FPSort) = {
-    val newFactory = new FPConstantFactory(sign, eBits, sBits)
-    if (sort.eBits != eBits.length || sort.sBits != sBits.length + 1) {
-      throw new Exception("Creating literal with wrong sort? " + sort + ", " + eBits + ", " + sBits)
-    }
-    newFactory(List(sort))
-  }
-  
   
   /////////////////////////////////////////////  
   // SMT-LIB SUPPORTED SYMBOLS
