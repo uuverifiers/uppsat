@@ -2,8 +2,6 @@ language: scala
 os:
     - linux
 before_install: 
-    - wget https://github.com/Z3Prover/z3/releases/download/z3-4.5.0/z3-4.5.0-x64-debian-8.5.zip -O z3.zip
-    - unzip z3.zip
-    - cp ./z3-4.5.0-x64-debian-8.5/bin/z3 .
+    - wget http://user.it.uu.se/~aleze648/z3/z3
     - echo "(exit)" > test.smt2
     - ./z3 -smt2 test.smt2
