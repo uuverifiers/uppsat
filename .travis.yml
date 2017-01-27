@@ -1,7 +1,8 @@
 language: scala
 
 
-os: - linux
+os: 
+	- linux
 
 before_install: 
 	- wget https://github.com/Z3Prover/z3/releases/download/z3-4.5.0/z3-4.5.0-x64-debian-8.5.zip -O z3.zip
