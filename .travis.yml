@@ -6,4 +6,4 @@ before_install:
     - unzip z3.zip
     - cp ./z3-4.5.0-x64-debian-8.5/bin/z3 .
     - echo "(exit)" > test.smt2
-    - z3 -smt2 test.smt2
+    - ./z3 -smt2 test.smt2
