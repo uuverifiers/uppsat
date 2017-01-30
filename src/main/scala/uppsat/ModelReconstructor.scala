@@ -111,4 +111,22 @@ object ModelReconstructor {
     val answer = onlineSolver.get.runSolver(formula)
     ast.symbol.sort.theory.parseLiteral(answer.trim())    
   }
+  
+  def getValue(constraint : AST, unkown: AST, theory : Theory) : AST = {
+    if (onlineSolver.isEmpty)
+      startOnlineSolver()
+    
+    val translator = new SMTTranslator(theory)
+    val formula = translator.evalExpression(constraint, unkown)
+    val res = onlineSolver.get.runSolver(formula)
+    unkown.symbol.sort.theory.parseLiteral(res.trim())    
+  }
+  
+  
+  // Reconstruction patterns
+  def reconstructNodeByNode(ast : AST, decodedModel : Model, nodeByNodeHook : (Model, Model, AST) => Model) : Model = {
+    val reconstructedModel = new Model()    
+    AST.postVisit[Model, Model](ast, reconstructedModel, decodedModel, nodeByNodeHook)
+    reconstructedModel
+  }
 }

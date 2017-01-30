@@ -182,7 +182,7 @@ object SmallFloatsApproximation extends NodeByNodeApproximation {
    
       //Evaluation
       val newAST = AST(symbol, label, newChildren.toList)
-      val newValue = ModelReconstructor.evalAST(newAST, FloatingPointTheory)
+      val newValue = ModelReconstructor.evalAST(newAST, inputTheory)
       if ( DEBUG && symbol.sort == BooleanTheory.BooleanSort) { // TODO: Talk to Philipp about an elegant way to do flags
         val assignments = candidateModel.getAssignmentsFor(ast).toList
         val backupAnswer = ModelReconstructor.valAST(ast, assignments.toList, this.inputTheory, Z3Solver)
