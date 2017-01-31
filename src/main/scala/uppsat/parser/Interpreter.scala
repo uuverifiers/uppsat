@@ -1,6 +1,7 @@
 package uppsat.parser
 
 import uppsat.theory.IntegerTheory._
+import uppsat.globalOptions.verbose
 
 import uppsat.theory.FloatingPointTheory.FPSortFactory.FPSort
 import uppsat.theory.BooleanTheory._
@@ -15,10 +16,13 @@ import uppsat.theory.FloatingPointTheory.RoundingMode
 import uppsat.theory.FloatingPointTheory.FPConstantFactory
 import uppsat.theory.FloatingPointTheory.FPSortFactory
 import uppsat.solver.SMTSolver
+import uppsat.ApproximationSolver
 
 case class SMTParserException(msg : String) extends Exception(msg)
 
 object Interpreter {
+  var result : ApproximationSolver.Answer = ApproximationSolver.Unknown
+  
   class SMTParser extends smtlib.Absyn.ScriptC.Visitor[Int, Object] {
     def visit(t : smtlib.Absyn.Script, o : Object) : Int = {
       for (i <- 0 until t.listcommand_.iterator.length) { 
@@ -139,19 +143,19 @@ object Interpreter {
   private def parse(cmd : Command) : Unit = cmd match {
 
     case cmd : SetLogicCommand => {
-      println("Ignoring set-logic command")
+      verbose("Ignoring set-logic command")
     }
 
       //////////////////////////////////////////////////////////////////////////
 
     case cmd : SetOptionCommand => {
-      println("Ignoring set-option command")
+      verbose("Ignoring set-option command")
     }
 
   //     //////////////////////////////////////////////////////////////////////////
       
      case cmd : SetInfoCommand =>
-       println("Ignoring set-info command")
+       verbose("Ignoring set-info command")
 
   //     //////////////////////////////////////////////////////////////////////////
 
@@ -240,11 +244,8 @@ object Interpreter {
       val formula = myEnv.getFormula.labelAST     
       val translator = new uppsat.solver.SMTTranslator(uppsat.theory.FloatingPointTheory)
       val approximation = uppsat.approximation.SmallFloatsApproximation
-      
-      println("-----------------------------------------------")
-      println("Starting Approximation Framework")
-      println("-----------------------------------------------")        
-      uppsat.ApproximationSolver.solve(formula, translator, approximation)
+      // TODO:  Hooks to user defined approximation
+      result = uppsat.ApproximationSolver.solve(formula, translator, approximation)
     }
   //     //////////////////////////////////////////////////////////////////////////
 

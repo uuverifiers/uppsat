@@ -11,31 +11,43 @@ import uppsat.approximation._
 import uppsat.precision.PrecisionMap.Path
 import uppsat.Encoder.PathMap
 import uppsat.ModelReconstructor.Model
+import uppsat.globalOptions._
 
 
 object ApproximationSolver {
   
   type ExtModel = Map[ConcreteFunctionSymbol, String]
   
-  def solve(formula : AST, translator : SMTTranslator, approximation : Approximation) = {
-    println(translator.translate(formula))
+  trait Answer
+  
+  case class Sat(model : ExtModel) extends Answer
+  case object Unsat extends Answer
+  case object Unknown extends Answer
+  
+  
+  def solve(formula : AST, translator : SMTTranslator, approximation : Approximation) : Answer = {
+    verbose("-----------------------------------------------")
+    verbose("Starting Approximation Framework")
+    verbose("-----------------------------------------------")   
+    verbose(translator.translate(formula))
     val startTime = System.currentTimeMillis
     val retVal = loop(formula : AST, translator : SMTTranslator, approximation : Approximation) 
     val stopTime = System.currentTimeMillis
     
     
-    println("Solving time: " + (stopTime - startTime) + "ms") 
+    verbose("Solving time: " + (stopTime - startTime) + "ms") 
+    
+    ModelReconstructor.stopOnlineSolver()
     
     retVal match {
       case Some(model) => {
-        println("Model found:")
-        println(model.mkString("\t", "\n\t", "\n"))
+        verbose("Model found:\n" + model.mkString("\t", "\n\t", "\n"))        
         println("sat")
-        Some(model)
+        Sat(model)
       }
       case None => {        
         println("unsat")
-        None
+        Unsat
       }
     }
   }
@@ -51,23 +63,25 @@ object ApproximationSolver {
       val stringModel = Z3Solver.getModel(encodedSMT, translator.getDefinedSymbols.toList)
       val appModel = translator.getModel(formula, stringModel)
       
-      //println("Approximate model: " + appModel.getAssignmentsFor(formula).mkString("\n\t") + "\n")
-      println("Decoding model ... ")
+      debug("Approximate model: " + appModel.getAssignmentsFor(formula).mkString("\n\t") + "\n")
+      verbose("Decoding model ... ")
       
       val decodedModel = approximation.decodeModel(formula, appModel, pmap)
       val appAssignments = decodedModel.getAssignmentsFor(formula)
       
-      //println("Decoded model: \n" + appAssignments.mkString("\n\t") + "\n)
-      println("Reconstructing model ...")
+      debug("Decoded model: \n" + appAssignments.mkString("\n\t") + "\n")
+      verbose("Reconstructing model ...")
       
       val reconstructedModel = approximation.reconstruct(formula, decodedModel)
       val assignments = reconstructedModel.getAssignmentsFor(formula)
       
-      //println("Reconstructed model: \n" + appAssignments.mkString("\n\t") + "\n")
-      println("Validating model ...")
+      debug("Reconstructed model: \n" + appAssignments.mkString("\n\t") + "\n")
+      verbose("Validating model ...")
       
-      println("Model comparison : ")
-      formula.ppWithModels("", appModel, reconstructedModel)
+      verbose("Model comparison : ")
+      if (globalOptions.VERBOSE)
+        formula.ppWithModels("", appModel, reconstructedModel)
+      
       if (ModelReconstructor.valAST(formula, assignments.toList, approximation.inputTheory, Z3Solver)) {
         val extModel =
           for ((symbol, value) <- reconstructedModel.getModel) yield {
@@ -76,10 +90,10 @@ object ApproximationSolver {
         (Some(extModel), None)
       } else {
         if (pmap.isMaximal) {
-          println("Model reconstruction failed: maximal precision reached")
+          verbose("Model reconstruction failed: maximal precision reached")
           return (None, None)
         } else {
-          println("Model reconstruction failed: refining precision")            
+          verbose("Model reconstruction failed: refining precision")            
           val newPmap = approximation.satRefine(formula, decodedModel, reconstructedModel, pmap)
           (None, Some(newPmap))
         }
@@ -90,15 +104,15 @@ object ApproximationSolver {
     while (true) {     
 
       iterations += 1
-      println("-----------------------------------------------")
-      println("Starting iteration " + iterations)
-      println("-----------------------------------------------")
+      verbose("-----------------------------------------------")
+      verbose("Starting iteration " + iterations)
+      verbose("-----------------------------------------------")
       
       val encodedFormula = approximation.encodeFormula(formula, pmap) 
       //encodedFormula.prettyPrint
       val encodedSMT = translator.translate(encodedFormula)
 
-      println(encodedSMT)
+      verbose(encodedSMT)
       
       if (Z3Solver.solve(encodedSMT)) {
         val (extModel, newPMap) = tryReconstruct(encodedSMT)
@@ -109,10 +123,10 @@ object ApproximationSolver {
         }          
       } else {
         if (pmap.isMaximal) {
-          println("Approximate model not found: maximal precision reached.")          
+          verbose("Approximate model not found: maximal precision reached.")          
           return None
         } else {
-          println("Approximate model not found: refining precision.")            
+          verbose("Approximate model not found: refining precision.")            
           pmap = approximation.unsatRefine(formula, List(), pmap)
         }
       }

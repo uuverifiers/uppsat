@@ -92,5 +92,10 @@ class Z3OnlineSolver extends SMTSolver {
       case str => throw new Exception("Unexpected sat/unsat result: " + str)
     }
   }
+  
+  def stopSolver() = {
+    process.destroy()
+    process.waitFor()
+  }
 
 }

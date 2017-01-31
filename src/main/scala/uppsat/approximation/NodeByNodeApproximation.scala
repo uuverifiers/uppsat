@@ -27,7 +27,7 @@ import uppsat.theory.BooleanTheory.BoolEquality
 import uppsat.theory.BooleanTheory.BoolImplication
 import uppsat.theory.BooleanTheory.BoolNegation
 import uppsat.theory.BooleanTheory.NaryConjunction
-import java.util.ResourceBundle$Control.CandidateListCache
+import uppsat.globalOptions._
 
 trait NodeByNodeApproximation extends Approximation {  
   def encodeNode(ast : AST, children : List[AST], precision : P) : AST
@@ -131,8 +131,10 @@ trait NodeByNodeApproximation extends Approximation {
   // Precondition : number of undefined arguments it at most one. 
   def getImplication(candidateModel : Model, ast : AST) : Option[(AST, AST)] = {
     var unknown : List[AST]= List()
-    println("Original node : ")
-    ast.prettyPrint("")
+    debug("Original node : ")
+    if (DEBUG) 
+        ast.prettyPrint("")
+        
     val newChildren = for ( a <- ast.children) yield {
       if (candidateModel.contains(a))
         candidateModel(a)
@@ -145,11 +147,12 @@ trait NodeByNodeApproximation extends Approximation {
     if (unknown.length > 1) 
       throw new Exception("getImplication assumes at most one unknown" + unknown.mkString(", "))
     
-    println("Implication : " + ast.symbol)
-    println("Children " + newChildren.mkString(", "))
+    debug("Implication : " + ast.symbol)
+    debug("Children " + newChildren.mkString(", "))
     val substitutedAST = AST(ast.symbol, ast.label, newChildren)
-    println("new tree")
-    substitutedAST.prettyPrint("")
+    debug("new tree")
+    if (DEBUG)
+      substitutedAST.prettyPrint("")
     if (unknown.length == 1) {
       val res = ModelReconstructor.getValue(substitutedAST, unknown.head, inputTheory)
       Some (unknown.head, res)
@@ -188,7 +191,7 @@ trait NodeByNodeApproximation extends Approximation {
     val atoms = retrieveCriticalAtoms(decodedModel)(ast)
     val vars = atoms.iterator.filter(_.isVariable)
     
-    println("Vars \n" + vars.mkString("\n "))
+    debug("Vars \n" + vars.mkString("\n "))
     
     initializeCandidateModel(atoms, decodedModel, candidateModel)
     
@@ -198,11 +201,11 @@ trait NodeByNodeApproximation extends Approximation {
     var iteration = 0
     while (! done) {
       iteration += 1
-      println("Patching iteration " + iteration)
+      verbose("Patching iteration " + iteration)
       val toVerify = atoms.filter { x => numUndefValues(candidateModel, x) == 0 }
       
       val implications = atoms.filter { x => numUndefValues(candidateModel, x) == 1 }
-      println(implications.mkString(", "))
+      verbose(implications.mkString(", "))
       
       changed = false
       for (i <- implications) {

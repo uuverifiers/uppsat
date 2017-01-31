@@ -25,6 +25,7 @@ import uppsat.theory.BooleanTheory.BoolVar
 import uppsat.ModelReconstructor.Model
 import uppsat.solver.Z3OnlineException
 import uppsat.solver.Z3OnlineSolver
+import uppsat.globalOptions
 
 object SmallFloatsApproximation extends NodeByNodeApproximation {
   // Input and output languages
@@ -183,7 +184,7 @@ object SmallFloatsApproximation extends NodeByNodeApproximation {
       //Evaluation
       val newAST = AST(symbol, label, newChildren.toList)
       val newValue = ModelReconstructor.evalAST(newAST, inputTheory)
-      if ( DEBUG && symbol.sort == BooleanTheory.BooleanSort) { // TODO: Talk to Philipp about an elegant way to do flags
+      if ( globalOptions.DEBUG && symbol.sort == BooleanTheory.BooleanSort) { // TODO: Talk to Philipp about an elegant way to do flags
         val assignments = candidateModel.getAssignmentsFor(ast).toList
         val backupAnswer = ModelReconstructor.valAST(ast, assignments.toList, this.inputTheory, Z3Solver)
         

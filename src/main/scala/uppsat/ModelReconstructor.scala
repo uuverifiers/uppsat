@@ -11,6 +11,7 @@ import uppsat.solver.SMTTranslator
 import uppsat.solver.Z3OnlineSolver
 import uppsat.theory.FloatingPointTheory.FPVar
 import uppsat.ast._
+import uppsat.globalOptions._
 
 object ModelReconstructor {
   //type Model = Map[Path, AST]
@@ -92,13 +93,18 @@ object ModelReconstructor {
     onlineSolver.get.runSolver("(check-sat)\n(eval true)\n")    
   }
   
+  
+  def stopOnlineSolver() = {
+    onlineSolver.get.asInstanceOf[Z3OnlineSolver].stopSolver()    
+  }
+ 
   def valAST(ast: AST, assignments: List[(String, String)], theory : Theory, solver : SMTSolver) : Boolean = {
     val translator = new SMTTranslator(theory)
     val smtVal = translator.translate(ast, false, assignments)
-//    println("valAST...")
-//    println(smtVal)
+    debug("valAST...")
+    debug(smtVal)
     val result = solver.solve(smtVal)
-//    println("\t" + result)
+    debug("\t" + result)
     result
   }
   

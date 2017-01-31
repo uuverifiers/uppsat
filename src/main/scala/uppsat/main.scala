@@ -12,6 +12,27 @@ import uppsat.approximation._
 import uppsat.precision.PrecisionMap.Path
 import uppsat.Encoder.PathMap
 import uppsat.ModelReconstructor.Model
+import uppsat.globalOptions._
+
+object globalOptions {
+  // FLAGS
+  var VERBOSE = false
+  var DEBUG = false
+
+  def verbose(str : String) = {
+    if (globalOptions.VERBOSE) {
+      println(str)
+    }
+  }
+  
+  def debug(str : String) = {
+    if (globalOptions.DEBUG) {
+      println(str)
+    }
+  }
+}
+
+
 
 
 object main {
@@ -68,7 +89,7 @@ object main {
 //    ApproximationSolver.loop(formula, translator, approximation)
 //    println("Running time: -- ms")
     
-    println("args: " + args.mkString("|"))
+    verbose("Args: " + args.mkString("|"))
     
     import java.io._
     import scala.collection.JavaConversions._
@@ -86,6 +107,13 @@ object main {
     Timer.measure("main") {
       val result = Interpreter.interpret(script)
     }
-    println(Timer)
+    verbose(Timer.toString())
+    
+    import uppsat.ApproximationSolver.Answer
+    Interpreter.result match {
+      case _ : ApproximationSolver.Sat => System.exit(10)
+      case ApproximationSolver.Unsat   => System.exit(20)
+      case ApproximationSolver.Unknown => System.exit(30)        
+    }
   }    
 }
