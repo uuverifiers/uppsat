@@ -6,5 +6,6 @@ scalaVersion := "2.11.8"
 
 scalacOptions += "-Yresolve-term-conflict:package" 
 
-libraryDependencies += "org.scalatest" % "scalatest_2.11" % "3.0.1" % "test"
+libraryDependencies += "org.scalactic" %% "scalactic" % "3.0.1"
+libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.1" % "test"
 

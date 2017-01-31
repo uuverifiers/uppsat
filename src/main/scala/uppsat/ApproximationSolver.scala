@@ -37,7 +37,7 @@ object ApproximationSolver {
     
     verbose("Solving time: " + (stopTime - startTime) + "ms") 
     
-    ModelReconstructor.stopOnlineSolver()
+    //ModelReconstructor.stopOnlineSolver()
     
     retVal match {
       case Some(model) => {

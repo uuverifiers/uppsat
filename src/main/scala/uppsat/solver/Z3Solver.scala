@@ -43,7 +43,7 @@ object Z3Solver extends SMTSolver {
       line match { 
         case errorPattern() =>  {
           import java.io._
-          val pw = new PrintWriter(new File("error.smt2"))
+          val pw = new PrintWriter(new File("error.log"))
           pw.write(formula)
           pw.close
           throw new Z3Exception(stdout.toString)
