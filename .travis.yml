@@ -1,4 +1,8 @@
 language: scala
+
+scala:
+  - 2.11.7
+  
 os:
     - linux
 before_install: 
