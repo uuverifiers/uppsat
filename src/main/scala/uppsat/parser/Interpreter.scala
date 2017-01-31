@@ -408,7 +408,21 @@ object Interpreter {
       checkArgs("fp.leq", 2, args)
       translateTerm(args(0)) <= translateTerm(args(1))
     }
-
+    
+    case PlainSymbol("fp.gt") => {
+      checkArgs("fp.lt", 2, args)
+      translateTerm(args(0)) > translateTerm(args(1))
+    }    
+    
+    case PlainSymbol("fp.geq") => {
+      checkArgs("fp.leq", 2, args)
+      translateTerm(args(0)) >= translateTerm(args(1))
+    }
+    
+    case PlainSymbol("fp.eq") => {
+      checkArgs("fp.eq", 2, args)
+      translateTerm(args(0)) === translateTerm(args(1))
+    }
     
     // We can't use syntactic sugar since first leaf might not be a rounding-mode but rather a defined function
     case PlainSymbol("fp.add") => {
