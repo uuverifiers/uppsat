@@ -14,8 +14,8 @@ class Regression extends FunSpec {
     }
   }
    
-   val satSources = new File(getClass.getResource("\\sat\\").toURI())
-   val unsatSources = new File(getClass.getResource("\\unsat\\").toURI())
+   val satSources = new File(getClass.getResource("//sat//").toURI())
+   val unsatSources = new File(getClass.getResource("//unsat//").toURI())
    val satFiles = getListOfFiles(satSources, List(".smt2"))
    val unsatFiles = getListOfFiles(unsatSources, List(".smt2"))
    
