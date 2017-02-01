@@ -11,6 +11,7 @@ class Environment {
   var symbols : Map[String, ConcreteFunctionSymbol] = Map()
   var definitions : Map[String, (ConcreteFunctionSymbol, AST)] = Map()
   var assumptions : List[AST] = List()
+  //var synonyms : Map[ConcreteFunctionSymbol, ConcreteFunctionSymbol] = Map()
 
   def addSymbol(id : String, symbol : ConcreteFunctionSymbol) = {
     symbols += id -> symbol
@@ -19,15 +20,16 @@ class Environment {
   def addDefinition(id : String, symbol : ConcreteFunctionSymbol, definition : AST) = {
     definitions += id -> (symbol, definition)
   }
+  
+  //  def addSynonym( alias : ConcreteFunctionSymbol, original : ConcreteFunctionSymbol) = {
+  //    synonyms += alias -> original
+  //  }
 
   def addAssumption(ass : AST) = {
-    if (assumptions.isEmpty) {
-      assumptions = ass :: assumptions
-      false
-    } else {  
-      true
-    }
+    assumptions = ass :: assumptions
   }
+  
+  
   
   def findSymbol(id : String) : Option[ConcreteFunctionSymbol] = {
     if (symbols contains id)
@@ -63,6 +65,10 @@ class Environment {
     }
     for (ass <- assumptions) {
       println("\tASSUMPTION: " + ass)
+    }
+    
+    for ((name, (symbol, definition)) <- definitions) yield {
+       println("\tDEFINITION: " + symbol + " : " + definition)
     }
   }
 }

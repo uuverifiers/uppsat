@@ -205,7 +205,7 @@ object Interpreter {
 
   //     //////////////////////////////////////////////////////////////////////////
 
-     case cmd : FunctionDefCommand => {
+     case cmd : FunctionDefCommand => {       
        val fullname = asString(cmd.symbol_)
        val name = if (fullname contains ':') "|" + fullname + "|" else fullname
        if (!cmd.listesortedvarc_.isEmpty) {
