@@ -21,8 +21,8 @@ import uppsat.ApproximationSolver.Sat
 
 object globalOptions {
   // FLAGS
-  var VERBOSE = false
-  var DEBUG = false
+  var VERBOSE = true
+  var DEBUG = true
 
   def verbose(str : String) = {
     if (globalOptions.VERBOSE) {
@@ -107,11 +107,23 @@ object main {
       import java.io._
     import scala.collection.JavaConversions._
 
+    for (a <- args) yield {
+      a match {
+        case "-v" => globalOptions.VERBOSE = true
+                     
+        case "-d" => globalOptions.DEBUG = true
+                     
+        case _ => ()
+      }
+    }
+      
+    val nonOptions = args.filterNot(_.startsWith("-"))  
+      
     val file =
-      if (args.isEmpty)
+      if (nonOptions.isEmpty)
         "debug.smt2"
       else
-        args.toList(0)
+        nonOptions.toList(0)
         
     val reader = () => new java.io.BufferedReader (new java.io.FileReader(new java.io.File(file)))            
     val l = new smtlib.Yylex(reader())

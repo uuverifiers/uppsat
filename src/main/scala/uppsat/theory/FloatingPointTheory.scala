@@ -667,7 +667,7 @@ case class FPSpecialValuesFactory(symbolName : String) extends FPGenConstantFact
       }
       case fpPredSym : FloatingPointPredicateSymbol => {
         fpPredSym.getFactory match {
-          case FPEqualityFactory => "="
+          case FPEqualityFactory => "fp.eq"
           case FPLessThanOrEqualFactory => "fp.leq"
           case FPLessThanFactory => "fp.lt"
           case FPGreaterThanOrEqualFactory => "fp.geq"
