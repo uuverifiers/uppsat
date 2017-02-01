@@ -7,8 +7,11 @@ os:
     - linux
     
 before_install: 
-    - wget http://user.it.uu.se/~aleze648/z3/z3
-    - export PATH =$PATH:. 
+    - mkdir solvers
+    - cd solvers
+    - wget http://user.it.uu.se/~aleze648/z3/z3    
     - chmod u+=x z3
     - echo "(exit)" > test.smt2
     - z3 -smt2 test.smt2
+    - export PATH =$PATH:`pwd`
+    - cd ..
