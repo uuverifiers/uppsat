@@ -34,7 +34,7 @@ class Regression extends FunSpec {
    
     describe("UNSAT : " ) {
      for (f <- unsatFiles) {
-         ignore(f.toPath().toString().split('\\').reverse.head) {
+         it(f.toPath().toString().split('\\').reverse.head) {
            val args =  Array(f.toString())
             uppsat.main.main_aux(args) match {
               case Unsat => assert(true)
