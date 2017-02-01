@@ -21,8 +21,8 @@ import uppsat.ApproximationSolver.Sat
 
 object globalOptions {
   // FLAGS
-  var VERBOSE = true
-  var DEBUG = true
+  var VERBOSE = false
+  var DEBUG = false
 
   def verbose(str : String) = {
     if (globalOptions.VERBOSE) {
