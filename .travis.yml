@@ -12,6 +12,6 @@ before_install:
     - wget http://user.it.uu.se/~aleze648/z3/z3    
     - chmod u+=x z3
     - echo "(exit)" > test.smt2
-    - export PATH =$PATH:`pwd`
+    - export PATH=$PATH:`pwd`
     - z3 -smt2 test.smt2
     - cd ..
