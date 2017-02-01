@@ -15,9 +15,7 @@ class Regression extends FunSpec {
   }
    
    val satSources = new File(getClass.getResource("/sat/").toURI())
-   val unsatSources = new File(getClass.getResource("/unsat/").toURI())
    val satFiles = getListOfFiles(satSources, List(".smt2"))
-   val unsatFiles = getListOfFiles(unsatSources, List(".smt2"))
    
    describe("SAT : " ) {
      for (f <- satFiles) {
@@ -30,6 +28,9 @@ class Regression extends FunSpec {
        }
      }
    }
+   
+   val unsatSources = new File(getClass.getResource("/unsat/").toURI())
+   val unsatFiles = getListOfFiles(unsatSources, List(".smt2"))
    
     describe("UNSAT : " ) {
      for (f <- unsatFiles) {
