@@ -123,7 +123,7 @@ object ModelReconstructor {
       startOnlineSolver()
     
     val translator = new SMTTranslator(theory)
-    val formula = translator.evalExpression(constraint, unkown)
+    val formula = translator.evalExpression(constraint)
     val res = onlineSolver.get.runSolver(formula)
     unkown.symbol.sort.theory.parseLiteral(res.trim())    
   }

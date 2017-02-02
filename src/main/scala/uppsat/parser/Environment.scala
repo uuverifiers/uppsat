@@ -11,6 +11,7 @@ class Environment {
   var symbols : Map[String, ConcreteFunctionSymbol] = Map()
   var definitions : Map[String, (ConcreteFunctionSymbol, AST)] = Map()
   var assumptions : List[AST] = List()
+  var result : uppsat.ApproximationSolver.Answer = uppsat.ApproximationSolver.Unknown
   //var synonyms : Map[ConcreteFunctionSymbol, ConcreteFunctionSymbol] = Map()
 
   def addSymbol(id : String, symbol : ConcreteFunctionSymbol) = {

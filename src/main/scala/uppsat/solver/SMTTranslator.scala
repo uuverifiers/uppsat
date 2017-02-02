@@ -79,6 +79,7 @@ class SMTTranslator(theory : Theory) {
     footer
   }
   
+  //Used by Fixpoint approximation
   def evalExpression(ast : AST) : String = {
     val astFormula = translateAST(ast)
     val eval = "(assert (= answer " + astFormula + "))"
@@ -90,16 +91,16 @@ class SMTTranslator(theory : Theory) {
     "(eval answer)"
   }
   
-  def evalExpression(ast : AST, answer : AST) : String = {
-    val astFormula = translateAST(ast)
-    val eval = "(assert " + astFormula + ")"
-    header + "\n" +
-    symDecs + "\n" + 
-    "(declare-fun " + answer.symbol + " () " + answer.symbol.sort.theory.toSMTLib(answer.symbol.sort) +" )\n" +
-    eval + "\n" +
-    footer +  "\n" +
-    "(eval " + answer.symbol + ")"
-  }
+//  def evalExpression(ast : AST, answer : AST) : String = {
+//    val astFormula = translateAST(ast)
+//    val eval = "(assert " + astFormula + ")"
+//    header + "\n" +
+//    symDecs + "\n" + 
+//    "(declare-fun " + answer.symbol + " () " + answer.symbol.sort.theory.toSMTLib(answer.symbol.sort) +" )\n" +
+//    eval + "\n" +
+//    footer +  "\n" +
+//    "(eval " + answer.symbol + ")"
+//  }
   
   def evaluate(ast : AST) : String = {
     val astFormula = translateAST(ast)

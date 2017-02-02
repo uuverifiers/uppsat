@@ -16,12 +16,11 @@ import uppsat.theory.FloatingPointTheory.RoundingMode
 import uppsat.theory.FloatingPointTheory.FPConstantFactory
 import uppsat.theory.FloatingPointTheory.FPSortFactory
 import uppsat.solver.SMTSolver
-import uppsat.ApproximationSolver
 
 case class SMTParserException(msg : String) extends Exception(msg)
 
 object Interpreter {
-  var result : ApproximationSolver.Answer = ApproximationSolver.Unknown
+  
   
   class SMTParser extends smtlib.Absyn.ScriptC.Visitor[Int, Object] {
     def visit(t : smtlib.Absyn.Script, o : Object) : Int = {
@@ -57,7 +56,11 @@ object Interpreter {
         args.map(translateTerm).mkString("\n"))    
     
   var myEnv = new Environment
-
+  
+  def reset() = {
+      myEnv = new Environment
+  }
+  
   def warn(msg : String) : Unit = {
     println("Warning: " + msg)
   }
@@ -245,7 +248,7 @@ object Interpreter {
       val translator = new uppsat.solver.SMTTranslator(uppsat.theory.FloatingPointTheory)
       val approximation = uppsat.approximation.SmallFloatsApproximation
       // TODO:  Hooks to user defined approximation
-      result = uppsat.ApproximationSolver.solve(formula, translator, approximation)
+      myEnv.result = uppsat.ApproximationSolver.solve(formula, translator, approximation)
     }
   //     //////////////////////////////////////////////////////////////////////////
 

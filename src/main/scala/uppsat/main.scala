@@ -133,10 +133,11 @@ object main {
     val p = new smtlib.parser(l)
     val script = p.pScriptC
     Timer.measure("main") {
+      Interpreter.reset()
       Interpreter.interpret(script)
     }
     verbose(Timer.toString())
-    Interpreter.result
+    Interpreter.myEnv.result
 }
 }
 
