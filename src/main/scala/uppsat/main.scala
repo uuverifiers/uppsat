@@ -23,6 +23,7 @@ object globalOptions {
   // FLAGS
   var VERBOSE = false
   var DEBUG = false
+  var DEADLINE : Option[Long] = None
 
   def verbose(str : String) = {
     if (globalOptions.VERBOSE) {
@@ -112,6 +113,8 @@ object main {
         case "-v" => globalOptions.VERBOSE = true
                      
         case "-d" => globalOptions.DEBUG = true
+        
+        //case "-t="
                      
         case _ => ()
       }

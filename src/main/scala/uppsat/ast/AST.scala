@@ -124,8 +124,14 @@ case class AST(val symbol : ConcreteFunctionSymbol, val label : Label, val child
   
   def ppWithModels(indent : String, smallModel : Model, bigModel : Model) : Unit = {
     val newIndent = indent + "   "
-    println(indent + symbol + " [" + label.mkString(",") + "] //" + symbol.sort + " " + smallModel(this).symbol + " -> " + bigModel(this).symbol)
-    for (c <- children) (c ppWithModels(newIndent, smallModel, bigModel) )
+    this.symbol.sort match {
+      case BooleanSort if (smallModel(this) == bigModel(this)) => ()
+      case _ => { 
+          println(indent + symbol + " [" + label.mkString(",") + "] //" + symbol.sort + " " + smallModel(this).symbol + " -> " + bigModel(this).symbol)
+          for (c <- children) (c ppWithModels(newIndent, smallModel, bigModel) )
+      }
+    }
+    
   }
   
   def size = iterator.size  
