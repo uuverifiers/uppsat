@@ -118,14 +118,14 @@ object ModelReconstructor {
     ast.symbol.sort.theory.parseLiteral(answer.trim())    
   }
   
-  def getValue(constraint : AST, unkown: AST, theory : Theory) : AST = {
+  def getValue(constraint : AST, unknown: AST, theory : Theory) : AST = {
     if (onlineSolver.isEmpty)
       startOnlineSolver()
     
     val translator = new SMTTranslator(theory)
-    val formula = translator.evalExpression(constraint)
+    val formula = translator.evalExpression(constraint, unknown)
     val res = onlineSolver.get.runSolver(formula)
-    unkown.symbol.sort.theory.parseLiteral(res.trim())    
+    unknown.symbol.sort.theory.parseLiteral(res.trim())    
   }
   
   

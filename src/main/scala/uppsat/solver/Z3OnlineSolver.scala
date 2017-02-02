@@ -31,6 +31,7 @@ class Z3OnlineSolver extends SMTSolver {
   val stdout = process.getInputStream () 
   
   def runSolver(formula : String) = Timer.measure("Z3OnlineSolver.runSolver") {
+    reset
     z3print("Sending input: " + formula)    
     stdin.write((formula + "\n").getBytes());
     stdin.flush();    
@@ -46,7 +47,9 @@ class Z3OnlineSolver extends SMTSolver {
       line = Option(outReader.readLine())
       line.get match { 
         case satPattern() => () // Skip over the sat result of the empty check-sat call when interactive mode is initialized
-        case errorPattern() => throw new Exception("Z3 error: " + line.get)
+        case errorPattern() => 
+          println(formula)
+          throw new Exception("Z3 error: " + line.get)
         case other => result = Some(other)
       }    
     }
@@ -56,6 +59,7 @@ class Z3OnlineSolver extends SMTSolver {
   
   def reset = { 
     stdin.write("(reset)".getBytes)
+    runSolver("(check-sat)\n")
   }
   
   def parseOutput(output : String, extractSymbols : List[String]) : Option[Map[String, String]] = {
@@ -75,6 +79,7 @@ class Z3OnlineSolver extends SMTSolver {
   }
   
   def solve(formula : String) : Boolean = {
+    //reset
     val result = runSolver(formula)  
     val retVal = result.split("\n").head.trim()
     retVal match {

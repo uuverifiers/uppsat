@@ -183,7 +183,8 @@ trait NodeByNodeApproximation extends Approximation {
   }
   
   def reconstruct(ast : AST, decodedModel : Model) : Model = {
-    ModelReconstructor.reconstructNodeByNode(ast, decodedModel, reconstructNode)
+    //ModelReconstructor.reconstructNodeByNode(ast, decodedModel, reconstructNode)
+    fixPointBasedReconstruction(ast, decodedModel)
   }
   
   def fixPointBasedReconstruction(ast : AST, decodedModel : Model) : Model = {
@@ -230,7 +231,12 @@ trait NodeByNodeApproximation extends Approximation {
       }
     }
     
-    decodedModel
+    for (node <- ast.iterator.toList.reverse) {
+      if (!candidateModel.contains(node))
+        reconstructNode(decodedModel, candidateModel, node)        
+    }
+    println(candidateModel)
+    candidateModel
   }
   
   def satRefine(ast : AST, decodedModel : Model, failedModel : Model, pmap : PrecisionMap[P]) : PrecisionMap[P] = {
