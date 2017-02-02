@@ -46,7 +46,7 @@ object Z3Solver extends SMTSolver {
           val pw = new PrintWriter(new File("error.log"))
           pw.write(formula)
           pw.close
-          throw new Z3Exception(stdout.toString)
+          throw new Z3Exception(line)
         }
         case other => result = result ++ List(other)        
       }
