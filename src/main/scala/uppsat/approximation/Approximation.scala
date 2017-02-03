@@ -6,14 +6,13 @@ import uppsat.ast.AST
 import uppsat.ModelReconstructor.Model
 import uppsat.precision.PrecisionMap
 
-
-
 trait Approximation {
   type P
-  // Do we need this? 
+  val precisionOrdering : PrecisionOrdering[P] 
   val inputTheory : Theory
   val outputTheory : Theory
-  val precisionOrdering : PrecisionOrdering[P]
+  
+  // General framework primitives
   def satRefine(ast : AST, decodedModel : Model, failedModel : Model, pmap : PrecisionMap[P]) : PrecisionMap[P]  
   def unsatRefine(ast : AST, core : List[AST], pmap : PrecisionMap[P]) : PrecisionMap[P]
   def encodeFormula(ast : AST, pmap : PrecisionMap[P]) : AST

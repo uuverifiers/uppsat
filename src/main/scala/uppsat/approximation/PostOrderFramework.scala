@@ -9,6 +9,8 @@ import uppsat.ModelReconstructor.Model
 import uppsat.ModelReconstructor
 import uppsat.Timer
 import uppsat.globalOptions._
+import uppsat.theory.FloatingPointTheory
+import uppsat.theory.BooleanTheory.BoolTrue
 
 trait ApproximationCore {
   val inputTheory : Theory
@@ -20,30 +22,84 @@ trait ApproximationCore {
   
 }
 
-trait Codec extends ApproximationCore {
+trait ApproximationCodec extends ApproximationCore {
   def encodeNode(ast : AST, children : List[AST], precision : Precision) : AST //Codec
   def decodeNode( args : (Model, PrecisionMap[Precision]), decodedModel : Model, ast : AST) : Model
   def cast(ast : AST, target : ConcreteSort  ) : AST // PrecisionOrdering ?
 }
 
-trait Satisfy extends ApproximationCore {
-  def reconstructNode( decodedM : Model,  candidateM : Model, ast :  AST) : Model //satisfy  
+trait Reconstructor extends ApproximationCore {
+  def evaluateNode( decodedM : Model,  candidateM : Model, ast :  AST) : Model //satisfy  
+  
+  // Utility function
+  def getCurrentValue(ast : AST, decodedModel : Model, candidateModel : Model) : AST = {
+    if (! candidateModel.contains(ast)) {
+          candidateModel.set(ast, decodedModel(ast))
+    } 
+    candidateModel(ast)
+  }
 }
 
-trait Refinement extends ApproximationCore {
-  val topK : Int
-  val fractionToRefine : Double 
-  val precisionIncrement : Precision
-  
-  def nodeError(decodedModel : Model)(failedModel : Model)(accu : Map[AST, Double], ast : AST) : Map[AST, Double]
-  
+// This one could maybe be interleaved with the evaluation function provided buy
+// approximation bundle
+trait EqualityAsAssignmentReconstructor extends Reconstructor {
+  def equalityAsAssignment(ast : AST, decodedModel : Model,  candidateModel : Model) : Boolean = {
+    ast match {
+      case AST(fpEq : FloatingPointTheory .FPPredicateSymbol, path, children) 
+        if (fpEq.getFactory == FloatingPointTheory.FPEqualityFactory 
+            && decodedModel(ast).symbol == BoolTrue)  => {
+         val lhs = children(0)
+         val rhs = children(1)         
+         val lhsDefined = candidateModel.contains(lhs)
+         val rhsDefined = candidateModel.contains(rhs) 
+         
+         (lhs.isVariable, rhs.isVariable) match {
+           case (true, true) => {
+             (lhsDefined, rhsDefined) match {
+               case (false, true) => candidateModel.set(lhs, candidateModel(rhs))
+                                     true
+               case (true, false) => candidateModel.set(rhs, candidateModel(lhs))
+                                     true
+               case (false, false) => false
+               case (true, true) => false
+             }
+           }           
+           case (true, false) if (!lhsDefined) => {
+             candidateModel.set(lhs, candidateModel(rhs))
+             true
+           }
+           case (false, true) if (!rhsDefined) =>{
+             candidateModel.set(rhs, candidateModel(lhs))
+             true
+           }
+           case (_, _) => false
+        }
+      }
+      case _ => false
+    }
+  }
+}
+
+trait RefinementStrategy extends ApproximationCore {  
   def satRefinePrecision( node : AST, pmap : PrecisionMap[Precision]) : Precision
   def unsatRefinePrecision( p : Precision) : Precision
 }
 
-class PostOrderFramework(val appCore : ApproximationCore with Codec with Satisfy with Refinement  ) extends Approximation {
+trait ErrorBasedRefinementStrategy extends RefinementStrategy {
+  val topK : Int
+  val fractionToRefine : Double 
+  val precisionIncrement : Precision
+  
+  def nodeError(decodedModel : Model)(failedModel : Model)(accu : Map[AST, Double], ast : AST) : Map[AST, Double]  
+}
+
+
+class PostOrderNodeBasedApproximation(val appCore : ApproximationCore with ApproximationCodec with Reconstructor with ErrorBasedRefinementStrategy  ) extends Approximation {
   
   type P = appCore.Precision
+  val precisionOrdering = appCore.precisionOrdering
+  val inputTheory = appCore.inputTheory
+  val outputTheory = appCore.outputTheory
   
   def encodeFormula(ast : AST, pmap : PrecisionMap[P]) : AST = Timer.measure("SmallFloats.encodeFormula") {
     val AST(symbol, label, children) = ast
@@ -61,7 +117,9 @@ class PostOrderFramework(val appCore : ApproximationCore with Codec with Satisfy
   }
   
   def reconstruct(ast : AST, decodedModel : Model) : Model = {
-    ModelReconstructor.reconstructNodeByNode(ast, decodedModel, appCore.reconstructNode)
+    val reconstructedModel = new Model()    
+    AST.postVisit[Model, Model](ast, reconstructedModel, decodedModel, appCore.evaluateNode)
+    reconstructedModel
   }
   
   def satRefine(ast : AST, decodedModel : Model, failedModel : Model, pmap : PrecisionMap[P]) : PrecisionMap[P] = {
