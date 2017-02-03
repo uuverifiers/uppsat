@@ -182,7 +182,7 @@ trait SmallFloatsReconstructor extends SmallFloatsCore with EqualityAsAssignment
 
 trait SmallFloatsRefinementStrategy extends SmallFloatsCore with ErrorBasedRefinementStrategy {
   val topK = 10 // K 
-  val fractionToRefine = 0.3 //K_percentage
+  val fractionToRefine = 1.0//K_percentage
   val precisionIncrement = 1 // 20/100 = 1/5
 
   def satRefinePrecision( node : AST, pmap : PrecisionMap[Int]) : Int = {
