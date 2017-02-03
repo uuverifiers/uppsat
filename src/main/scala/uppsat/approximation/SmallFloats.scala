@@ -32,7 +32,7 @@ trait SmallFloatsCore extends ApproximationCore {
    val outputTheory = FloatingPointTheory   
 }
 
-trait SmallFloatsCodec extends ApproximationCodec with SmallFloatsCore {
+trait SmallFloatsCodec extends SmallFloatsCore with ApproximationCodec {
   //The core of the smallfloats approximation!
   //Other approximations might add top level constraints over the domain rather than 
   // change the sorts of the formula itself.
@@ -153,8 +153,8 @@ trait SmallFloatsCodec extends ApproximationCodec with SmallFloatsCore {
   }
 }
 
-trait SmallFloatsReconstructor extends EqualityAsAssignmentReconstructor with SmallFloatsCore {
-  def reconstructNode( decodedModel  : Model, candidateModel : Model, ast : AST) : Model = {
+trait SmallFloatsReconstructor extends SmallFloatsCore with EqualityAsAssignmentReconstructor {
+  def evaluateNode( decodedModel  : Model, candidateModel : Model, ast : AST) : Model = {
     val AST(symbol, label, children) = ast
         
     if (!equalityAsAssignment(ast, decodedModel, candidateModel) && children.length > 0) {
@@ -180,7 +180,11 @@ trait SmallFloatsReconstructor extends EqualityAsAssignmentReconstructor with Sm
   }
 }
 
-trait SmallFloatsRefinementStrategy extends ErrorBasedRefinementStrategy with SmallFloatsCore {
+trait SmallFloatsRefinementStrategy extends SmallFloatsCore with ErrorBasedRefinementStrategy {
+  val topK : Int = 0
+  val fractionToRefine : Double = 0
+  val precisionIncrement : Precision = 0
+
   def satRefinePrecision( node : AST, pmap : PrecisionMap[Int]) : Int = {
     val p =  pmap(node.label)    
     val newP = (p + precisionIncrement) max p
@@ -253,12 +257,12 @@ trait SmallFloatsRefinementStrategy extends ErrorBasedRefinementStrategy with Sm
   } 
 }
 
-object SmallFloatsApp extends   SmallFloatsCodec 
-                        with    SmallFloatsReconstructor
-                        with    SmallFloatsRefinementStrategy
-                        with    SmallFloatsCore {
-   type Precision = Int
+object SmallFloatsApp extends SmallFloatsCore with SmallFloatsCodec
+                                              with SmallFloatsReconstructor
+                                              with SmallFloatsRefinementStrategy {
+/*   type Precision = Int
    val precisionOrdering = new IntPrecisionOrdering(0,5)
    val inputTheory = FloatingPointTheory
-   val outputTheory = FloatingPointTheory  
+   val outputTheory = FloatingPointTheory   */
 }
+
