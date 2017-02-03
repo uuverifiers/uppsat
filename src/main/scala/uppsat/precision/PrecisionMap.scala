@@ -4,6 +4,7 @@ import PrecisionMap._
 import uppsat.ast.AST
 import uppsat.ast.Leaf
 import uppsat.ast.ConcreteFunctionSymbol
+import uppsat.globalOptions.verbose
 
 object PrecisionMap {
   type Path = List[Int]
@@ -51,6 +52,14 @@ object PrecisionMap {
 
 class PrecisionMap[T] private (val map : Map[Path, T])(implicit val pathToPath : Map[Path, Path], val precisionOrdering : PrecisionOrdering[T]) {  
   
+  def characterize = {
+    var s = precisionOrdering.minimalPrecision
+    for ( v <- map.values) {
+      s = precisionOrdering.+(s, v)
+    }
+    println("#" + s)
+  }
+  
   def update(path : Path, newP : T) = {
     if (precisionOrdering.lt(precisionOrdering.maximalPrecision, newP))
         throw new Exception("Trying to set precision larger than maximum precision")
@@ -71,6 +80,7 @@ class PrecisionMap[T] private (val map : Map[Path, T])(implicit val pathToPath :
   //    else
   //      new PrecisionMap[T](map + (path -> newP))
   //  }
+  
   
   def isMaximal = {
     map.values.find(x => precisionOrdering.lt(x, precisionOrdering.maximalPrecision)).isEmpty

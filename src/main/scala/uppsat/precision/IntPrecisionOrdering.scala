@@ -15,4 +15,7 @@ class IntPrecisionOrdering(val minimalPrecision : Int, val maximalPrecision : In
         Some(0)
     }
   }
+  
+  def +(a : Int, b : Int) : Int = a + b
+  
 }

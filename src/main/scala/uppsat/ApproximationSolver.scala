@@ -95,6 +95,7 @@ object ApproximationSolver {
         } else {
           verbose("Model reconstruction failed: refining precision")            
           val newPmap = approximation.satRefine(formula, decodedModel, reconstructedModel, pmap)
+          newPmap.characterize
           (None, Some(newPmap))
         }
       }      
