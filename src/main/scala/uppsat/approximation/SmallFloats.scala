@@ -253,7 +253,12 @@ trait SmallFloatsRefinementStrategy extends ErrorBasedRefinementStrategy with Sm
   } 
 }
 
-trait SmallFloatsBundle extends SmallFloatsCore 
-                        with    SmallFloatsCodec 
+object SmallFloatsApp extends   SmallFloatsCodec 
                         with    SmallFloatsReconstructor
                         with    SmallFloatsRefinementStrategy
+                        with    SmallFloatsCore {
+   type Precision = Int
+   val precisionOrdering = new IntPrecisionOrdering(0,5)
+   val inputTheory = FloatingPointTheory
+   val outputTheory = FloatingPointTheory  
+}
