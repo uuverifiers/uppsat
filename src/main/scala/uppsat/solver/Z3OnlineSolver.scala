@@ -30,9 +30,8 @@ class Z3OnlineSolver extends SMTSolver {
   val stderr = process.getErrorStream ()
   val stdout = process.getInputStream () 
   
-  def runSolver(formula : String) = Timer.measure("Z3OnlineSolver.runSolver") {
-    reset
-    z3print("Sending input: " + formula)    
+  def evaluate(formula : String) = Timer.measure("Z3OnlineSolver.runSolver") {
+    z3print("Evaluating: " + formula)    
     stdin.write((formula + "\n").getBytes());
     stdin.flush();    
     
@@ -57,9 +56,9 @@ class Z3OnlineSolver extends SMTSolver {
   }
 
   
-  def reset = { 
-    stdin.write("(reset)".getBytes)
-    runSolver("(check-sat)\n")
+  def reset = {    
+    stdin.write(("(reset)\n").getBytes());
+    stdin.flush();
   }
   
   def parseOutput(output : String, extractSymbols : List[String]) : Option[Map[String, String]] = {
@@ -74,13 +73,13 @@ class Z3OnlineSolver extends SMTSolver {
   
   def getModel(formula : String, extractSymbols : List[String]) = {
     val extendedFormula = formula + (extractSymbols.map("(eval " + _ + ")").mkString("\n", "\n", ""))
-    val result = runSolver(extendedFormula)
+    val result = evaluate(extendedFormula)
     parseOutput(result, extractSymbols).get    
   }
   
   def solve(formula : String) : Boolean = {
     //reset
-    val result = runSolver(formula)  
+    val result = evaluate(formula)  
     val retVal = result.split("\n").head.trim()
     retVal match {
       case "sat" => true
@@ -90,7 +89,7 @@ class Z3OnlineSolver extends SMTSolver {
   }
 
   def getAnswer(formula : String) : String = {
-    val result = runSolver(formula)  
+    val result = evaluate(formula)  
     val retVal = result.split("\n")
     retVal.head.trim() match {
       case "sat" => retVal(1).trim()

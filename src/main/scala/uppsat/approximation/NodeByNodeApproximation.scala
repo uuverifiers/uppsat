@@ -231,10 +231,15 @@ trait NodeByNodeApproximation extends Approximation {
       }
     }
     
-    for (node <- ast.iterator.toList.reverse) {
-      if (!candidateModel.contains(node))
-        reconstructNode(decodedModel, candidateModel, node)        
+    def copyFromDecodedModelIfNotSet (decodedModel : Model, candidateModel : Model, ast : AST) = {
+      if (! candidateModel.contains(ast)) {
+            candidateModel.set(ast, decodedModel(ast))
+      }
+      candidateModel
     }
+    
+    AST.postVisit(ast, candidateModel, decodedModel, copyFromDecodedModelIfNotSet)
+    
     println(candidateModel)
     candidateModel
   }

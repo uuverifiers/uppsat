@@ -22,7 +22,7 @@ object Z3Solver extends SMTSolver {
     if (!silent)
       println("[Z3] " + str)
     
-  def runSolver(formula : String) = Timer.measure("Z3Solver.runSolver") {
+  def evaluate(formula : String) = Timer.measure("Z3Solver.runSolver") {
     import sys.process._
   
     val process = Runtime.getRuntime().exec("z3 -in -smt2")
@@ -72,12 +72,12 @@ object Z3Solver extends SMTSolver {
   
   def getModel(formula : String, extractSymbols : List[String]) = {
     val extendedFormula = formula + (extractSymbols.map("(eval " + _ + ")").mkString("\n", "\n", ""))
-    val result = runSolver(extendedFormula)
+    val result = evaluate(extendedFormula)
     parseOutput(result, extractSymbols).get    
   }
   
   def solve(formula : String) : Boolean = {
-    val result = runSolver(formula)    
+    val result = evaluate(formula)    
     val retVal = result.split("\n").head.trim()
     retVal match {
       case "sat" => true
@@ -87,7 +87,7 @@ object Z3Solver extends SMTSolver {
   }
 
   def getAnswer(formula : String) : String = {
-    val result = runSolver(formula)  
+    val result = evaluate(formula)  
     val retVal = result.split("\n")
     retVal.head.trim() match {
       case "sat" => retVal(1).trim()
