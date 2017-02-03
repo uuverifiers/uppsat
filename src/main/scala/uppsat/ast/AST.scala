@@ -43,11 +43,11 @@ object AST {
   }
 
 
-def boolVisit[T]( ast : AST, accumulator : T, cond : (T, AST, Path) => Boolean, work : (T, AST) => T ) : T = {
+def boolVisit[T]( ast : AST, accumulator : T, cond : (T, AST) => Boolean, work : (T, AST) => T ) : T = {
     val AST(symbol, label, children) = ast
     var accu = accumulator
     
-    if (cond(accu, ast, label)) {
+    if (cond(accu, ast)) {
       accu = work(accu, ast)
       
       for (c <- children) 

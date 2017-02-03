@@ -54,7 +54,7 @@ trait NodeByNodeApproximation extends Approximation {
   }
   
   def booleanComparisonOfModels(ast : AST, decodedModel : Model, failedModel : Model) : List[AST] = {
-      def boolCond( accu : List[AST], ast : AST, path : Path) : Boolean = {
+      def boolCond( accu : List[AST], ast : AST) : Boolean = {
         decodedModel(ast) != failedModel(ast)
       }
       
