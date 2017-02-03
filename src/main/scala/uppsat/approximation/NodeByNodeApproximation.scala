@@ -239,8 +239,6 @@ trait NodeByNodeApproximation extends Approximation {
     }
     
     AST.postVisit(ast, candidateModel, decodedModel, copyFromDecodedModelIfNotSet)
-    
-    println(candidateModel)
     candidateModel
   }
   
@@ -260,7 +258,8 @@ trait NodeByNodeApproximation extends Approximation {
     }
     
     if (changes == 0) { // This could actually happen, that all the nodes where evaluation fails are at full precision. UnsatRefine in that case.
-      unsatRefine(ast, List(), pmap)
+      verbose("No changes, naive precision refinement")
+      newPMap = unsatRefine(ast, List(), pmap)
     }
     newPMap    
   }
