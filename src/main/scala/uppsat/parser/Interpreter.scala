@@ -248,7 +248,7 @@ object Interpreter {
     case cmd : CheckSatCommand => {
       val formula = myEnv.getFormula.labelAST     
       val translator = new uppsat.solver.SMTTranslator(uppsat.theory.FloatingPointTheory)
-      val approximation = uppsat.approximation.SmallFloatsApproximation
+      val approximation = new PostOrderNodeBasedApproximation(SmallFloatsApp)//uppsat.approximation.SmallFloatsApproximation
       // TODO:  Hooks to user defined approximation
       myEnv.result = uppsat.ApproximationSolver.solve(formula, translator, approximation)
     }
