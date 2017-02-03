@@ -20,7 +20,7 @@ object ModelReconstructor {
     var variableValuation : Map[ConcreteFunctionSymbol, AST] = Map()
     var subexprValuation : Map[Path, AST] = Map()
     
-    
+      
     def getModel : Map[ConcreteFunctionSymbol, AST] = {
       variableValuation
     }
@@ -90,12 +90,16 @@ object ModelReconstructor {
   
   def startOnlineSolver() = {
     onlineSolver = Some(new Z3OnlineSolver)
-    onlineSolver.get.runSolver("(check-sat)\n(eval true)\n")    
+    onlineSolver.get.evaluate("(check-sat)\n(eval true)\n")    
   }
   
   
   def stopOnlineSolver() = {
     onlineSolver.get.asInstanceOf[Z3OnlineSolver].stopSolver()    
+  }
+  
+  def resetOnlineSolver() = {
+    onlineSolver.get.asInstanceOf[Z3OnlineSolver].reset
   }
  
   def valAST(ast: AST, assignments: List[(String, String)], theory : Theory, solver : SMTSolver) : Boolean = {
@@ -114,7 +118,7 @@ object ModelReconstructor {
     
     val translator = new SMTTranslator(theory)
     val formula = translator.evaluate(ast)
-    val answer = onlineSolver.get.runSolver(formula)
+    val answer = onlineSolver.get.evaluate(formula)
     ast.symbol.sort.theory.parseLiteral(answer.trim())    
   }
   
@@ -124,7 +128,8 @@ object ModelReconstructor {
     
     val translator = new SMTTranslator(theory)
     val formula = translator.evalExpression(constraint, unknown)
-    val res = onlineSolver.get.runSolver(formula)
+    resetOnlineSolver()
+    val res = onlineSolver.get.evaluate(formula)
     unknown.symbol.sort.theory.parseLiteral(res.trim())    
   }
   
