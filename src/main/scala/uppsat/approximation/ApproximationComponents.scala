@@ -16,6 +16,8 @@ import uppsat.theory.IntegerTheory.IntEquality
 import uppsat.theory.FloatingPointTheory.RoundingModeEquality
 import uppsat.theory.FloatingPointTheory.FPPredicateSymbol
 import uppsat.theory.FloatingPointTheory.FPEqualityFactory
+import uppsat.theory.FloatingPointTheory.FPSortFactory.FPSort
+import uppsat.ast.IndexedFunctionSymbol
 
 
   // Every approximation is  required to specify the:
@@ -58,12 +60,12 @@ import uppsat.theory.FloatingPointTheory.FPEqualityFactory
   trait EqualityAsAssignmentReconstructor extends Reconstructor {
     def equalityAsAssignment(ast : AST, decodedModel : Model,  candidateModel : Model) : Boolean = {
       ast match {
-        case AST(BoolEquality, _, _) |
-             AST(IntEquality, _, _)|
-             AST(RoundingModeEquality, _ , _)|
+//        case AST(BoolEquality, _, _) |
+//             AST(IntEquality, _, _)|
+        case AST(RoundingModeEquality, _ , _)|
              AST(_: FPPredicateSymbol, _, _)
              if (decodedModel(ast).symbol == BoolTrue && 
-                (ast.symbol.theory != FloatingPointTheory 
+                (! ast.symbol.isInstanceOf[IndexedFunctionSymbol] 
                 || ast.symbol.asInstanceOf[FPPredicateSymbol].getFactory == FPEqualityFactory)) => {
            val lhs = ast.children(0)
            val rhs = ast.children(1)         
