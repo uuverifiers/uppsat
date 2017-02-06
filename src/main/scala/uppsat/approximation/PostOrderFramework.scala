@@ -14,7 +14,7 @@ import uppsat.theory.BooleanTheory.BoolTrue
 
 
 
-class PostOrderNodeBasedApproximation(val appCore : ApproximationCore with ApproximationCodec with Reconstructor with ErrorBasedRefinementStrategy  ) extends Approximation {
+class PostOrderNodeBasedApproximation(val appCore : ApproximationCore with ApproximationCodec with NodeByNodeReconstructor with ErrorBasedRefinementStrategy  ) extends Approximation {
   
   type P = appCore.Precision
   val precisionOrdering = appCore.precisionOrdering

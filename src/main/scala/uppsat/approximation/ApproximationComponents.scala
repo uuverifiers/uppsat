@@ -44,7 +44,7 @@ import uppsat.ast.IndexedFunctionSymbol
   // Uses various techniques to : 
   // - evaluate the decoded model in original semantics
   // - patch / infer values where possible
-  trait Reconstructor extends ApproximationCore {
+  trait NodeByNodeReconstructor extends ApproximationCore {
     def evaluateNode( decodedM : Model,  candidateM : Model, ast :  AST) : Model //satisfy  
     
     // Utility function
@@ -57,7 +57,7 @@ import uppsat.ast.IndexedFunctionSymbol
   }
   
   // Model reconstructor that uses EqualityAsAssignments
-  trait EqualityAsAssignmentReconstructor extends Reconstructor {
+  trait EqualityAsAssignmentReconstructor extends NodeByNodeReconstructor {
     def equalityAsAssignment(ast : AST, decodedModel : Model,  candidateModel : Model) : Boolean = {
       ast match {
 //        case AST(BoolEquality, _, _) |
