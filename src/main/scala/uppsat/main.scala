@@ -136,7 +136,7 @@ object main {
       Interpreter.reset()
       Interpreter.interpret(script)
     }
-    verbose(Timer.toString())
+    println(Timer.toString())
     Interpreter.myEnv.result
 }
 }
