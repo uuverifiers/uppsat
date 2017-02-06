@@ -36,6 +36,15 @@ object globalOptions {
       println(str)
     }
   }
+  
+  def checkTimeout : Boolean = {
+    DEADLINE match {
+      case None => true
+      case Some(t) => 
+        println(Timer.ElapsedTime)
+        Timer.ElapsedTime < t
+    }
+  }
 }
 
 
@@ -107,14 +116,17 @@ object main {
   def main_aux(args : Array[String]) : Answer = {
       import java.io._
     import scala.collection.JavaConversions._
-
+    
+    globalOptions.DEADLINE = Some(60000000000l)
     for (a <- args) yield {
+      val timeoutPattern = "-t=([0-9.]+)".r
+      
       a match {
         case "-v" => globalOptions.VERBOSE = true
                      
         case "-d" => globalOptions.DEBUG = true
         
-        //case "-t="
+        case timeoutPattern(t) => globalOptions.DEADLINE = Some(t.toInt * 1000000000)
                      
         case _ => ()
       }

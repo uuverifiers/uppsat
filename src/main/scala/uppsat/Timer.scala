@@ -73,6 +73,8 @@ object Timer {
     callCounters.clear
   }
   
+  def ElapsedTime = (0l /: accumulatedTimes.valuesIterator)(_ + _)
+  
   override def toString : String = {
     val resBuf = ArrayBuilder.make[(String, Int, Long)]
 

@@ -40,21 +40,25 @@ object ApproximationSolver {
     //ModelReconstructor.stopOnlineSolver()
     
     retVal match {
-      case Some(model) => {
+      case Sat(model) => {
         verbose("Model found:\n" + model.mkString("\t", "\n\t", "\n"))        
         println("sat")
         Sat(model)
       }
-      case None => {        
+      case Unsat => {        
         println("unsat")
         Unsat
+      }
+      case Unknown => {        
+        println("unknown")
+        Unknown
       }
     }
   }
   
   
   
-  def loop(formula : AST, translator : SMTTranslator, approximation : Approximation) : Option[ExtModel] = {  
+  def loop(formula : AST, translator : SMTTranslator, approximation : Approximation) : Answer = {  
     var pmap = PrecisionMap[approximation.P](formula)(approximation.precisionOrdering)
     pmap = pmap.cascadingUpdate(formula, approximation.precisionOrdering.minimalPrecision)
     var iterations = 0
@@ -102,8 +106,7 @@ object ApproximationSolver {
     }    
        
    
-    while (true) {     
-
+    while (checkTimeout) {
       iterations += 1
       verbose("-----------------------------------------------")
       verbose("Starting iteration " + iterations)
@@ -118,20 +121,22 @@ object ApproximationSolver {
       if (Z3Solver.solve(encodedSMT)) {
         val (extModel, newPMap) = tryReconstruct(encodedSMT)
         (extModel, newPMap) match {
-          case (Some(model), _) => return extModel
+          case (Some(model), _) => return Sat(model)
           case (_, Some(p)) => pmap = pmap.merge(p)
-          case (_, None) => return None
+          case (_, None) => throw new Exception("Loop ???")
         }          
       } else {
         if (pmap.isMaximal) {
           verbose("Approximate model not found: maximal precision reached.")          
-          return None
+          return Unsat
         } else {
           verbose("Approximate model not found: refining precision.")            
           pmap = approximation.unsatRefine(formula, List(), pmap)
         }
       }
     }
-    throw new Exception("Main loop exited without return-value.")
+    
+    return Unknown
+    //throw new Exception("Main loop exited without return-value.")
   }    
 }
