@@ -18,6 +18,7 @@ import uppsat.theory.FloatingPointTheory.FPSortFactory
 import uppsat.solver.SMTSolver
 import uppsat.approximation.PostOrderNodeBasedApproximation
 import uppsat.approximation.SmallFloatsApp
+import uppsat.ApproximationSolver
 
 case class SMTParserException(msg : String) extends Exception(msg)
 
@@ -250,6 +251,7 @@ object Interpreter {
       val translator = new uppsat.solver.SMTTranslator(uppsat.theory.FloatingPointTheory)
       val approximation = new PostOrderNodeBasedApproximation(SmallFloatsApp)//uppsat.approximation.SmallFloatsApproximation
       // TODO:  Hooks to user defined approximation
+      myEnv.result = ApproximationSolver.Unknown
       myEnv.result = uppsat.ApproximationSolver.solve(formula, translator, approximation)
     }
   //     //////////////////////////////////////////////////////////////////////////

@@ -40,9 +40,7 @@ object globalOptions {
   def checkTimeout : Boolean = {
     DEADLINE match {
       case None => true
-      case Some(t) => 
-        println(Timer.ElapsedTime)
-        Timer.ElapsedTime < t
+      case Some(t) => Timer.ElapsedTime < t
     }
   }
 }
@@ -144,6 +142,7 @@ object main {
     val l = new smtlib.Yylex(reader())
     val p = new smtlib.parser(l)
     val script = p.pScriptC
+    Timer.reset
     Timer.measure("main") {
       Interpreter.reset()
       Interpreter.interpret(script)

@@ -4,6 +4,7 @@ import scala.io.Source
 
 import uppsat.ApproximationSolver.Sat
 import uppsat.ApproximationSolver.Unsat
+import uppsat.ApproximationSolver.Unknown
 
 class Regression extends FunSpec {
   // tests go here...
@@ -19,28 +20,35 @@ class Regression extends FunSpec {
    
    describe("SAT : " ) {
      for (f <- satFiles) {
-         it(f.toPath().toString().split('\\').reverse.head) {
-           val args =  Array(f.toString())
-            uppsat.main.main_aux(args) match {
-              case _ : Sat => assert(true)
-              case _ => assert(false)
-            }         
+         val args =  Array(f.toString(), "-t=60")
+         val result = uppsat.main.main_aux(args)
+         result match {
+           case _ : Sat => 
+             it(f.toPath().toString().split('\\').reverse.head) {assert(true)}
+           case Unsat =>
+             it(f.toPath().toString().split('\\').reverse.head) {assert(false)}
+           case Unknown => 
+             ignore(f.toPath().toString().split('\\').reverse.head) {assert(false)}
+         }         
        }
      }
-   }
+   
    
    val unsatSources = new File(getClass.getResource("/unsat/").toURI())
    val unsatFiles = getListOfFiles(unsatSources, List(".smt2"))
    
     describe("UNSAT : " ) {
      for (f <- unsatFiles) {
-         it(f.toPath().toString().split('\\').reverse.head) {
-           val args =  Array(f.toString())
-            uppsat.main.main_aux(args) match {
-              case Unsat => assert(true)
-              case _ => assert(false)
-            }         
-       }
+         val args =  Array(f.toString(), "-t=60")
+         val result = uppsat.main.main_aux(args)
+         result match {
+           case _ : Sat => 
+             it(f.toPath().toString().split('\\').reverse.head) {assert(false)}
+           case Unsat =>
+             it(f.toPath().toString().split('\\').reverse.head) {assert(true)}
+           case Unknown => 
+             ignore(f.toPath().toString().split('\\').reverse.head) {assert(false)}
+         }
      }
    }
 }
