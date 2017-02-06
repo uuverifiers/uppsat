@@ -142,7 +142,7 @@ case class FPSpecialValuesFactory(symbolName : String) extends FPGenConstantFact
   
   abstract class RoundingMode extends ConcreteFunctionSymbol
   
-  object RoundingModeEquality extends ConcreteFunctionSymbol {
+  case object RoundingModeEquality extends ConcreteFunctionSymbol {
     val sort = BooleanSort
     val args = List(RoundingModeSort, RoundingModeSort)
     val name = "rounding-mode-equality"
