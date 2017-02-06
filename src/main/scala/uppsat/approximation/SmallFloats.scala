@@ -156,8 +156,8 @@ trait SmallFloatsCodec extends SmallFloatsCore with ApproximationCodec {
 trait SmallFloatsReconstructor extends SmallFloatsCore with EqualityAsAssignmentReconstructor {
   def evaluateNode( decodedModel  : Model, candidateModel : Model, ast : AST) : Model = {
     val AST(symbol, label, children) = ast
-        
-    if (!equalityAsAssignment(ast, decodedModel, candidateModel) && children.length > 0) {
+    
+    if (children.length > 0 && !equalityAsAssignment(ast, decodedModel, candidateModel)) {
       val newChildren = for ( c <- children) yield {        
         getCurrentValue(c, decodedModel, candidateModel)
       }

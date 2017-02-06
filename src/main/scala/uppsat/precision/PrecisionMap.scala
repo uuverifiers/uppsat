@@ -5,6 +5,7 @@ import uppsat.ast.AST
 import uppsat.ast.Leaf
 import uppsat.ast.ConcreteFunctionSymbol
 import uppsat.globalOptions.verbose
+import uppsat.globalOptions
 
 object PrecisionMap {
   type Path = List[Int]
@@ -53,11 +54,13 @@ object PrecisionMap {
 class PrecisionMap[T] private (val map : Map[Path, T])(implicit val pathToPath : Map[Path, Path], val precisionOrdering : PrecisionOrdering[T]) {  
   
   def characterize = {
-    var s = precisionOrdering.minimalPrecision
-    for ( v <- map.values) {
-      s = precisionOrdering.+(s, v)
+    if (globalOptions.VERBOSE) {
+      var s = precisionOrdering.minimalPrecision
+      for ( v <- map.values) {
+        s = precisionOrdering.+(s, v)
+      }
+      verbose("#" + s)
     }
-    println("#" + s)
   }
   
   def update(path : Path, newP : T) = {
