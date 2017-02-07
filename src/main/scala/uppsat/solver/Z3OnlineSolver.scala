@@ -32,7 +32,7 @@ class Z3OnlineSolver extends SMTSolver {
   
   
   def init() = {
-    stdin.write("(check-sat)\n".getBytes());
+    stdin.write("(reset)\n(check-sat)\n".getBytes());
     stdin.flush();
     var result : Option[String] = None    
     var line = None : Option[String]
@@ -48,6 +48,7 @@ class Z3OnlineSolver extends SMTSolver {
   }
   
   def evaluate(formula : String) = Timer.measure("Z3OnlineSolver.runSolver") {
+    init
     z3print("Evaluating: " + formula)    
     stdin.write((formula + "\n").getBytes());
     stdin.flush();    

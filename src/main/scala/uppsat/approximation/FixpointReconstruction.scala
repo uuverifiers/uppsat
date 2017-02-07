@@ -27,8 +27,15 @@ import uppsat.theory.BooleanTheory.BoolImplication
 import uppsat.theory.BooleanTheory.BoolNegation
 import uppsat.theory.BooleanTheory.NaryConjunction
 import uppsat.globalOptions._
+import uppsat.theory.FloatingPointTheory.FloatingPointPredicateSymbol
+import uppsat.theory.FloatingPointTheory.FPEqualityFactory
+import uppsat.globalOptions
+import uppsat.globalOptions._
+import uppsat.solver.Z3Solver
+import uppsat.theory.BooleanTheory.BooleanConstant
 
 trait FixpointReconstruction extends ApproximationCore {
+  
   def retrieveCriticalAtoms(decodedModel : Model)(ast : AST) : List[AST] = {
       val value = decodedModel(ast)
       ast match {
@@ -147,14 +154,22 @@ trait FixpointReconstruction extends ApproximationCore {
     undefVars.head
   }
   
+  def isPotentiallyUniqueImplication(ast : AST, polarity : Boolean) = {
+    (ast.symbol, polarity) match {
+      case (pred : FloatingPointPredicateSymbol, true) if pred.getFactory == FPEqualityFactory => true
+      case _ => false
+    }
+  }
   def fixPointBasedReconstruction(ast : AST, decodedModel : Model) : Model = {
     val candidateModel = new Model()  
     val atoms = retrieveCriticalAtoms(decodedModel)(ast)
+    
+    val uniqueSolutions = atoms.filter((x : AST) => isPotentiallyUniqueImplication(x, decodedModel(x).symbol == BoolTrue))
     val terms = atoms.map(_.iterator.toList).flatten 
     val vars = terms.filter(_.isVariable).toSet.toList
     
     verbose("Starting fixpoint reconstruction")
-    verbose("Atoms(" + atoms.length + "):\n\t" + atoms.mkString("\n\t"))
+    verbose("Atoms(" + uniqueSolutions.length + "):\n\t" + uniqueSolutions.mkString("\n"))
     verbose("Vars(" + vars.length + "):\n\t" + vars.mkString("\n\t"))
     
     
@@ -170,7 +185,7 @@ trait FixpointReconstruction extends ApproximationCore {
       verbose("=============================\nPatching iteration " + iteration)
       
       
-      val implications = atoms.filter { x => x.children.length > 0 && numUndefValues(candidateModel, x) == 1 }
+      val implications = uniqueSolutions.filter { x => x.children.length > 0 && numUndefValues(candidateModel, x) == 1 }
       verbose("Implications(" + implications.length + "):\n\t")
       implications.map(_.prettyPrint("\t"))
       
@@ -198,6 +213,11 @@ trait FixpointReconstruction extends ApproximationCore {
          val undefVars = vars.filterNot(candidateModel.contains(_)).toList
          if (undefVars.isEmpty) {
            verbose("No undefined variables ...\n Done satisfying critical atoms.")
+           
+           val unevaluatedAtoms = atoms.filter { x => numUndefValues(candidateModel, x) > 0 }
+           for (a <- unevaluatedAtoms) {
+             AST.postVisit(a, candidateModel, decodedModel, evaluateNode)
+           }
            done = true
          } else {
            val chosen =  chooseVar(atoms, undefVars)
@@ -206,6 +226,44 @@ trait FixpointReconstruction extends ApproximationCore {
          }
            
       }
+    }
+    
+    
+
+
+  def evaluateNode( decodedModel  : Model, candidateModel : Model, ast : AST) : Model = {
+    val AST(symbol, label, children) = ast
+    
+    if (!candidateModel.contains(ast)) {
+      if (children.length > 0) {
+        val newChildren = for ( c <- children) yield {        
+          getCurrentValue(c, decodedModel, candidateModel)
+        }
+     
+        //Evaluation
+        val newAST = AST(symbol, label, newChildren.toList)
+        val newValue = ModelReconstructor.evalAST(newAST, inputTheory)
+        if ( globalOptions.PARANOID && symbol.sort == BooleanTheory.BooleanSort) { // TODO: Talk to Philipp about an elegant way to do flags
+          val assignments = candidateModel.getAssignmentsFor(ast).toList
+          val backupAnswer = ModelReconstructor.valAST(ast, assignments.toList, this.inputTheory, Z3Solver)
+          
+          val answer = newValue.symbol.asInstanceOf[BooleanConstant] == BoolTrue
+          if ( backupAnswer != answer )
+            throw new Exception("Backup validation failed : \nEval: " + answer + "\nvalAst: " + backupAnswer)
+  
+        }        
+        candidateModel.set(ast, newValue)
+      }
+    }
+      
+    candidateModel  
+    
+  }
+    def getCurrentValue(ast : AST, decodedModel : Model, candidateModel : Model) : AST = {
+      if (! candidateModel.contains(ast)) {
+            candidateModel.set(ast, decodedModel(ast))
+      } 
+      candidateModel(ast)
     }
     
     def copyFromDecodedModelIfNotSet (decodedModel : Model, candidateModel : Model, ast : AST) = {
