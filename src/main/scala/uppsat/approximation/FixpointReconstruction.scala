@@ -117,8 +117,8 @@ trait FixpointReconstruction extends ApproximationCore {
   }
   
   def numUndefValues(candidateModel : Model, ast : AST) : Int = {
-    val assigned = ast.children.filter(( a : AST) => candidateModel.contains(a))
-    assigned.length      
+    val unassigned = ast.children.filterNot(candidateModel.contains(_))
+    unassigned.length      
   }
   
   def initializeCandidateModel(atoms : List[AST], decodedModel : Model, candidateModel : Model) = {
@@ -171,7 +171,7 @@ trait FixpointReconstruction extends ApproximationCore {
       }
       
       if (!changed) {
-         val undefVars = vars.filter(candidateModel.contains(_)).toList
+         val undefVars = vars.filterNot(candidateModel.contains(_)).toList
          if (undefVars.isEmpty) {
            done = true
          } else {
@@ -183,6 +183,7 @@ trait FixpointReconstruction extends ApproximationCore {
     }
     
  def copyFromDecodedModelIfNotSet (decodedModel : Model, candidateModel : Model, ast : AST) = {
+    def copyFromDecodedModelIfNotSet (decodedModel : Model, candidateModel : Model, ast : AST) = {
       if (! candidateModel.contains(ast)) {
             candidateModel.set(ast, decodedModel(ast))
       }
