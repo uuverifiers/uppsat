@@ -182,7 +182,6 @@ trait FixpointReconstruction extends ApproximationCore {
       }
     }
     
- def copyFromDecodedModelIfNotSet (decodedModel : Model, candidateModel : Model, ast : AST) = {
     def copyFromDecodedModelIfNotSet (decodedModel : Model, candidateModel : Model, ast : AST) = {
       if (! candidateModel.contains(ast)) {
             candidateModel.set(ast, decodedModel(ast))
