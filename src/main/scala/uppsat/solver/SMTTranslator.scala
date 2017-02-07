@@ -64,14 +64,16 @@ class SMTTranslator(theory : Theory) {
   def symAsserts =
     symbolAssertions.map("(assert " + _ + ")").mkString("\n")
   
-  def translate(ast : AST, noAssert : Boolean = false, assignments : List[(String, String)] = List()) : String = {
+  def translate(ast : AST, noAssert : Boolean = false, assignments : List[(String, String)] = List(), noHeader : Boolean = false) : String = {
     val astFormula = translateAST(ast)
     val assertions = if (!noAssert) "(assert " + astFormula + ")" else ""
     
     val assig = for ((x, v) <- assignments) yield { 
       "(assert ( = " + x + " " + v + "))"
       }
-    header + "\n" +
+     val head = if (!noHeader) header + "\n" else "" 
+    
+    head + 
     symDecs + "\n" +
     symAsserts + "\n" + 
     assertions + "\n" +
@@ -80,18 +82,14 @@ class SMTTranslator(theory : Theory) {
   }
   
   //Used by Fixpoint approximation
-//  def evalExpression(ast : AST) : String = {
-//    val astFormula = translateAST(ast)
-//    val eval = "(assert (= answer " + astFormula + "))"
-//    //header + "\n" +
-//    symDecs + "\n" + 
-//    "(declare-fun answer () " + ast.symbol.sort.theory.toSMTLib(ast.symbol.sort) +" )\n" +
-//    eval + "\n" +
-//    footer +  "\n" +
-//    "(eval answer)"
-//  }
+  def evaluateSubformula(ast : AST, answer : ConcreteFunctionSymbol, assignments : List[(ConcreteFunctionSymbol, AST)]) : String = {
+    val strAssignments = for ((sym, value) <- assignments) yield {
+      (sym.toString(), value.symbol.theory.toSMTLib(value.symbol))
+    }
+    translate(ast, false, strAssignments, true) + "(eval " + answer + ")"    
+  }
   
-  def evalExpression(ast : AST, answer : AST) : String = {
+  def evalExpression(ast : AST, answer : AST, assignments : List[(ConcreteFunctionSymbol, AST)] = List()) : String = {
     val astFormula = translateAST(ast)
     val eval = "(assert " + astFormula + ")"
     //header + "\n" +

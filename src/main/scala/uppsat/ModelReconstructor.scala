@@ -25,6 +25,13 @@ object ModelReconstructor {
       variableValuation
     }
     
+    def getDefinedAssignmentsFor(ast : AST) = {
+      for ( n <- ast.iterator if n.symbol.theory.isVariable(n.symbol) && contains(n)) yield {
+        val value = this(n)
+        (n.symbol.toString(), value.symbol.theory.toSMTLib(value.symbol) )
+      }
+    }
+    
     def getAssignmentsFor(ast : AST)   = {
       for ( n <- ast.iterator if n.symbol.theory.isVariable(n.symbol)) yield {
         val value = this(n)
@@ -115,11 +122,25 @@ object ModelReconstructor {
   def evalAST(ast : AST, theory : Theory) : AST = {
     if (onlineSolver.isEmpty)
       startOnlineSolver()
+    else
+      resetOnlineSolver()
     
     val translator = new SMTTranslator(theory)
     val formula = translator.evaluate(ast)
     val answer = onlineSolver.get.evaluate(formula)
     ast.symbol.sort.theory.parseLiteral(answer.trim())    
+  }
+  
+  def evalAST(ast : AST, answer : ConcreteFunctionSymbol, assignments : List[(ConcreteFunctionSymbol, AST)], theory : Theory) : AST = {
+    if (onlineSolver.isEmpty)
+      startOnlineSolver()
+    else
+      resetOnlineSolver()
+    
+    val translator = new SMTTranslator(theory)
+    val formula = translator.evaluateSubformula(ast, answer, assignments)
+    val res = onlineSolver.get.evaluate(formula)
+    answer.sort.theory.parseLiteral(res.trim())    
   }
   
   def getValue(constraint : AST, unknown: AST, theory : Theory) : AST = {

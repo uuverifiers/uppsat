@@ -86,38 +86,40 @@ trait FixpointReconstruction extends ApproximationCore {
   
   // Precondition : number of undefined arguments it at most one. 
   def getImplication(candidateModel : Model, ast : AST) : Option[(AST, AST)] = {
-    var unknown : List[AST]= List()
-    debug("Original node : ")
-    if (DEBUG) 
-        ast.prettyPrint("")
-        
-    val newChildren = for ( a <- ast.children) yield {
-      if (candidateModel.contains(a))
-        candidateModel(a)
-      else
-        unknown = a :: unknown
-        a
-    }
+    val vars = ast.iterator.toList.filter(_.isVariable)
     
-    unknown = unknown.distinct
+    val assertions : List[(ConcreteFunctionSymbol, AST)] = 
+      for ( v <- vars if(candidateModel.contains(v))) yield {        
+          (v.symbol, candidateModel(v))
+      }
+    
+    val unknown = vars.filterNot(candidateModel.contains(_)).map(_.symbol).distinct
+    
+    
     if (unknown.length > 1) 
       throw new Exception("getImplication assumes at most one unknown" + unknown.mkString(", "))
     
-    debug("Implication : " + ast.symbol)
-    debug("Children " + newChildren.mkString(", "))
-    val substitutedAST = AST(ast.symbol, ast.label, newChildren)
-    debug("new tree")
-    if (DEBUG)
-      substitutedAST.prettyPrint("")
+    
     if (unknown.length == 1) {
-      val res = ModelReconstructor.getValue(substitutedAST, unknown.head, inputTheory)
+      val res = ModelReconstructor.evalAST(ast, unknown.head, assertions, inputTheory)
       Some (unknown.head, res)
     } else
       None
+    None
   }
   
   def numUndefValues(candidateModel : Model, ast : AST) : Int = {
-    val unassigned = ast.children.filterNot(candidateModel.contains(_))
+//    /println("Children \n\t")
+//    var unassigned = 0
+//    for (c <- ast.children) {
+//      if (candidateModel.contains(c)) 
+//        println("\t" + c + " already present in candidate model with " + candidateModel(c))
+//      else {
+//        println("\t" + c + " not present in candidate model")
+//        unassigned += 1
+//      } 
+//    }
+    val unassigned = ast.iterator.toList.filter((x:AST) => (x.children.length == 0) && !candidateModel.contains(x))
     unassigned.length      
   }
   
@@ -141,9 +143,14 @@ trait FixpointReconstruction extends ApproximationCore {
   def fixPointBasedReconstruction(ast : AST, decodedModel : Model) : Model = {
     val candidateModel = new Model()  
     val atoms = retrieveCriticalAtoms(decodedModel)(ast)
-    val vars = atoms.iterator.filter(_.isVariable)
+    val terms = atoms.map(_.iterator.toList).flatten 
+    val vars = terms.filter(_.isVariable).toSet.toList
     
-    debug("Vars \n" + vars.mkString("\n "))
+    verbose("Starting fixpoint reconstruction")
+    verbose("Atoms(" + atoms.length + "):\n\t" + atoms.mkString("\n\t"))
+    verbose("Vars(" + vars.length + "):\n\t" + vars.mkString("\n\t"))
+    
+    
     
     initializeCandidateModel(atoms, decodedModel, candidateModel)
     
@@ -153,29 +160,40 @@ trait FixpointReconstruction extends ApproximationCore {
     var iteration = 0
     while (! done) {
       iteration += 1
-      verbose("Patching iteration " + iteration)
-      val toVerify = atoms.filter { x => numUndefValues(candidateModel, x) == 0 }
+      verbose("=============================\nPatching iteration " + iteration)
       
-      val implications = atoms.filter { x => numUndefValues(candidateModel, x) == 1 }
-      verbose(implications.mkString(", "))
+      
+      val implications = atoms.filter { x => x.children.length > 0 && numUndefValues(candidateModel, x) == 1 }
+      verbose("Implications(" + implications.length + "):\n\t" + implications.mkString("\n\t"))
       
       changed = false
       for (i <- implications) {
-        getImplication(candidateModel, i) match {
+        val imp = getImplication(candidateModel, i) 
+        verbose("Chosen - " + imp)
+        imp match {
           case Some((node, value)) => {
+            verbose("Adding " + node + " -> " + value)
             candidateModel.set(node, value)
             changed = true
           }
-          case None => ()
+          case None => {
+            if (! candidateModel.contains(ast)) {
+              candidateModel.set(ast, decodedModel(ast))
+              changed = true
+            }
+          }
         }
       }
       
       if (!changed) {
+         verbose("No implications ... ")
          val undefVars = vars.filterNot(candidateModel.contains(_)).toList
          if (undefVars.isEmpty) {
+           verbose("No undefined variables ...\n Done satisfying critical atoms.")
            done = true
          } else {
            val chosen =  chooseVar(atoms, undefVars)
+           verbose("Copying from decoded model " + chosen + " -> " + decodedModel(chosen))
            candidateModel.set(chosen, decodedModel(chosen))
          }
            
@@ -188,7 +206,7 @@ trait FixpointReconstruction extends ApproximationCore {
       }
       candidateModel
     }
-    
+    verbose("Completing the model")
     AST.postVisit(ast, candidateModel, decodedModel, copyFromDecodedModelIfNotSet)
     candidateModel
   }
