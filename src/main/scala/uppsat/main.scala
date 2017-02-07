@@ -25,6 +25,7 @@ object globalOptions {
   var DEBUG = false
   var DEADLINE : Option[Long] = None
   var STARTTIME : Option[Long] = None
+  var PARANOID = false
 
   def verbose(str : String) = {
     if (globalOptions.VERBOSE) {
@@ -125,6 +126,8 @@ object main {
         case "-v" => globalOptions.VERBOSE = true
                      
         case "-d" => globalOptions.DEBUG = true
+        
+        case "-p" => globalOptions.PARANOID =  true
         
         case timeoutPattern(t) =>   globalOptions.DEADLINE = Some(t.toInt * 1000)
                      

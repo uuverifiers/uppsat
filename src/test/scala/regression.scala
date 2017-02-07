@@ -5,6 +5,8 @@ import scala.io.Source
 import uppsat.ApproximationSolver.Sat
 import uppsat.ApproximationSolver.Unsat
 import uppsat.ApproximationSolver.Unknown
+import uppsat.globalOptions
+import uppsat.globalOptions._
 
 class Regression extends FunSpec {
   // tests go here...
@@ -15,7 +17,8 @@ class Regression extends FunSpec {
     }
   }
    
-   uppsat.globalOptions.DEADLINE = Some(20000l)
+   globalOptions.DEADLINE = Some(20000l)
+   globalOptions.PARANOID = true
    
    val satSources = new File(getClass.getResource("/sat/").toURI())
    val satFiles = getListOfFiles(satSources, List(".smt2"))
