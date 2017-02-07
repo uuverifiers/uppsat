@@ -26,7 +26,12 @@ object globalOptions {
   var DEADLINE : Option[Long] = None
   var STARTTIME : Option[Long] = None
   var PARANOID = false
-
+  val REG_APPROXS = List(new PostOrderNodeBasedApproximation(IJCARSmallFloatsApp),
+                            new FxPointReconApproximation(FxPntSmallFloatsApp))
+  var chosenApproximation = 1
+  
+  def getApproximation = REG_APPROXS(chosenApproximation)
+  
   def verbose(str : String) = {
     if (globalOptions.VERBOSE) {
       println(str)
@@ -121,13 +126,16 @@ object main {
     
     for (a <- args) yield {
       val timeoutPattern = "-t=([0-9.]+)".r
-      
+      val appPattern = "-a=([0-9.])".r
       a match {
+        
         case "-v" => globalOptions.VERBOSE = true
                      
         case "-d" => globalOptions.DEBUG = true
         
         case "-p" => globalOptions.PARANOID =  true
+        
+        case appPattern(i) => globalOptions.chosenApproximation = i.toInt
         
         case timeoutPattern(t) =>   globalOptions.DEADLINE = Some(t.toInt * 1000)
                      

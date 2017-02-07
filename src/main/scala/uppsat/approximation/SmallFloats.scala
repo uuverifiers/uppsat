@@ -257,8 +257,14 @@ trait SmallFloatsRefinementStrategy extends SmallFloatsCore with ErrorBasedRefin
   } 
 }
 
-object SmallFloatsApp extends SmallFloatsCore with SmallFloatsCodec
-                                              with SmallFloatsReconstructor
-                                              with SmallFloatsRefinementStrategy {
+object IJCARSmallFloatsApp extends SmallFloatsCore 
+                              with SmallFloatsCodec
+                              with SmallFloatsReconstructor
+                              with SmallFloatsRefinementStrategy {
 }
 
+object FxPntSmallFloatsApp extends SmallFloatsCore 
+                              with SmallFloatsCodec
+                              with FixpointReconstruction
+                              with SmallFloatsRefinementStrategy {
+}
