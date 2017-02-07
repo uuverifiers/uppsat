@@ -15,12 +15,15 @@ class Regression extends FunSpec {
     }
   }
    
+   uppsat.globalOptions.DEADLINE = Some(20000l)
+   
    val satSources = new File(getClass.getResource("/sat/").toURI())
    val satFiles = getListOfFiles(satSources, List(".smt2"))
    
+   
    describe("SAT : " ) {
      for (f <- satFiles) {
-         val args =  Array(f.toString(), "-t=60")
+         val args =  Array(f.toString())
          val result = uppsat.main.main_aux(args)
          result match {
            case _ : Sat => 
@@ -39,7 +42,7 @@ class Regression extends FunSpec {
    
     describe("UNSAT : " ) {
      for (f <- unsatFiles) {
-         val args =  Array(f.toString(), "-t=60")
+         val args =  Array(f.toString())
          val result = uppsat.main.main_aux(args)
          result match {
            case _ : Sat => 

@@ -24,6 +24,7 @@ object globalOptions {
   var VERBOSE = false
   var DEBUG = false
   var DEADLINE : Option[Long] = None
+  var STARTTIME : Option[Long] = None
 
   def verbose(str : String) = {
     if (globalOptions.VERBOSE) {
@@ -40,7 +41,7 @@ object globalOptions {
   def checkTimeout : Boolean = {
     DEADLINE match {
       case None => true
-      case Some(t) => Timer.ElapsedTime < t
+      case Some(t) => System.currentTimeMillis() - STARTTIME.get < t
     }
   }
 }
@@ -115,7 +116,8 @@ object main {
       import java.io._
     import scala.collection.JavaConversions._
     
-    globalOptions.DEADLINE = Some(60000000000l)
+    globalOptions.STARTTIME = Some(System.currentTimeMillis())
+    
     for (a <- args) yield {
       val timeoutPattern = "-t=([0-9.]+)".r
       
@@ -124,7 +126,7 @@ object main {
                      
         case "-d" => globalOptions.DEBUG = true
         
-        case timeoutPattern(t) => globalOptions.DEADLINE = Some(t.toInt * 1000000000)
+        case timeoutPattern(t) =>   globalOptions.DEADLINE = Some(t.toInt * 1000)
                      
         case _ => ()
       }
