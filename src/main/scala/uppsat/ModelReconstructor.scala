@@ -44,6 +44,9 @@ object ModelReconstructor {
         throw new Exception("Reassigning  a model value")
       }
       
+      if (ast.symbol.sort != ast.symbol.sort)
+        throw new Exception("Model is not typed corectly! " + ast.symbol + " / " + value.symbol)
+      
       ast match {
         case AST(symbol, path, children) => {
           symbol match {
@@ -97,7 +100,7 @@ object ModelReconstructor {
   
   def startOnlineSolver() = {
     onlineSolver = Some(new Z3OnlineSolver)
-    onlineSolver.get.evaluate("(check-sat)\n(eval true)\n")    
+    onlineSolver.get.asInstanceOf[Z3OnlineSolver].init
   }
   
   
@@ -131,7 +134,7 @@ object ModelReconstructor {
     ast.symbol.sort.theory.parseLiteral(answer.trim())    
   }
   
-  def evalAST(ast : AST, answer : ConcreteFunctionSymbol, assignments : List[(ConcreteFunctionSymbol, AST)], theory : Theory) : AST = {
+  def evalAST(ast : AST, answer : ConcreteFunctionSymbol, assignments : List[(ConcreteFunctionSymbol, AST)], theory : Theory) : Option[AST] = {
     if (onlineSolver.isEmpty)
       startOnlineSolver()
     else
@@ -140,7 +143,10 @@ object ModelReconstructor {
     val translator = new SMTTranslator(theory)
     val formula = translator.evaluateSubformula(ast, answer, assignments)
     val res = onlineSolver.get.evaluate(formula)
-    answer.sort.theory.parseLiteral(res.trim())    
+    res match {
+      case "sat" | "unsat" => None
+      case _ => Some (answer.sort.theory.parseLiteral(res.trim()))
+    }        
   }
   
   def getValue(constraint : AST, unknown: AST, theory : Theory) : AST = {

@@ -93,19 +93,26 @@ trait FixpointReconstruction extends ApproximationCore {
           (v.symbol, candidateModel(v))
       }
     
-    val unknown = vars.filterNot(candidateModel.contains(_)).map(_.symbol).distinct
+    val unknown = vars.filterNot(candidateModel.contains(_)).map(x => (x.symbol, x)).toMap
     
     
-    if (unknown.length > 1) 
+    if (unknown.size > 1) 
       throw new Exception("getImplication assumes at most one unknown" + unknown.mkString(", "))
     
     
-    if (unknown.length == 1) {
-      val res = ModelReconstructor.evalAST(ast, unknown.head, assertions, inputTheory)
-      Some (unknown.head, res)
+    if (unknown.size == 1) {
+      println("Getting implication")
+      ast.prettyPrint("")
+      println(assertions.mkString(","))
+      println("Unknown " + unknown.keys.head)
+      val result = ModelReconstructor.evalAST(ast, unknown.keys.head, assertions, inputTheory)
+      result match {
+        case Some(res) => Some ((unknown.values.head, res))
+        case None => None
+      }
     } else
       None
-    None
+    
   }
   
   def numUndefValues(candidateModel : Model, ast : AST) : Int = {
@@ -164,10 +171,11 @@ trait FixpointReconstruction extends ApproximationCore {
       
       
       val implications = atoms.filter { x => x.children.length > 0 && numUndefValues(candidateModel, x) == 1 }
-      verbose("Implications(" + implications.length + "):\n\t" + implications.mkString("\n\t"))
+      verbose("Implications(" + implications.length + "):\n\t")
+      implications.map(_.prettyPrint("\t"))
       
       changed = false
-      for (i <- implications) {
+      for (i <- implications if !changed)  {
         val imp = getImplication(candidateModel, i) 
         verbose("Chosen - " + imp)
         imp match {
@@ -177,10 +185,10 @@ trait FixpointReconstruction extends ApproximationCore {
             changed = true
           }
           case None => {
-            if (! candidateModel.contains(ast)) {
-              candidateModel.set(ast, decodedModel(ast))
-              changed = true
-            }
+//            if (! candidateModel.contains(ast)) {
+//              candidateModel.set(ast, decodedModel(ast))
+//              changed = true
+//            }
           }
         }
       }

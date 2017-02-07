@@ -26,7 +26,7 @@ object globalOptions {
   var DEADLINE : Option[Long] = None
   var STARTTIME : Option[Long] = None
   var PARANOID = false
-  val REG_APPROXS = List(new PostOrderNodeBasedApproximation(IJCARSmallFloatsApp),
+  val REG_APPROXS = List(   new PostOrderNodeBasedApproximation(IJCARSmallFloatsApp),
                             new FxPointReconApproximation(FxPntSmallFloatsApp))
   var chosenApproximation = 1
   

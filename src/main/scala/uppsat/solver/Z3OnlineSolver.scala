@@ -30,6 +30,23 @@ class Z3OnlineSolver extends SMTSolver {
   val stderr = process.getErrorStream ()
   val stdout = process.getInputStream () 
   
+  
+  def init() = {
+    stdin.write("(check-sat)\n".getBytes());
+    stdin.flush();
+    var result : Option[String] = None    
+    var line = None : Option[String]
+    val outReader = new BufferedReader(new InputStreamReader (stdout))
+    val satPattern = "sat".r
+    while (result.isEmpty) {
+      line = Option(outReader.readLine())
+      line.get match { 
+        case satPattern() => result = Some ("sat")
+      }    
+    }
+    result.get
+  }
+  
   def evaluate(formula : String) = Timer.measure("Z3OnlineSolver.runSolver") {
     z3print("Evaluating: " + formula)    
     stdin.write((formula + "\n").getBytes());
@@ -38,14 +55,17 @@ class Z3OnlineSolver extends SMTSolver {
     val outReader = new BufferedReader(new InputStreamReader (stdout))
     var result = None : Option[String]    
 
-    val satPattern = "sat".r
     val errorPattern = ".*error.*".r
-
+    val satPattern = "sat".r
+    val unsatPattern = "unsat".r
+    
     var line = None : Option[String]
     while (result.isEmpty) {
       line = Option(outReader.readLine())
       line.get match { 
-        case satPattern() => () // Skip over the sat result of the empty check-sat call when interactive mode is initialized
+        case satPattern() => () // Ingore sat
+        case unsatPattern() => result = Some("unsat") //HACK! Make this polite!!!!!
+                               outReader.readLine() 
         case errorPattern() => 
           println(formula)
           throw new Exception("Z3 error: " + line.get)
