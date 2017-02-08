@@ -92,14 +92,13 @@ class Z3OnlineSolver extends SMTSolver {
     Some(model)
   }
   
-  def getModel(formula : String, extractSymbols : List[String]) = {
+  def getStringModel(formula : String, extractSymbols : List[String]) = {
     val extendedFormula = formula + (extractSymbols.map("(eval " + _ + ")").mkString("\n", "\n", ""))
     val result = evaluate(extendedFormula)
     parseOutput(result, extractSymbols).get    
   }
   
-  def solve(formula : String) : Boolean = {
-    //reset
+  def checkSat(formula : String) : Boolean = {
     val result = evaluate(formula)  
     val retVal = result.split("\n").head.trim()
     retVal match {
@@ -109,6 +108,7 @@ class Z3OnlineSolver extends SMTSolver {
     }
   }
 
+  //Not used by the online solver
   def getAnswer(formula : String) : String = {
     val result = evaluate(formula)  
     val retVal = result.split("\n")

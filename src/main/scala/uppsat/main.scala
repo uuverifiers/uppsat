@@ -28,7 +28,7 @@ object globalOptions {
   var PARANOID = false
   val REG_APPROXS = List(   new PostOrderNodeBasedApproximation(IJCARSmallFloatsApp),
                             new FxPointReconApproximation(FxPntSmallFloatsApp))
-  var chosenApproximation = 1
+  var chosenApproximation = 0
   
   def getApproximation = REG_APPROXS(chosenApproximation)
   

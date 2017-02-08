@@ -64,7 +64,7 @@ object ApproximationSolver {
     var iterations = 0
     
     def tryReconstruct(encodedSMT : String) : (Option[ExtModel], Option[PrecisionMap[approximation.P]]) = Timer.measure("tryReconstruct") {
-      val stringModel = Z3Solver.getModel(encodedSMT, translator.getDefinedSymbols.toList)
+      val stringModel = Z3Solver.getStringModel(encodedSMT, translator.getDefinedSymbols.toList)
       val appModel = translator.getModel(formula, stringModel)
       
       debug("Approximate model: " + appModel.getAssignmentsFor(formula).mkString("\n\t") + "\n")
@@ -118,12 +118,13 @@ object ApproximationSolver {
 
       verbose(encodedSMT)
       
-      if (Z3Solver.solve(encodedSMT)) {
+      if (Z3Solver.checkSat(encodedSMT)) {
         val (extModel, newPMap) = tryReconstruct(encodedSMT)
         (extModel, newPMap) match {
           case (Some(model), _) => return Sat(model)
           case (_, Some(p)) => pmap = pmap.merge(p)
-          case (_, None) => throw new Exception("Loop ???")
+          case (_, None) => verbose("Reconstruction yielded unknown results")
+                            pmap = approximation.unsatRefine(formula, List(), pmap)
         }          
       } else {
         if (pmap.isMaximal) {

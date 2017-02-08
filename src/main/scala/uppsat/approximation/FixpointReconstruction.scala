@@ -199,12 +199,7 @@ trait FixpointReconstruction extends ApproximationCore {
             candidateModel.set(node, value)
             changed = true
           }
-          case None => {
-//            if (! candidateModel.contains(ast)) {
-//              candidateModel.set(ast, decodedModel(ast))
-//              changed = true
-//            }
-          }
+          case None => ()
         }
       }
       
@@ -223,15 +218,25 @@ trait FixpointReconstruction extends ApproximationCore {
            val chosen =  chooseVar(atoms, undefVars)
            verbose("Copying from decoded model " + chosen + " -> " + decodedModel(chosen))
            candidateModel.set(chosen, decodedModel(chosen))
-         }
-           
+         }           
       }
     }
     
+    verbose("Completing the model")
+    AST.postVisit(ast, candidateModel, decodedModel, copyFromDecodedModelIfNotSet)
     
-
-
-  def evaluateNode( decodedModel  : Model, candidateModel : Model, ast : AST) : Model = {
+    val assignments = candidateModel.getAssignmentsFor(ast)
+    
+    if (ModelReconstructor.valAST(ast, assignments.toList, inputTheory, Z3Solver)) {
+      candidateModel
+    } else {
+      val newModel = new Model()
+      AST.postVisit(ast, newModel, decodedModel, evaluateNode)
+      newModel
+    }  
+  }
+ 
+    def evaluateNode( decodedModel  : Model, candidateModel : Model, ast : AST) : Model = {
     val AST(symbol, label, children) = ast
     
     if (!candidateModel.contains(ast)) {
@@ -259,7 +264,8 @@ trait FixpointReconstruction extends ApproximationCore {
     candidateModel  
     
   }
-    def getCurrentValue(ast : AST, decodedModel : Model, candidateModel : Model) : AST = {
+    
+  def getCurrentValue(ast : AST, decodedModel : Model, candidateModel : Model) : AST = {
       if (! candidateModel.contains(ast)) {
             candidateModel.set(ast, decodedModel(ast))
       } 
@@ -272,9 +278,4 @@ trait FixpointReconstruction extends ApproximationCore {
       }
       candidateModel
     }
-    verbose("Completing the model")
-    AST.postVisit(ast, candidateModel, decodedModel, copyFromDecodedModelIfNotSet)
-    candidateModel
-  }
-  
 }

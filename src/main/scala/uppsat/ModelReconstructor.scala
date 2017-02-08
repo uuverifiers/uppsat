@@ -117,7 +117,7 @@ object ModelReconstructor {
     val smtVal = translator.translate(ast, false, assignments)
     debug("valAST...")
     debug(smtVal)
-    val result = solver.solve(smtVal)
+    val result = solver.checkSat(smtVal)
     debug("\t" + result)
     result
   }
