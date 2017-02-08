@@ -65,8 +65,7 @@ class Z3OnlineSolver extends SMTSolver {
       line = Option(outReader.readLine())
       line.get match { 
         case satPattern() => () // Ingore sat
-        case unsatPattern() => result = Some("unsat") //HACK! Make this polite!!!!!
-                               outReader.readLine() 
+        case unsatPattern() => result = Some("unsat") //HACK! Make this polite!!!!! 
         case errorPattern() => 
           println(formula)
           throw new Exception("Z3 error: " + line.get)
