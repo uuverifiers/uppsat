@@ -14,7 +14,7 @@ class Z3OnlineException(msg : String) extends Exception("Z3 error: " + msg)
 // Starts process at 
 
 class Z3OnlineSolver extends SMTSolver {
-  var silent = false
+  var silent = true
   
   def setSilent(b : Boolean) = {
     silent = b
@@ -37,7 +37,7 @@ class Z3OnlineSolver extends SMTSolver {
     feedInput(f)
     val r = catchOutput(f) 
     r match { 
-      case Some("sat") => println("Init caught sat")
+      case Some("sat") => ()
       case _ => throw new Exception("Empty check-sat failed to return sat : " + r)
     }
   }
@@ -49,7 +49,6 @@ class Z3OnlineSolver extends SMTSolver {
   }
   
   def catchOutput(formula : String) = {
-    
     var result = None : Option[String]    
 
     val errorPattern = ".*error.*".r
@@ -61,8 +60,6 @@ class Z3OnlineSolver extends SMTSolver {
     while (result.isEmpty) {
       z3print(".")
       line = Option(outReader.readLine())
-      z3print(".")
-      println(line)
       line.get match {
         case errorPattern() => 
           println(formula)
@@ -77,6 +74,7 @@ class Z3OnlineSolver extends SMTSolver {
     evaluate(formula, List()).head
   }
   
+  // Assumes a check-sat call has already been made
   def evalSymbol( symbol : ConcreteFunctionSymbol) = {
     val formula = "(eval " + symbol + ")" 
     feedInput(formula)
@@ -92,8 +90,7 @@ class Z3OnlineSolver extends SMTSolver {
   }
     
   def evaluate(formula : String, answers : List[ConcreteFunctionSymbol] = List()) : List[String] = Timer.measure("Z3OnlineSolver.runSolver") {
-    init
-    z3print("Evaluating: \n" + formula)    
+    reset      
     feedInput(formula)
     catchOutput(formula) match {
       case Some("sat") => answers.map(evalSymbol(_)).collect { case Some(x) => x }

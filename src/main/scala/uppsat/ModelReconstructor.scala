@@ -130,7 +130,7 @@ object ModelReconstructor {
     
     val translator = new SMTTranslator(theory)
     val formula = translator.evaluate(ast)
-    val answer = onlineSolver.get.evaluate(formula)
+    val answer = onlineSolver.get.asInstanceOf[Z3OnlineSolver].evaluateExpression(formula)
     ast.symbol.sort.theory.parseLiteral(answer.trim())    
   }
   
@@ -141,7 +141,7 @@ object ModelReconstructor {
       resetOnlineSolver()
     
     val translator = new SMTTranslator(theory)
-    val formula = translator.formulaWithAssertions(ast, answer, assignments)
+    val formula = translator.evaluateSubformula(ast, answer, assignments)
      
     val res = onlineSolver.get.asInstanceOf[Z3OnlineSolver].evaluate(formula, List(answer))
     if (!res.isEmpty)
