@@ -7,13 +7,14 @@ import uppsat.solver._
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import uppsat.Timer
+import uppsat.ast.ConcreteFunctionSymbol
 
 class Z3OnlineException(msg : String) extends Exception("Z3 error: " + msg)
 
 // Starts process at 
 
 class Z3OnlineSolver extends SMTSolver {
-  var silent = true
+  var silent = false
   
   def setSilent(b : Boolean) = {
     silent = b
@@ -29,56 +30,80 @@ class Z3OnlineSolver extends SMTSolver {
   val stdin = process.getOutputStream ()
   val stderr = process.getErrorStream ()
   val stdout = process.getInputStream () 
-  
+  val outReader = new BufferedReader(new InputStreamReader (stdout))
   
   def init() = {
-    stdin.write("(reset)\n(check-sat)\n".getBytes());
-    stdin.flush();
-    var result : Option[String] = None    
-    var line = None : Option[String]
-    val outReader = new BufferedReader(new InputStreamReader (stdout))
-    val satPattern = "sat".r
-    while (result.isEmpty) {
-      line = Option(outReader.readLine())
-      line.get match { 
-        case satPattern() => result = Some ("sat")
-      }    
+    val f = "(reset)\n(check-sat)\n"
+    feedInput(f)
+    val r = catchOutput(f) 
+    r match { 
+      case Some("sat") => println("Init caught sat")
+      case _ => throw new Exception("Empty check-sat failed to return sat : " + r)
     }
-    result.get
   }
   
-  def evaluate(formula : String) = Timer.measure("Z3OnlineSolver.runSolver") {
-    init
-    z3print("Evaluating: " + formula)    
-    stdin.write((formula + "\n").getBytes());
-    stdin.flush();    
+  def feedInput(f : String) = {
+    z3print("Sending ... \n" + f)
+    stdin.write((f+"\n").getBytes());
+    stdin.flush();
+  }
+  
+  def catchOutput(formula : String) = {
     
-    val outReader = new BufferedReader(new InputStreamReader (stdout))
     var result = None : Option[String]    
 
     val errorPattern = ".*error.*".r
     val satPattern = "sat".r
     val unsatPattern = "unsat".r
     
+    z3print("Collecting output ")
     var line = None : Option[String]
     while (result.isEmpty) {
+      z3print(".")
       line = Option(outReader.readLine())
-      line.get match { 
-        case satPattern() => () // Ingore sat
-        case unsatPattern() => result = Some("unsat") //HACK! Make this polite!!!!! 
+      z3print(".")
+      println(line)
+      line.get match {
         case errorPattern() => 
           println(formula)
           throw new Exception("Z3 error: " + line.get)
         case other => result = Some(other)
       }    
     }
-    result.get
+    result
+  }
+  
+  def evaluate(formula : String) : String = {
+    evaluate(formula, List()).head
+  }
+  
+  def evalSymbol( symbol : ConcreteFunctionSymbol) = {
+    val formula = "(eval " + symbol + ")" 
+    feedInput(formula)
+    catchOutput(formula)
+  }
+  
+  // Evaluation of a an expression, should always result in a value
+  def evaluateExpression(expression : String) = Timer.measure("Z3OnlineSolver.runSolver") {
+    init
+    z3print("Evaluating: \n" + expression)    
+    feedInput(expression)
+    catchOutput(expression).get 
+  }
+    
+  def evaluate(formula : String, answers : List[ConcreteFunctionSymbol] = List()) : List[String] = Timer.measure("Z3OnlineSolver.runSolver") {
+    init
+    z3print("Evaluating: \n" + formula)    
+    feedInput(formula)
+    catchOutput(formula) match {
+      case Some("sat") => answers.map(evalSymbol(_)).collect { case Some(x) => x }
+      case Some("unsat") => List()
+    }
   }
 
   
   def reset = {    
-    stdin.write(("(reset)\n").getBytes());
-    stdin.flush();
+    feedInput("(reset)\n")
   }
   
   def parseOutput(output : String, extractSymbols : List[String]) : Option[Map[String, String]] = {
@@ -116,6 +141,7 @@ class Z3OnlineSolver extends SMTSolver {
       case str => throw new Exception("Unexpected sat/unsat result: " + str)
     }
   }
+  
   
   def stopSolver() = {
     process.destroy()

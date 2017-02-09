@@ -141,12 +141,13 @@ object ModelReconstructor {
       resetOnlineSolver()
     
     val translator = new SMTTranslator(theory)
-    val formula = translator.evaluateSubformula(ast, answer, assignments)
-    val res = onlineSolver.get.evaluate(formula)
-    res match {
-      case "sat" | "unsat" => None
-      case _ => Some (answer.sort.theory.parseLiteral(res.trim()))
-    }        
+    val formula = translator.formulaWithAssertions(ast, answer, assignments)
+     
+    val res = onlineSolver.get.asInstanceOf[Z3OnlineSolver].evaluate(formula, List(answer))
+    if (!res.isEmpty)
+      Some (answer.sort.theory.parseLiteral(res.head.trim()))
+    else
+      None        
   }
   
   def getValue(constraint : AST, unknown: AST, theory : Theory) : AST = {

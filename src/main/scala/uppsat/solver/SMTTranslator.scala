@@ -81,12 +81,13 @@ class SMTTranslator(theory : Theory) {
     footer
   }
   
+  
   //Used by Fixpoint approximation
   def evaluateSubformula(ast : AST, answer : ConcreteFunctionSymbol, assignments : List[(ConcreteFunctionSymbol, AST)]) : String = {
     val strAssignments = for ((sym, value) <- assignments) yield {
       (sym.toString(), value.symbol.theory.toSMTLib(value.symbol))
     }
-    translate(ast, false, strAssignments, true) + "(eval " + answer + ")"    
+    translate(ast, false, strAssignments, true)     
   }
   
   def evalExpression(ast : AST, answer : AST, assignments : List[(ConcreteFunctionSymbol, AST)] = List()) : String = {
