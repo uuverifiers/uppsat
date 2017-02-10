@@ -39,7 +39,11 @@ class FxPointReconApproximation(val appCore : ApproximationCore
   }
   
   def reconstruct(ast : AST, decodedModel : Model) : Model = {
-    appCore.fixPointBasedReconstruction(ast, decodedModel)
+    val oldVerbose = uppsat.globalOptions.VERBOSE
+    uppsat.globalOptions.VERBOSE = true
+    val res = appCore.fixPointBasedReconstruction(ast, decodedModel)
+    uppsat.globalOptions.VERBOSE = oldVerbose
+    res
   }
   
   def satRefine(ast : AST, decodedModel : Model, failedModel : Model, pmap : PrecisionMap[P]) : PrecisionMap[P] = {

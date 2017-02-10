@@ -130,7 +130,7 @@ object ModelReconstructor {
     
     val translator = new SMTTranslator(theory)
     val formula = translator.evaluate(ast)
-    val answer = onlineSolver.get.evaluate(formula)
+    val answer = onlineSolver.get.asInstanceOf[Z3OnlineSolver].evaluateExpression(formula)
     ast.symbol.sort.theory.parseLiteral(answer.trim())    
   }
   
@@ -142,11 +142,12 @@ object ModelReconstructor {
     
     val translator = new SMTTranslator(theory)
     val formula = translator.evaluateSubformula(ast, answer, assignments)
-    val res = onlineSolver.get.evaluate(formula)
-    res match {
-      case "sat" | "unsat" => None
-      case _ => Some (answer.sort.theory.parseLiteral(res.trim()))
-    }        
+     
+    val res = onlineSolver.get.asInstanceOf[Z3OnlineSolver].evaluate(formula, List(answer))
+    if (!res.isEmpty)
+      Some (answer.sort.theory.parseLiteral(res.head.trim()))
+    else
+      None        
   }
   
   def getValue(constraint : AST, unknown: AST, theory : Theory) : AST = {
