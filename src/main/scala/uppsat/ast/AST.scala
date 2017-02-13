@@ -115,6 +115,20 @@ case class AST(val symbol : ConcreteFunctionSymbol, val label : Label, val child
     
   def prettyPrint : Unit =
     prettyPrint("")
+  
+  def getSMT() = {
+      symbol.theory.toSMTLib(symbol)
+  }
+  
+  def simpleString() : String = {
+    
+    children.length match {
+      case 0 => getSMT() 
+      case 1 => getSMT() + " " + children(0).simpleString() + " "
+      case 2 => children(0).simpleString() + " " + getSMT() + " " + children(1).simpleString()
+      case _ => getSMT() + " " + children.map(_.getSMT()).mkString(" ") + " "
+    }
+  }
     
   def prettyPrint(indent : String) : Unit = {
     val newIndent = indent + "   "

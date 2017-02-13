@@ -33,6 +33,13 @@ import uppsat.globalOptions
 import uppsat.globalOptions._
 import uppsat.solver.Z3Solver
 import uppsat.theory.BooleanTheory.BooleanConstant
+import uppsat.theory.FloatingPointTheory.RoundingModeEquality
+import scala.collection.mutable.ArrayStack
+import scala.collection.mutable.Leaf
+import scala.collection.mutable.Queue
+import uppsat.theory.FloatingPointTheory.FPPredicateSymbol
+import scala.collection.mutable.ArrayBuffer
+import uppsat.theory.FloatingPointTheory.RoundingModeSort
 
 trait FixpointReconstruction extends ApproximationCore {
   
@@ -108,10 +115,7 @@ trait FixpointReconstruction extends ApproximationCore {
     
     
     if (unknown.size == 1) {
-      println("Getting implication")
-      ast.prettyPrint("")
-      println(assertions.mkString(","))
-      println("Unknown " + unknown.keys.head)
+      verbose("Implication of  " +  unknown.keys.head + "\n\t" + ast.simpleString())
       val result = ModelReconstructor.evalAST(ast, unknown.keys.head, assertions, inputTheory)
       result match {
         case Some(res) => Some ((unknown.values.head, res))
@@ -154,48 +158,199 @@ trait FixpointReconstruction extends ApproximationCore {
     undefVars.head
   }
   
-  def isPotentiallyUniqueImplication(ast : AST, polarity : Boolean) = {
+  def isDefinition(ast : AST, polarity : Boolean) = {
     (ast.symbol, polarity) match {
-      case (pred : FloatingPointPredicateSymbol, true) if pred.getFactory == FPEqualityFactory => true
+      case (pred : FloatingPointPredicateSymbol, true) 
+        if (pred.getFactory == FPEqualityFactory)  => {
+            if (ast.children(0).isVariable || ast.children(1).isVariable)
+              true
+            else
+              false
+        }
+      case (BoolEquality, true)
+      |    (RoundingModeEquality, true) =>
+        if (ast.children(0).isVariable || ast.children(1).isVariable)
+              true
+            else
+              false
       case _ => false
     }
   }
+  
+  def getDefinitions(ast : AST, polarity : Boolean) = {
+    (ast.symbol, polarity) match {
+      case (pred : FloatingPointPredicateSymbol, true) 
+        if (pred.getFactory == FPEqualityFactory)  =>
+            val left = if (ast.children(0).isVariable)   Some((ast.children(0), ast.children(1)))
+                       else None
+                          
+            val right = if (ast.children(1).isVariable)  Some((ast.children(1), ast.children(2)))
+                        else  None
+          
+            List(left, right)
+      case (BoolEquality, true)
+      |    (RoundingModeEquality, true) =>
+        val left = if (ast.children(0).isVariable)   Some((ast.children(0), ast.children(1)))
+                       else None
+                          
+        val right = if (ast.children(1).isVariable)  Some((ast.children(1), ast.children(2)))
+                    else  None
+      
+        List(left, right)
+      case _ => List()
+    }
+  }
+  
+  def isAtom(ast : AST) : Boolean = { 
+     ast.symbol.sort == BooleanSort && (ast.isVariable || !ast.children.map(_.symbol.sort).filterNot(_ == BooleanSort).isEmpty)
+  }
+  
+  def getBoolDefinitions(ast : AST, polarity : Boolean) : Option[(AST,AST)] = {
+    (ast.symbol, polarity) match {
+      case (BoolEquality, true) | (RoundingModeEquality, true) | (FPEqualityFactory(_), true) => { 
+        (if (ast.children(0).isVariable) Some((ast.children(0), ast)) else  None) orElse
+        (if (ast.children(1).isVariable) Some((ast.children(1), ast)) else  None)
+      }      
+      case _ => None
+    }
+  }
+  
+  def topLvlConjuncts(ast : AST) : Iterator[AST]= {
+    ast.symbol match {
+      case BoolConjunction | _ : NaryConjunction =>
+        for ( c <-  ast.children.iterator;
+              d <- topLvlConjuncts(c)) yield d 
+      //case (BoolNegation) => topLvlConjuncts(ast.children(0), !isPositive)
+      //case (BoolImplication) => throw new Exception("NYI Implication")
+      case _ => Iterator(ast)
+    }
+  }
+  
+  def criticalAtoms(formula : AST, decodedModel : Model, equalities : List[AST], definitions : List[(AST, AST)]) = {
+     var todo = new Queue[AST]()
+     todo.enqueue(formula)
+     
+     var criticalAtoms : List[AST] = List()
+     
+     while(!todo.isEmpty) {
+       val node = todo.dequeue()
+       
+       if (isAtom(node)) {
+           println("Critical " + node.simpleString())
+           criticalAtoms = node :: criticalAtoms
+       }
+       
+       if(node.isVariable) {
+         val  defs = definitions.filter(_._1 == node) 
+         for ((_,d) <- defs) { //There should be only 1 most often
+           println("Def " + d.simpleString())
+           for (a <- retrieveCriticalAtoms(decodedModel)(d) if !equalities.contains(a)){
+             println("Enq. " + a.simpleString())
+             todo.enqueue(a)        
+           }
+         }
+       } else {
+         for (a <- retrieveCriticalAtoms(decodedModel)(node) if !equalities.contains(a)) {
+             println("Enq. " + a.simpleString())
+             todo.enqueue(a)
+         }
+       }
+     }
+     
+    criticalAtoms
+  }
+  import uppsat.theory.FloatingPointTheory.FPSortFactory.FPSort
+  def sortComparison(s1 : Sort, s2 : Sort) = {
+    (s1, s2) match {      
+      case (BooleanSort, _) | (_, BooleanSort) => true
+      case (RoundingModeSort, _) | (_, RoundingModeSort) => true
+      case (FPSort(eb1, sb1), FPSort(eb2, sb2)) => eb1 + sb1 > eb2 + sb2
+      case (FPSort(_, _), _) | (_, FPSort(_, _)) => true
+    }
+  }
+  
   def fixPointBasedReconstruction(ast : AST, decodedModel : Model) : Model = {
     val candidateModel = new Model()  
-    val atoms = retrieveCriticalAtoms(decodedModel)(ast)
-    
-    val uniqueSolutions = atoms.filter((x : AST) => isPotentiallyUniqueImplication(x, decodedModel(x).symbol == BoolTrue))
-    val terms = atoms.map(_.iterator.toList).flatten 
-    val vars = terms.filter(_.isVariable).toSet.toList
-    
+   
     verbose("Starting fixpoint reconstruction")
-    verbose("Atoms(" + uniqueSolutions.length + "):\n\t" + uniqueSolutions.mkString("\n"))
-    verbose("Vars(" + vars.length + "):\n\t" + vars.mkString("\n\t"))
     
     
+    //val multipleSolutions = atoms.filterNot((x : AST) => isPotentiallyUniqueImplication(x, decodedModel(x).symbol == BoolTrue))
+//    val atoms = ast.iterator.toList.filter(_.symbol.sort == BooleanSort)//retrieveCriticalAtoms(decodedModel)(ast)
+//    verbose("Atoms(" + atoms.length + "):\n\t" + atoms.map(_.simpleString()).mkString("\n"))
+//    
+//    val definitionAtoms = atoms.filter( (x : AST) => isDefinition(x, decodedModel(x) == BoolTrue)) 
+//    verbose("Definitions(" +  definitionAtoms.length + ")\n\t" + definitionAtoms.mkString("\n\t"))
+//    val definitions = definitionAtoms.map((x : AST) => getBoolDefinitions(x, decodedModel(x) == BoolTrue)).flatten.collect{case Some(x) =>x }
+//    verbose("Defintion pairs : " + definitions.mkString("\n\t"))
+//    
+//    val terms = atoms.map(_.iterator.toList).flatten 
+//    val vars = terms.filter(_.isVariable).distinct
+//    //    verbose("Vars(" + vars.length + "):\n\t" + vars.map(_.symbol).mkString(", "))
+//    
+//    
+//    
+//    
+//    
+//    
+//    val critical = criticalAtoms(ast, decodedModel, definitionAtoms, definitions)
+//    verbose("Critical(" + critical.length + "):\n\t" + critical.map(_.simpleString()).mkString("\n"))
+
+    val (definitionAtoms, conjuncts) = topLvlConjuncts(ast).toList.partition { isDefinition(_, true) }
+    var definitions = for ( a <- definitionAtoms; b <- getBoolDefinitions(a, true)) yield b
     
-    initializeCandidateModel(atoms, decodedModel, candidateModel)
+    verbose("Definitons : " + definitions.mkString("\n"))
+    //initializeCandidateModel(atoms, decodedModel, candidateModel)
+    
+    //TODO: Remove duplicate definitions
+    
+    val critical = new ArrayBuffer[AST]
+    
+    var todo = new Queue[AST]
+    todo ++=  conjuncts
+    while (!todo.isEmpty) {
+      
+      for (c <- todo) {
+        critical ++= retrieveCriticalAtoms(decodedModel)(c)
+      }
+      todo.clear()
+      
+      val vars = (for (c <- critical.iterator;
+                       v <- c.iterator.filter(_.isVariable)) yield v.symbol).toSet
+      
+      verbose("Vars(" + vars.size + "):\n\t" + vars.mkString(", "))                       
+      val (toBeAdded, toKeep) = definitions.partition((p) => vars.contains(p._1.symbol))
+      todo ++= toBeAdded.map(_._2)
+      definitions = toKeep
+    }
+    
+    verbose("Critical " + critical.mkString("\n\t"))
+    
     
     //Fix-point computation
     var done = false
     var changed = false
     var iteration = 0
+    
+    val vars = (for (c <- critical.iterator;
+                       v <- c.iterator.filter(_.isVariable)) yield v.symbol).toList.sortWith((x,y) => sortComparison(x.sort, y.sort))
+                       
     while (! done) {
       iteration += 1
       verbose("=============================\nPatching iteration " + iteration)
       
       
-      val implications = uniqueSolutions.filter { x => x.children.length > 0 && numUndefValues(candidateModel, x) == 1 }
-      verbose("Implications(" + implications.length + "):\n\t")
-      implications.map(_.prettyPrint("\t"))
-      
+      val implications = critical.filter { x => x.children.length > 0 && numUndefValues(candidateModel, x) == 1 }
+      verbose("Implications(" + implications.length + "):")
+      verbose(implications.map(_.simpleString()).mkString("\n\t"))
+      verbose("**************************************************")
       changed = false
       for (i <- implications if !changed)  {
         val imp = getImplication(candidateModel, i) 
-        verbose("Chosen - " + imp)
+        
         imp match {
           case Some((node, value)) => {
-            verbose("Adding " + node + " -> " + value)
+            verbose("Inserting " + node.getSMT() + " -> " + value.getSMT())
             candidateModel.set(node, value)
             changed = true
           }
@@ -203,21 +358,24 @@ trait FixpointReconstruction extends ApproximationCore {
         }
       }
       
+      
+      // order 
       if (!changed) {
          verbose("No implications ... ")
-         val undefVars = vars.filterNot(candidateModel.contains(_)).toList
+         val undefVars = vars.filterNot(candidateModel.containsVariable(_)).toList
          if (undefVars.isEmpty) {
            verbose("No undefined variables ...\n Done satisfying critical atoms.")
            
-           val unevaluatedAtoms = atoms.filter { x => numUndefValues(candidateModel, x) > 0 }
+           val unevaluatedAtoms = critical.filter { x => numUndefValues(candidateModel, x) > 0 }
            for (a <- unevaluatedAtoms) {
              AST.postVisit(a, candidateModel, decodedModel, evaluateNode)
            }
            done = true
          } else {
-           val chosen =  chooseVar(atoms, undefVars)
-           verbose("Copying from decoded model " + chosen + " -> " + decodedModel(chosen))
-           candidateModel.set(chosen, decodedModel(chosen))
+           val chosen = undefVars.head
+           val chosenNode = AST(chosen,List(), List())
+           verbose("Copying from decoded model " + chosen + " -> " + decodedModel(chosenNode).getSMT())
+           candidateModel.set(chosenNode, decodedModel(chosenNode))
          }           
       }
     }

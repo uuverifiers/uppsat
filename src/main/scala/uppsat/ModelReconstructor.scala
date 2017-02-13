@@ -63,6 +63,9 @@ object ModelReconstructor {
       ()
     }
     
+    def containsVariable( symbol : ConcreteFunctionSymbol) : Boolean = {
+      variableValuation.contains(symbol)
+    }
     def contains(ast : AST) : Boolean = {
       ast match {
         case AST(symbol, path, children) => {

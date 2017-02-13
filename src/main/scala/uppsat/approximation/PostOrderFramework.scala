@@ -39,10 +39,10 @@ class FxPointReconApproximation(val appCore : ApproximationCore
   }
   
   def reconstruct(ast : AST, decodedModel : Model) : Model = {
-    val oldVerbose = uppsat.globalOptions.VERBOSE
-    uppsat.globalOptions.VERBOSE = true
+//    val oldVerbose = uppsat.globalOptions.VERBOSE
+//    uppsat.globalOptions.VERBOSE = true
     val res = appCore.fixPointBasedReconstruction(ast, decodedModel)
-    uppsat.globalOptions.VERBOSE = oldVerbose
+    //uppsat.globalOptions.VERBOSE = oldVerbose
     res
   }
   
