@@ -158,17 +158,17 @@ trait FixpointReconstruction extends ApproximationCore {
     undefVars.head
   }
   
-  def isDefinition(ast : AST, polarity : Boolean) = {
-    (ast.symbol, polarity) match {
-      case (pred : FloatingPointPredicateSymbol, true) 
+  def isDefinition(ast : AST) : Boolean = {
+    ast.symbol match {
+      case pred : FloatingPointPredicateSymbol 
         if (pred.getFactory == FPEqualityFactory)  => {
             if (ast.children(0).isVariable || ast.children(1).isVariable)
               true
             else
               false
         }
-      case (BoolEquality, true)
-      |    (RoundingModeEquality, true) =>
+      case BoolEquality
+      |    RoundingModeEquality =>
         if (ast.children(0).isVariable || ast.children(1).isVariable)
               true
             else
@@ -269,6 +269,10 @@ trait FixpointReconstruction extends ApproximationCore {
     }
   }
   
+  
+  def varToNode(variable : ConcreteFunctionSymbol) : AST = {
+    AST(variable, List(), List())
+  }
   def fixPointBasedReconstruction(ast : AST, decodedModel : Model) : Model = {
     val candidateModel = new Model()  
    
@@ -296,7 +300,7 @@ trait FixpointReconstruction extends ApproximationCore {
 //    val critical = criticalAtoms(ast, decodedModel, definitionAtoms, definitions)
 //    verbose("Critical(" + critical.length + "):\n\t" + critical.map(_.simpleString()).mkString("\n"))
 
-    val (definitionAtoms, conjuncts) = topLvlConjuncts(ast).toList.partition { isDefinition(_, true) }
+    val (definitionAtoms, conjuncts) = topLvlConjuncts(ast).toList.partition { isDefinition(_) }
     var definitions = for ( a <- definitionAtoms; b <- getBoolDefinitions(a, true)) yield b
     
     verbose("Definitons : " + definitions.mkString("\n"))
@@ -334,18 +338,22 @@ trait FixpointReconstruction extends ApproximationCore {
     
     val vars = (for (c <- critical.iterator;
                        v <- c.iterator.filter(_.isVariable)) yield v.symbol).toList.sortWith((x,y) => sortComparison(x.sort, y.sort))
+    
+    // Boolean variables can just be copied over
+    for (v <- vars if v.theory == BooleanTheory)
+      copyFromDecodedModelIfNotSet(decodedModel, candidateModel, varToNode(v))
                        
     while (! done) {
       iteration += 1
       verbose("=============================\nPatching iteration " + iteration)
       
       
-      val implications = critical.filter { x => x.children.length > 0 && numUndefValues(candidateModel, x) == 1 }
+      val implications = critical.filter { x => x.children.length > 0 && isDefinition(x) && numUndefValues(candidateModel, x) == 1 }
       verbose("Implications(" + implications.length + "):")
       verbose(implications.map(_.simpleString()).mkString("\n\t"))
       verbose("**************************************************")
       changed = false
-      for (i <- implications if !changed)  {
+      for (i <- implications if numUndefValues(candidateModel, i) == 1 )  {
         val imp = getImplication(candidateModel, i) 
         
         imp match {
