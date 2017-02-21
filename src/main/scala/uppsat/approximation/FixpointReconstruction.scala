@@ -40,6 +40,9 @@ import scala.collection.mutable.Queue
 import uppsat.theory.FloatingPointTheory.FPPredicateSymbol
 import scala.collection.mutable.ArrayBuffer
 import uppsat.theory.FloatingPointTheory.RoundingModeSort
+import scala.collection.mutable.HashMap
+import scala.collection.mutable.MultiMap
+import scala.collection.mutable.Set
 
 trait FixpointReconstruction extends ApproximationCore {
   
@@ -273,41 +276,11 @@ trait FixpointReconstruction extends ApproximationCore {
   def varToNode(variable : ConcreteFunctionSymbol) : AST = {
     AST(variable, List(), List())
   }
-  def fixPointBasedReconstruction(ast : AST, decodedModel : Model) : Model = {
-    val candidateModel = new Model()  
-   
-    verbose("Starting fixpoint reconstruction")
+  
+  def extractCriticalAtoms( ast : AST, decodedModel : Model) = {
     
-    
-    //val multipleSolutions = atoms.filterNot((x : AST) => isPotentiallyUniqueImplication(x, decodedModel(x).symbol == BoolTrue))
-//    val atoms = ast.iterator.toList.filter(_.symbol.sort == BooleanSort)//retrieveCriticalAtoms(decodedModel)(ast)
-//    verbose("Atoms(" + atoms.length + "):\n\t" + atoms.map(_.simpleString()).mkString("\n"))
-//    
-//    val definitionAtoms = atoms.filter( (x : AST) => isDefinition(x, decodedModel(x) == BoolTrue)) 
-//    verbose("Definitions(" +  definitionAtoms.length + ")\n\t" + definitionAtoms.mkString("\n\t"))
-//    val definitions = definitionAtoms.map((x : AST) => getBoolDefinitions(x, decodedModel(x) == BoolTrue)).flatten.collect{case Some(x) =>x }
-//    verbose("Defintion pairs : " + definitions.mkString("\n\t"))
-//    
-//    val terms = atoms.map(_.iterator.toList).flatten 
-//    val vars = terms.filter(_.isVariable).distinct
-//    //    verbose("Vars(" + vars.length + "):\n\t" + vars.map(_.symbol).mkString(", "))
-//    
-//    
-//    
-//    
-//    
-//    
-//    val critical = criticalAtoms(ast, decodedModel, definitionAtoms, definitions)
-//    verbose("Critical(" + critical.length + "):\n\t" + critical.map(_.simpleString()).mkString("\n"))
-
-    val (definitionAtoms, conjuncts) = topLvlConjuncts(ast).toList.partition { isDefinition(_) }
+    val (definitionAtoms, conjuncts) = topLvlConjuncts(ast).toList.partition(isDefinition(_))
     var definitions = for ( a <- definitionAtoms; b <- getBoolDefinitions(a, true)) yield b
-    
-    verbose("Definitons : " + definitions.mkString("\n"))
-    //initializeCandidateModel(atoms, decodedModel, candidateModel)
-    
-    //TODO: Remove duplicate definitions
-    
     val critical = new ArrayBuffer[AST]
     
     var todo = new Queue[AST]
@@ -322,13 +295,30 @@ trait FixpointReconstruction extends ApproximationCore {
       val vars = (for (c <- critical.iterator;
                        v <- c.iterator.filter(_.isVariable)) yield v.symbol).toSet
       
-      verbose("Vars(" + vars.size + "):\n\t" + vars.mkString(", "))                       
+      //verbose("Vars(" + vars.size + "):\n\t" + vars.mkString(", "))                       
       val (toBeAdded, toKeep) = definitions.partition((p) => vars.contains(p._1.symbol))
       todo ++= toBeAdded.map(_._2)
       definitions = toKeep
     }
+    (definitions, critical, conjuncts)
+  }
+  
+  def fixPointBasedReconstruction(ast : AST, decodedModel : Model) : Model = {
+    val candidateModel = new Model()  
+   
+    verbose("Starting fixpoint reconstruction")
+    val (definitions, critical, conjuncts) = extractCriticalAtoms(ast, decodedModel)    
+    verbose("Critical " + critical.mkString("\n\t"))    
+    verbose("Definitons : " + definitions.mkString("\n"))
     
-    verbose("Critical " + critical.mkString("\n\t"))
+    //TODO: Remove duplicate definitions
+    //TODO:  Cycle-breaking
+    
+    val varsToCritical = new HashMap[ConcreteFunctionSymbol, Set[AST]] with MultiMap[ConcreteFunctionSymbol, AST]
+    (for (c <- critical.iterator;
+          v <- c.iterator.filter(_.isVariable)) 
+          yield (v.symbol, c)).foldLeft(varsToCritical){(acc, pair) => acc.addBinding(pair._1, pair._2)}
+       
     
     
     //Fix-point computation
@@ -336,8 +326,7 @@ trait FixpointReconstruction extends ApproximationCore {
     var changed = false
     var iteration = 0
     
-    val vars = (for (c <- critical.iterator;
-                       v <- c.iterator.filter(_.isVariable)) yield v.symbol).toList.sortWith((x,y) => sortComparison(x.sort, y.sort))
+    val vars = varsToCritical.keys.toList.sortWith((x,y) => varsToCritical(x).size < varsToCritical(y).size)// sortComparison(x.sort, y.sort))
     
     // Boolean variables can just be copied over
     for (v <- vars if v.theory == BooleanTheory)
