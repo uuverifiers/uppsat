@@ -33,6 +33,7 @@ object Timer {
 
   private var startTime : Long = _
   private val runningOps = new Stack[String]
+  private var iterations = 0
 
   // accumulated time spent in each operation
   private val accumulatedTimes = new HashMap[String, Long] {
@@ -71,6 +72,11 @@ object Timer {
   def reset : Unit = {
     accumulatedTimes.clear
     callCounters.clear
+    iterations = 0
+  }
+  
+  def newIteration = { 
+    iterations +=1
   }
   
   def ElapsedTime = (0l /: accumulatedTimes.valuesIterator)(_ + _)
@@ -102,10 +108,10 @@ object Timer {
     
     val totalCalls = (0 /: callCounters.valuesIterator)(_ + _)
     
-  //val iterations = ":iterations " +  (totalCalls - 1)
+    val iter = ":iterations " + iterations 
     val total = ":time "  + totalTimeInSec + "s"
     
-    table + "\n" + total
+    table + "\n" + iter + "\n" +  total
   }
   
 }

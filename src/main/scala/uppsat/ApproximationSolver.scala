@@ -107,6 +107,7 @@ object ApproximationSolver {
        
    
     while (checkTimeout) {
+      Timer.newIteration
       iterations += 1
       verbose("-----------------------------------------------")
       verbose("Starting iteration " + iterations)
