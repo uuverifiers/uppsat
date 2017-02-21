@@ -129,19 +129,14 @@ trait FixpointReconstruction extends ApproximationCore {
     
   }
   
+  
+  //undefinedVariables.Length
   def numUndefValues(candidateModel : Model, ast : AST) : Int = {
-//    /println("Children \n\t")
-//    var unassigned = 0
-//    for (c <- ast.children) {
-//      if (candidateModel.contains(c)) 
-//        println("\t" + c + " already present in candidate model with " + candidateModel(c))
-//      else {
-//        println("\t" + c + " not present in candidate model")
-//        unassigned += 1
-//      } 
-//    }
-    val unassigned = ast.iterator.toList.filter((x:AST) => (x.children.length == 0) && !candidateModel.contains(x))
-    unassigned.length      
+    undefinedVariables(candidateModel, ast).length    
+  }
+  
+  def undefinedVariables(candidateModel : Model, ast : AST) : List[ConcreteFunctionSymbol] = {
+    ast.iterator.toList.filter((x:AST) => x.isVariable && !candidateModel.contains(x)).map(_.symbol).distinct
   }
   
   def initializeCandidateModel(atoms : List[AST], decodedModel : Model, candidateModel : Model) = {
@@ -342,6 +337,7 @@ trait FixpointReconstruction extends ApproximationCore {
       verbose(implications.map(_.simpleString()).mkString("\n\t"))
       verbose("**************************************************")
       changed = false
+      
       for (i <- implications if numUndefValues(candidateModel, i) == 1 )  {
         val imp = getImplication(candidateModel, i) 
         
@@ -370,28 +366,40 @@ trait FixpointReconstruction extends ApproximationCore {
            done = true
          } else {
            val chosen = undefVars.head
-           val chosenNode = AST(chosen,List(), List())
+           val chosenNode = varToNode(chosen)
            verbose("Copying from decoded model " + chosen + " -> " + decodedModel(chosenNode).getSMT())
+           
+           val toValidate = for ( c <- varsToCritical(chosen) 
+                                  if numUndefValues(candidateModel, c) == 1)
+                                  yield c
            candidateModel.set(chosenNode, decodedModel(chosenNode))
+           // TODO
+//           for ( c <- toValidate) {
+//              
+//           }
+           
          }           
       }
     }
     
     verbose("Completing the model")
     AST.postVisit(ast, candidateModel, decodedModel, copyFromDecodedModelIfNotSet)
+    candidateModel
     
-    val assignments = candidateModel.getAssignmentsFor(ast)
+    //val assignments = candidateModel.getAssignmentsFor(ast)
     
-    if (ModelReconstructor.valAST(ast, assignments.toList, inputTheory, Z3Solver)) {
-      candidateModel
-    } else {
-      val newModel = new Model()
-      AST.postVisit(ast, newModel, decodedModel, evaluateNode)
-      newModel
-    }  
+//    if (ModelReconstructor.valAST(ast, assignments.toList, inputTheory, Z3Solver)) {
+//      candidateModel
+//    } else {
+//      val newModel = new Model()
+//      AST.postVisit(ast, newModel, decodedModel, evaluateNode)
+//      newModel
+//    }  
   }
+  
+  
  
-    def evaluateNode( decodedModel  : Model, candidateModel : Model, ast : AST) : Model = {
+  def evaluateNode( decodedModel  : Model, candidateModel : Model, ast : AST) : Model = {
     val AST(symbol, label, children) = ast
     
     if (!candidateModel.contains(ast)) {
