@@ -322,12 +322,62 @@ trait FixpointReconstruction extends ApproximationCore {
     var changed = false
     var iteration = 0
     
-    val vars = varsToCritical.keys.toList.sortWith((x,y) => varsToCritical(x).size < varsToCritical(y).size)// sortComparison(x.sort, y.sort))
+    val allVars = varsToCritical.keys.toList.sortWith((x,y) => varsToCritical(x).size < varsToCritical(y).size)// sortComparison(x.sort, y.sort))
     
     // Boolean variables can just be copied over
-    for (v <- vars if v.theory == BooleanTheory)
+    for (v <- allVars if v.theory == BooleanTheory)
       copyFromDecodedModelIfNotSet(decodedModel, candidateModel, varToNode(v))
-                       
+                  
+    
+    var varDependency = new HashMap[ConcreteFunctionSymbol, Set[ConcreteFunctionSymbol]] with MultiMap[ConcreteFunctionSymbol, ConcreteFunctionSymbol]
+    
+    for ( c <- critical.toList if isDefinition(c)) {
+      val lhs = c.children(0)
+      if (lhs.isVariable && lhs.symbol.theory != BooleanTheory) {
+        for ( v <- c.children(1).iterator.filter(_.isVariable))
+          varDependency.addBinding(lhs.symbol, v.symbol)
+      }
+      val rhs = c.children(0)
+      if (rhs.isVariable && rhs.symbol.theory != BooleanTheory) {        
+        for ( v <- c.children(0).iterator.filter(_.isVariable))
+          varDependency.addBinding(rhs.symbol, v.symbol)
+      }
+    }
+    
+    val varDepKeys = varDependency.keys.toList
+    
+    var variables =  allVars.filter(_.sort != BooleanSort).filterNot(varDepKeys.contains(_))
+    var varDepList = varDependency.keys.toList.sortWith((x,y) => varDependency.getOrElse(x, Set()).size < varDependency.getOrElse(y, Set()).size)
+    
+    for ( variable <- variables; 
+          (k, v) <- varDependency) {
+          varDependency.removeBinding(k, variable)
+    }
+          
+    
+    while (!varDepList.isEmpty) {
+      varDepList = varDepList.sortWith((x,y) => varDependency.getOrElse(x, Set()).size < varDependency.getOrElse(y, Set()).size)      
+      
+      val next = varDepList.head
+      
+      if (varDependency.contains(next)) { 
+        // Cyclic dependency exists, all the remaining keys need to be removed
+        varDependency.remove(next)
+      }
+
+      variables = next :: variables
+      for ((k, v) <- varDependency) {
+        varDependency.removeBinding(k, next)
+      }
+      
+      varDepList = varDepList.tail
+    }
+    
+    
+                    
+    val vars = variables
+//    val (nonLhs, lhs) = nonBoolVars.partition(occursOnLhs.contains(_))  
+//    val vars = nonLhs ++ lhs
     while (! done) {
       iteration += 1
       verbose("=============================\nPatching iteration " + iteration)
@@ -385,15 +435,7 @@ trait FixpointReconstruction extends ApproximationCore {
            val chosenNode = varToNode(chosen)
            verbose("Copying from decoded model " + chosen + " -> " + decodedModel(chosenNode).getSMT())
            
-           val toValidate = for ( c <- varsToCritical(chosen) 
-                                  if numUndefValues(candidateModel, c) == 1)
-                                  yield c
            candidateModel.set(chosenNode, decodedModel(chosenNode))
-           // TODO
-//           for ( c <- toValidate) {
-//              
-//           }
-           
          }           
       }
     }
@@ -401,16 +443,6 @@ trait FixpointReconstruction extends ApproximationCore {
     verbose("Completing the model")
     AST.postVisit(ast, candidateModel, decodedModel, copyFromDecodedModelIfNotSet)
     candidateModel
-    
-    //val assignments = candidateModel.getAssignmentsFor(ast)
-    
-//    if (ModelReconstructor.valAST(ast, assignments.toList, inputTheory, Z3Solver)) {
-//      candidateModel
-//    } else {
-//      val newModel = new Model()
-//      AST.postVisit(ast, newModel, decodedModel, evaluateNode)
-//      newModel
-//    }  
   }
   
   def reconstruct(ast : AST, decodedModel : Model) : Model = {
@@ -430,15 +462,6 @@ trait FixpointReconstruction extends ApproximationCore {
         verbose(">> " + ast.simpleString())
         val newAST = AST(symbol, label, newChildren.toList)
         val newValue = ModelReconstructor.evalAST(newAST, inputTheory)
-//        if ( globalOptions.PARANOID && symbol.sort == BooleanTheory.BooleanSort) { // TODO: Talk to Philipp about an elegant way to do flags
-//          val assignments = candidateModel.getAssignmentsFor(ast).toList
-//          val backupAnswer = ModelReconstructor.valAST(ast, assignments.toList, this.inputTheory, Z3Solver)
-//          
-//          val answer = newValue.symbol.asInstanceOf[BooleanConstant] == BoolTrue
-//          if ( backupAnswer != answer )
-//            throw new Exception("Backup validation failed : \nEval: " + answer + "\nvalAst: " + backupAnswer)
-//  
-//        }        
         candidateModel.set(ast, newValue)
       }
     }
