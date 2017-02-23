@@ -1,5 +1,6 @@
 package uppsat.approximation
 
+
 import uppsat.theory.Theory
 import uppsat.ast.AST
 import uppsat.ast.ConcreteSort
@@ -12,11 +13,11 @@ import uppsat.globalOptions._
 import uppsat.theory.FloatingPointTheory
 import uppsat.theory.BooleanTheory.BoolTrue
 
+class AnalyticalFramework(val appCore : ApproximationCore 
+                                         with ApproximationCodec 
+                                         with FixpointReconstruction 
+                                         with ErrorBasedRefinementStrategy) extends Approximation {
 
-
-
-class PostOrderNodeBasedApproximation(val appCore : ApproximationCore with ApproximationCodec with NodeByNodeReconstructor with ErrorBasedRefinementStrategy  ) extends Approximation {
-  
   type P = appCore.Precision
   val precisionOrdering = appCore.precisionOrdering
   val inputTheory = appCore.inputTheory
@@ -38,35 +39,22 @@ class PostOrderNodeBasedApproximation(val appCore : ApproximationCore with Appro
   }
   
   def reconstruct(ast : AST, decodedModel : Model) : Model = {
-    val reconstructedModel = new Model()    
-    AST.postVisit[Model, Model](ast, reconstructedModel, decodedModel, appCore.evaluateNode)
-    reconstructedModel
+      appCore.reconstruct(ast, decodedModel)
   }
   
   def satRefine(ast : AST, decodedModel : Model, failedModel : Model, pmap : PrecisionMap[P]) : PrecisionMap[P] = {
-    val accu = Map[AST, Double]()
-    val errorRatios = AST.postVisit(ast, accu, appCore.nodeError(decodedModel)(failedModel))
-    val sortedErrRatios = errorRatios.toList.sortWith((x,y) => x._2 > y._2)
-    val k = math.ceil(appCore.fractionToRefine * sortedErrRatios.length).toInt //TODO: Assertions
+//    val accu = Map[AST, Double]()
+//    val errorRatios = AST.postVisit(ast, accu, appCore.nodeError(decodedModel)(failedModel))
+//    val sortedErrRatios = errorRatios.toList.sortWith((x,y) => x._2 > y._2)
+//    val k = math.ceil(appCore.fractionToRefine * sortedErrRatios.length).toInt //TODO: Assertions
  
-    def booleanComparisonOfModels(ast : AST, decodedModel : Model, failedModel : Model) : List[AST] = {
-      def boolCond( accu : List[AST], ast : AST) : Boolean = {
-        decodedModel(ast) != failedModel(ast)
-      }
-      
-      def boolWork( accu : List[AST], ast : AST) : List[AST] = {      
-        ast :: accu
-      }
-      
-      AST.boolVisit(ast, List(), boolCond, boolWork).toSet.toList
-    }
     
-    val relevantNodes = booleanComparisonOfModels(ast, decodedModel, failedModel)
-    val nodesToRefine = sortedErrRatios.filter( x => relevantNodes.contains(x._1)).map(_._1)
+    val critical = appCore.retrieveCriticalAtoms(decodedModel)(ast).map(_.iterator).flatten.toList
+    val nodesToRefine = critical.filter( x => decodedModel(x) != failedModel(x))
     
     var newPMap = pmap
     var changes = 0
-    for (node <- nodesToRefine.filter( x => appCore.precisionOrdering.lt(newPMap(x.label),  pmap.precisionOrdering.maximalPrecision)).take(k)) { 
+    for (node <- nodesToRefine.filter( x => appCore.precisionOrdering.lt(newPMap(x.label),  pmap.precisionOrdering.maximalPrecision))) { 
       newPMap = newPMap.update(node.label, appCore.satRefinePrecision(node, newPMap))
       changes += 1      
     }
@@ -82,7 +70,5 @@ class PostOrderNodeBasedApproximation(val appCore : ApproximationCore with Appro
     pmap.map(appCore.unsatRefinePrecision)
   }
 
-
+  
 }
-
-

@@ -397,7 +397,9 @@ trait FixpointReconstruction extends ApproximationCore {
 //    }  
   }
   
-  
+  def reconstruct(ast : AST, decodedModel : Model) : Model = {
+    fixPointBasedReconstruction(ast, decodedModel)
+  }
  
   def evaluateNode( decodedModel  : Model, candidateModel : Model, ast : AST) : Model = {
     val AST(symbol, label, children) = ast

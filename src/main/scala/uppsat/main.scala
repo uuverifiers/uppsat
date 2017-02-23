@@ -27,7 +27,7 @@ object globalOptions {
   var STARTTIME : Option[Long] = None
   var PARANOID = false
   val REG_APPROXS = List(   new PostOrderNodeBasedApproximation(IJCARSmallFloatsApp),
-                            new FxPointReconApproximation(FxPntSmallFloatsApp))
+                            new AnalyticalFramework(FxPntSmallFloatsApp))
   var chosenApproximation = 1
   
   def getApproximation = REG_APPROXS(chosenApproximation)
