@@ -43,6 +43,7 @@ import uppsat.theory.FloatingPointTheory.RoundingModeSort
 import scala.collection.mutable.HashMap
 import scala.collection.mutable.MultiMap
 import scala.collection.mutable.Set
+import javafx.beans.property.SimpleStringProperty
 
 trait FixpointReconstruction extends ApproximationCore {
   
@@ -345,6 +346,18 @@ trait FixpointReconstruction extends ApproximationCore {
           case Some((node, value)) => {
             verbose("Inserting " + node.getSMT() + " -> " + value.getSMT())
             candidateModel.set(node, value)
+            
+            for ( crit <-  varsToCritical(node.symbol) 
+                if !candidateModel.contains(crit) 
+                && numUndefValues(candidateModel, crit) == 0) {
+              // We will set the values only of the literals that 
+              // have not been evaluated yet and have no unknowns
+              // Consider cascading expressions, do we need to watch all of them
+              evaluateNode(decodedModel, candidateModel, crit)
+              if (crit.symbol.sort == BooleanSort && candidateModel(crit) != decodedModel(crit)) {
+                println("Reconstruction fails for : " + node.symbol + "->" + value + " in literal \n" + crit.simpleString())                
+              }              
+            }            
             changed = true
           }
           case None => ()
@@ -358,6 +371,9 @@ trait FixpointReconstruction extends ApproximationCore {
          val undefVars = vars.filterNot(candidateModel.containsVariable(_)).toList
          if (undefVars.isEmpty) {
            verbose("No undefined variables ...\n Done satisfying critical atoms.")
+           
+           for ( (variable, value) <- decodedModel.variableValuation if (!candidateModel.contains(varToNode(variable))))
+             candidateModel.set(varToNode(variable), value)
            
            val unevaluatedAtoms = critical.filter { x => numUndefValues(candidateModel, x) > 0 }
            for (a <- unevaluatedAtoms) {
