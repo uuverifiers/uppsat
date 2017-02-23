@@ -55,16 +55,16 @@ class Z3OnlineSolver extends SMTSolver {
     val satPattern = "sat".r
     val unsatPattern = "unsat".r
     
-    z3print("Collecting output ")
+//    /z3print("Collecting output ")
     var line = None : Option[String]
     while (result.isEmpty) {
-      z3print(".")
       line = Option(outReader.readLine())
       line.get match {
         case errorPattern() => 
           println(formula)
           throw new Exception("Z3 error: " + line.get)
-        case other => result = Some(other)
+        case other => z3print("Collected : " + other)
+                      result = Some(other)
       }    
     }
     result

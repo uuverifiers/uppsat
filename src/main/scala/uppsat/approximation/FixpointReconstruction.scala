@@ -427,17 +427,18 @@ trait FixpointReconstruction extends ApproximationCore {
         }
      
         //Evaluation
+        verbose(">> " + ast.simpleString())
         val newAST = AST(symbol, label, newChildren.toList)
         val newValue = ModelReconstructor.evalAST(newAST, inputTheory)
-        if ( globalOptions.PARANOID && symbol.sort == BooleanTheory.BooleanSort) { // TODO: Talk to Philipp about an elegant way to do flags
-          val assignments = candidateModel.getAssignmentsFor(ast).toList
-          val backupAnswer = ModelReconstructor.valAST(ast, assignments.toList, this.inputTheory, Z3Solver)
-          
-          val answer = newValue.symbol.asInstanceOf[BooleanConstant] == BoolTrue
-          if ( backupAnswer != answer )
-            throw new Exception("Backup validation failed : \nEval: " + answer + "\nvalAst: " + backupAnswer)
-  
-        }        
+//        if ( globalOptions.PARANOID && symbol.sort == BooleanTheory.BooleanSort) { // TODO: Talk to Philipp about an elegant way to do flags
+//          val assignments = candidateModel.getAssignmentsFor(ast).toList
+//          val backupAnswer = ModelReconstructor.valAST(ast, assignments.toList, this.inputTheory, Z3Solver)
+//          
+//          val answer = newValue.symbol.asInstanceOf[BooleanConstant] == BoolTrue
+//          if ( backupAnswer != answer )
+//            throw new Exception("Backup validation failed : \nEval: " + answer + "\nvalAst: " + backupAnswer)
+//  
+//        }        
         candidateModel.set(ast, newValue)
       }
     }

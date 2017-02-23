@@ -128,8 +128,6 @@ object ModelReconstructor {
   def evalAST(ast : AST, theory : Theory) : AST = {
     if (onlineSolver.isEmpty)
       startOnlineSolver()
-    else
-      resetOnlineSolver()
     
     val translator = new SMTTranslator(theory)
     val formula = translator.evaluate(ast)
