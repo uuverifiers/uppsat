@@ -133,7 +133,8 @@ class PostOrderNodeBasedApproximation(val appCore : ApproximationCore with Appro
       AST.boolVisit(ast, List(), boolCond, boolWork).toSet.toList
     }
     
-    val nodesToRefine = booleanComparisonOfModels(ast, decodedModel, failedModel)
+    val relevantNodes = booleanComparisonOfModels(ast, decodedModel, failedModel)
+    val nodesToRefine = sortedErrRatios.filter( x => relevantNodes.contains(x._1)).map(_._1)
     
     var newPMap = pmap
     var changes = 0
