@@ -119,10 +119,11 @@ trait FixpointReconstruction extends ApproximationCore {
     
     
     if (unknown.size == 1) {
-      verbose("Implication of  " +  unknown.keys.head + "\n\t" + ast.simpleString())
+      println("Implication of  " +  unknown.keys.head + "\n\t" + ast.simpleString())
       val result = ModelReconstructor.evalAST(ast, unknown.keys.head, assertions, inputTheory)
       result match {
-        case Some(res) => Some ((unknown.values.head, res))
+        case Some(res) => println(">> " + res.symbol) 
+                          Some ((unknown.values.head, res))
         case None => None
       }
     } else
@@ -259,12 +260,15 @@ trait FixpointReconstruction extends ApproximationCore {
     criticalAtoms
   }
   import uppsat.theory.FloatingPointTheory.FPSortFactory.FPSort
-  def sortComparison(s1 : Sort, s2 : Sort) = {
+  def sortLessThan(s1 : Sort, s2 : Sort) = {
     (s1, s2) match {      
-      case (BooleanSort, _) | (_, BooleanSort) => true
-      case (RoundingModeSort, _) | (_, RoundingModeSort) => true
-      case (FPSort(eb1, sb1), FPSort(eb2, sb2)) => eb1 + sb1 > eb2 + sb2
-      case (FPSort(_, _), _) | (_, FPSort(_, _)) => true
+      case (BooleanSort, _) => false
+      case (_, BooleanSort) => true
+      case (RoundingModeSort, _) => false
+      case (_, RoundingModeSort) => true
+      case (FPSort(eb1, sb1), FPSort(eb2, sb2)) => eb1 + sb1 < eb2 + sb2
+      case (FPSort(_, _), _) => false
+      case (_, FPSort(_, _)) => true
     }
   }
   
@@ -344,38 +348,36 @@ trait FixpointReconstruction extends ApproximationCore {
       }
     }
     
-    val varDepKeys = varDependency.keys.toList
-    
-    var variables =  allVars.filter(_.sort != BooleanSort).filterNot(varDepKeys.contains(_))
-    var varDepList = varDependency.keys.toList.sortWith((x,y) => varDependency.getOrElse(x, Set()).size < varDependency.getOrElse(y, Set()).size)
+    var variables =  allVars.filter(_.sort != BooleanSort).filterNot(varDependency.contains(_))
     
     for ( variable <- variables; 
           (k, v) <- varDependency) {
           varDependency.removeBinding(k, variable)
     }
-          
-    
-    while (!varDepList.isEmpty) {
-      varDepList = varDepList.sortWith((x,y) => varDependency.getOrElse(x, Set()).size < varDependency.getOrElse(y, Set()).size)      
-      
-      val next = varDepList.head
-      
-      if (varDependency.contains(next)) { 
-        // Cyclic dependency exists, all the remaining keys need to be removed
-        varDependency.remove(next)
+    println("Variables :\n\t" + variables.mkString("\n\t"))
+    println("Dependency graph : \n\t" + varDependency.mkString("\n\t"))
+    while (!varDependency.isEmpty) {
+      var next = varDependency.keys.head
+      var cnt = varDependency(next).size
+      for ( (key, set) <- varDependency) {
+        val curr = set.size
+        if (curr < cnt || (curr == cnt && sortLessThan(next.sort, key.sort))){
+          next = key
+          cnt = curr
+        }
       }
-
+      // Cyclic dependency exists, all the remaining keys need to be removed
+      varDependency.remove(next)
       variables = next :: variables
       for ((k, v) <- varDependency) {
         varDependency.removeBinding(k, next)
       }
-      
-      varDepList = varDepList.tail
     }
     
     
-                    
-    val vars = variables
+                        
+    val vars = variables.reverse
+    println("Sorted variables :\n\t" + vars.mkString("\n\t"))
 //    val (nonLhs, lhs) = nonBoolVars.partition(occursOnLhs.contains(_))  
 //    val vars = nonLhs ++ lhs
     while (! done) {
@@ -383,11 +385,12 @@ trait FixpointReconstruction extends ApproximationCore {
       verbose("=============================\nPatching iteration " + iteration)
       
       
-      val implications = critical.filter { x => x.children.length > 0 && isDefinition(x) && numUndefValues(candidateModel, x) == 1 }
+      val implications = critical.filter { x => x.children.length > 0 && isDefinition(x) && numUndefValues(candidateModel, x) == 1 }.sortBy(_.iterator.size)
       verbose("Implications(" + implications.length + "):")
       verbose(implications.map(_.simpleString()).mkString("\n\t"))
       verbose("**************************************************")
       changed = false
+      
       
       for (i <- implications if numUndefValues(candidateModel, i) == 1 )  {
         val imp = getImplication(candidateModel, i) 
@@ -403,9 +406,17 @@ trait FixpointReconstruction extends ApproximationCore {
               // We will set the values only of the literals that 
               // have not been evaluated yet and have no unknowns
               // Consider cascading expressions, do we need to watch all of them
-              evaluateNode(decodedModel, candidateModel, crit)
+              //evaluateNode(decodedModel, candidateModel, crit)
+              AST.postVisit(crit, candidateModel, candidateModel, evaluateNode)
               if (crit.symbol.sort == BooleanSort && candidateModel(crit) != decodedModel(crit)) {
-                println("Reconstruction fails for : " + node.symbol + "->" + value + " in literal \n" + crit.simpleString())                
+                println("Reconstruction fails for : \n " + node.symbol + "->" + value +
+                        "\n Implied by : " + i.simpleString() + 
+                        "\n on literal \n" + crit.simpleString() +
+                        "\nDecodedModel\n ===================== " + decodedModel(crit) + "\n\t"
+                        + decodedModel.getAssignmentsFor(crit).mkString("\n\t") +
+                        "\nCandidateModel\n ===================== "  + candidateModel(crit)  + "\n\t"
+                        + candidateModel.getAssignmentsFor(crit).mkString("\n\t")
+                        )                
               }              
             }            
             changed = true
