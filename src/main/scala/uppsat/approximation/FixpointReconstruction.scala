@@ -350,7 +350,7 @@ trait FixpointReconstruction extends ApproximationCore {
       }
     }
     
-    var variables =  allVars.filter(_.sort != BooleanSort).filterNot(varDependency.contains(_))
+    var variables =  allVars.filter(_.sort != BooleanSort).filterNot(varDependency.contains(_)).sortWith((x , y) => !sortLessThan(x.sort,y.sort))
     
     for ( variable <- variables; 
           (k, v) <- varDependency) {
