@@ -43,6 +43,8 @@ import uppsat.theory.FloatingPointTheory.RoundingModeSort
 import scala.collection.mutable.HashMap
 import scala.collection.mutable.MultiMap
 import scala.collection.mutable.Set
+import uppsat.theory.FloatingPointTheory.FPFunctionSymbol
+import uppsat.theory.FloatingPointTheory.FPSpecialValuesFactory
 
 
 trait FixpointReconstruction extends ApproximationCore {
@@ -376,7 +378,13 @@ trait FixpointReconstruction extends ApproximationCore {
     
     
                         
-    val vars = variables.reverse
+    // First migrate special values
+    for (v <- variables if v.sort == FPSort && 
+        decodedModel(varToNode(v)).symbol.asInstanceOf[IndexedFunctionSymbol].getFactory.isInstanceOf[FPSpecialValuesFactory]) 
+      candidateModel.set(varToNode(v), decodedModel(varToNode(v)))
+    
+    // Properly reverse the list of variables, since it was populated right to left
+    val vars = variables.filterNot(candidateModel.variableValuation.contains(_)).reverse
     println("Sorted variables :\n\t" + vars.mkString("\n\t"))
 //    val (nonLhs, lhs) = nonBoolVars.partition(occursOnLhs.contains(_))  
 //    val vars = nonLhs ++ lhs
@@ -444,7 +452,7 @@ trait FixpointReconstruction extends ApproximationCore {
          } else {
            val chosen = undefVars.head
            val chosenNode = varToNode(chosen)
-           verbose("Copying from decoded model " + chosen + " -> " + decodedModel(chosenNode).getSMT())
+           println("Copying from decoded model " + chosen + " -> " + decodedModel(chosenNode).getSMT())
            
            candidateModel.set(chosenNode, decodedModel(chosenNode))
          }           
