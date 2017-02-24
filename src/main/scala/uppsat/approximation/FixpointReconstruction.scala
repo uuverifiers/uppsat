@@ -383,8 +383,8 @@ trait FixpointReconstruction extends ApproximationCore {
         decodedModel(varToNode(v)).symbol.asInstanceOf[IndexedFunctionSymbol].getFactory.isInstanceOf[FPSpecialValuesFactory]) 
       candidateModel.set(varToNode(v), decodedModel(varToNode(v)))
     
-    // Properly reverse the list of variables, since it was populated right to left
-    val vars = variables.filterNot(candidateModel.variableValuation.contains(_)).reverse
+    
+    val vars = variables.filterNot(candidateModel.variableValuation.contains(_))//.reverse
     println("Sorted variables :\n\t" + vars.mkString("\n\t"))
 //    val (nonLhs, lhs) = nonBoolVars.partition(occursOnLhs.contains(_))  
 //    val vars = nonLhs ++ lhs
