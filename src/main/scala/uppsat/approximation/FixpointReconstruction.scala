@@ -451,10 +451,35 @@ trait FixpointReconstruction extends ApproximationCore {
            done = true
          } else {
            val chosen = undefVars.head
-           val chosenNode = varToNode(chosen)
-           println("Copying from decoded model " + chosen + " -> " + decodedModel(chosenNode).getSMT())
+           val node = varToNode(chosen)
+           println("Copying from decoded model " + chosen + " -> " + decodedModel(node).getSMT())
            
-           candidateModel.set(chosenNode, decodedModel(chosenNode))
+           candidateModel.set(node, decodedModel(node))
+           
+           
+           //TODO:  Construct one huge mega query to find this value?
+           var violated : List[AST] = List()
+           for ( crit <-  varsToCritical(node.symbol) 
+                if !candidateModel.contains(crit) 
+                && numUndefValues(candidateModel, crit) == 0) {
+              // We will set the values only of the literals that 
+              // have not been evaluated yet and have no unknowns
+              // Consider cascading expressions, do we need to watch all of them
+              //evaluateNode(decodedModel, candidateModel, crit)
+              AST.postVisit(crit, candidateModel, candidateModel, evaluateNode)
+              if (crit.symbol.sort == BooleanSort && candidateModel(crit) != decodedModel(crit)) {
+                println("Reconstruction fails for : \n " + node.symbol + "->" + decodedModel(node) +
+                        "\n on literal \n" + crit.simpleString() +
+                        "\nDecodedModel\n ===================== " + decodedModel(crit) + "\n\t"
+                        + decodedModel.getAssignmentsFor(crit).mkString("\n\t") +
+                        "\nCandidateModel\n ===================== "  + candidateModel(crit)  + "\n\t"
+                        + candidateModel.getAssignmentsFor(crit).mkString("\n\t")
+                        )                
+              }              
+              
+              if (crit.symbol.sort == BooleanSort && decodedModel(crit) != candidateModel(crit))
+                violated = crit :: violated
+            }
          }           
       }
     }
