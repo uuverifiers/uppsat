@@ -379,12 +379,17 @@ trait FixpointReconstruction extends ApproximationCore {
     
                         
     // First migrate special values
-    for (v <- variables if v.sort == FPSort && 
-        decodedModel(varToNode(v)).symbol.asInstanceOf[IndexedFunctionSymbol].getFactory.isInstanceOf[FPSpecialValuesFactory]) 
-      candidateModel.set(varToNode(v), decodedModel(varToNode(v)))
+    println("Migrating special values")
     
+    for (v <- variables if v.sort.isInstanceOf[FPSort]) {      
+      decodedModel(varToNode(v)).symbol.asInstanceOf[IndexedFunctionSymbol].getFactory match { 
+        case FPSpecialValuesFactory(_) => println("Migrating special value " + decodedModel(varToNode(v)))
+                                          candidateModel.set(varToNode(v), decodedModel(varToNode(v)))
+        case _ => println("Ignoring: " + decodedModel(varToNode(v)).symbol)
+      }
+    }
     
-    val vars = variables.filterNot(candidateModel.variableValuation.contains(_))//.reverse
+    val vars = variables.filterNot(candidateModel.variableValuation.contains(_)).reverse
     println("Sorted variables :\n\t" + vars.mkString("\n\t"))
 //    val (nonLhs, lhs) = nonBoolVars.partition(occursOnLhs.contains(_))  
 //    val vars = nonLhs ++ lhs
