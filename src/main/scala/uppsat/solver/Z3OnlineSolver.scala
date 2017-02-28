@@ -16,6 +16,10 @@ class Z3OnlineException(msg : String) extends Exception("Z3 error: " + msg)
 class Z3OnlineSolver extends SMTSolver {
   var silent = true
   
+  def toggleSilent = {
+    silent = !silent
+  }
+  
   def setSilent(b : Boolean) = {
     silent = b
   }
@@ -33,6 +37,8 @@ class Z3OnlineSolver extends SMTSolver {
   val outReader = new BufferedReader(new InputStreamReader (stdout))
   
   def init() = {
+    val oldSilent = silent
+    setSilent(true)
     val f = "(reset)\n(check-sat)\n"
     feedInput(f)
     val r = catchOutput(f) 
@@ -40,6 +46,7 @@ class Z3OnlineSolver extends SMTSolver {
       case Some("sat") => ()
       case _ => throw new Exception("Empty check-sat failed to return sat : " + r)
     }
+    setSilent(oldSilent)
   }
   
   def feedInput(f : String) = {
@@ -99,8 +106,11 @@ class Z3OnlineSolver extends SMTSolver {
   }
 
   
-  def reset = {    
+  def reset = {
+    val oldSilent = silent
+    setSilent(true)
     feedInput("(reset)\n")
+    setSilent(oldSilent)
   }
   
   def parseOutput(output : String, extractSymbols : List[String]) : Option[Map[String, String]] = {

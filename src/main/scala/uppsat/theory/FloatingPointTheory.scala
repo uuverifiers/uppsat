@@ -336,8 +336,8 @@ case class FPSpecialValuesFactory(symbolName : String) extends FPGenConstantFact
     factory(List(sort))
   } 
   
-  def intToBits(int : Int, upperBound : Int) = {
-    (for ( i <- 0 until upperBound) yield {
+  def intToBits(int : Int, bitWidth : Int) = {
+    (for ( i <- 0 until bitWidth) yield {
       if ((int & (1 << i )) > 0) 1 else 0
     }).reverse.toList
   }
@@ -631,6 +631,14 @@ case class FPSpecialValuesFactory(symbolName : String) extends FPGenConstantFact
            RMVar(_) => true
       case _ => false
     }
+  }
+  
+  def getULP(fpValue : FloatingPointLiteral) = {
+    // TODO :  Distinguish normal and subnormal numbers  
+   
+    val newExp = intToBits(bitsToInt(fpValue.eBits) - fpValue.sort.sBitWidth, fpValue.sort.eBitWidth)
+    val newSignificand = List.fill(fpValue._sort.sBitWidth - 1)(0)
+    fp(0, newExp, newSignificand) (fpValue._sort)   
   }
   
   val SMTHeader = {

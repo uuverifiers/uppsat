@@ -39,11 +39,7 @@ object ModelReconstructor {
       }      
     }
     
-    def set(ast : AST, value : AST) : Unit = {
-      if (contains(ast)){
-        throw new Exception("Reassigning  a model value")
-      }
-      
+    def overwrite(ast : AST, value : AST) : Unit = {
       if (ast.symbol.sort != ast.symbol.sort)
         throw new Exception("Model is not typed corectly! " + ast.symbol + " / " + value.symbol)
       
@@ -61,6 +57,14 @@ object ModelReconstructor {
         case _ => throw new Exception("Requesting a non-AST model value!")
       }
       ()
+    }
+    
+    def set(ast : AST, value : AST) : Unit = {
+      if (contains(ast)){
+        throw new Exception("Reassigning  a model value")
+      }
+      
+      overwrite(ast, value)
     }
     
     def containsVariable( symbol : ConcreteFunctionSymbol) : Boolean = {
