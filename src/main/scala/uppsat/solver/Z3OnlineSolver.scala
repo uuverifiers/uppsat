@@ -102,6 +102,9 @@ class Z3OnlineSolver extends SMTSolver {
     catchOutput(formula) match {
       case Some("sat") => answers.map(evalSymbol(_)).collect { case Some(x) => x }
       case Some("unsat") => List()
+      case Some("unknown") => List()
+      case Some(s) => throw new Exception("Solver returned : " + s)
+      case None => throw new Exception("Solver failed to return result")
     }
   }
 

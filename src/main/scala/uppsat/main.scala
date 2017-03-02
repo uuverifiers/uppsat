@@ -2,6 +2,7 @@ package uppsat;
 
 import uppsat.precision.PrecisionMap
 import uppsat.theory.BooleanTheory._
+import uppsat.theory.RealTheory._
 import uppsat.theory._
 import uppsat.ast._
 import uppsat.parser._
@@ -77,7 +78,17 @@ object main {
     val y = new IntVar("y")
 
     val rootNode = (x === (y - 4)) & ((x + y) === 6)
-    (rootNode, List(x, y), new SMTTranslator(IntegerTheory), IntApproximation)
+    (rootNode, List(x, y), new SMTTranslator(RealTheory), IntApproximation)
+  }
+  
+  
+  def real() = {
+
+    val x = new RealVar("x")
+    val y = new RealVar("y")
+
+    val rootNode = (x === (y - NumeralToAST(4))) & ((x + y) === DecimalToAST(6.5))
+    (rootNode, List(x, y), new SMTTranslator(RealTheory), IntApproximation)
   }
   
   def contradiction() = {
@@ -85,7 +96,7 @@ object main {
     val y = new IntVar("y")
 
     val rootNode = (x + 3 === y + 5)
-    (rootNode, List(x, y), new SMTTranslator(IntegerTheory), IntApproximation)
+    (rootNode, List(x, y), new SMTTranslator(RealTheory), EmptyApproximation)
   }    
   
 //  def floatingpoint() = {
@@ -100,7 +111,7 @@ object main {
 //  }
   
   def main(args: Array[String]) = {
-//    val (formula, vars, translator, approximation) = boolean()
+//    val (formula, vars, translator, approximation) = real()
 //    println("-----------------------------------------------")
 //    println("Formula ")
 //    println("-----------------------------------------------")
@@ -108,7 +119,7 @@ object main {
 //    
 //    ApproximationSolver.loop(formula, translator, approximation)
 //    println("Running time: -- ms")
-    
+//    
     verbose("Args: " + args.mkString("|"))
     
     main_aux(args) match {

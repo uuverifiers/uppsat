@@ -7,6 +7,7 @@ import uppsat.precision.PrecisionMap.Path
 import uppsat.theory.IntegerTheory._
 import uppsat.theory.FloatingPointTheory._
 import uppsat.theory.FloatingPointTheory.FPSortFactory.FPSort
+import uppsat.theory.RealTheory._
 import uppsat.ast.AST._
 
 object Leaf {
@@ -181,20 +182,24 @@ case class AST(val symbol : ConcreteFunctionSymbol, val label : Label, val child
   def +(that : AST)(implicit rm : RoundingMode = RoundToZero) = {
      (this.symbol.sort, that.symbol.sort) match {
        case (IntegerSort, IntegerSort) => intAddition(this, that)
-       case (f1 : FPSort, f2 : FPSort) => floatAddition(this, that)       
+       case (RealSort, RealSort) => realAddition(this, that)
+       case (_ : FPSort, _ : FPSort) => floatAddition(this, that)
+        
      }
   }
   
   def -(that : AST)(implicit rm : RoundingMode = RoundToZero) = {
      (this.symbol.sort, that.symbol.sort) match {
        case (IntegerSort, IntegerSort) => intSubstraction(this, that)
-       case (f1 : FPSort, f2 : FPSort) => floatSubtraction(this, that)
+       case (RealSort, RealSort) => realSubstraction(this, that)
+       case (_ : FPSort, _ : FPSort) => floatSubtraction(this, that)
      }
   }
   
   def *(that : AST)(implicit rm : RoundingMode = RoundToZero) = {
      (this.symbol.sort, that.symbol.sort) match {
        //case (IntegerSort, IntegerSort) => intAddition(this, that)
+       case (RealSort, RealSort) => realMultiplication(this, that)
        case (f1 : FPSort, f2 : FPSort) => floatMultiplication(this, that)       
      }
   }
@@ -202,6 +207,7 @@ case class AST(val symbol : ConcreteFunctionSymbol, val label : Label, val child
   def /(that : AST)(implicit rm : RoundingMode = RoundToZero) = {
      (this.symbol.sort, that.symbol.sort) match {
        //case (IntegerSort, IntegerSort) => intAddition(this, that)
+       case (RealSort, RealSort) => realDivision(this, that)
        case (f1 : FPSort, f2 : FPSort) => floatDivision(this, that)       
      }
   }
@@ -211,6 +217,7 @@ case class AST(val symbol : ConcreteFunctionSymbol, val label : Label, val child
     (this.symbol.sort, that.symbol.sort) match {
       case (BooleanSort, BooleanSort) => boolEquality(this, that)
       case (IntegerSort, IntegerSort) => intEquality(this, that)
+      case (RealSort, RealSort) => realEquality(this, that)
       case (f1 : FPSort, f2 : FPSort) => floatEquality(this, that)
       case (RoundingModeSort, RoundingModeSort) => rmEquality(this, that)
      }
@@ -219,6 +226,7 @@ case class AST(val symbol : ConcreteFunctionSymbol, val label : Label, val child
   def <=(that : AST) = {
     (this.symbol.sort, that.symbol.sort) match {
        case (IntegerSort, IntegerSort) => intLessThanOrEqual(this, that)
+       case (RealSort, RealSort) => realLessThanOrEqual(this, that)
        case (f1 : FPSort, f2 : FPSort) => floatLessThanOrEqual(this, that)
      }
   }
@@ -226,6 +234,7 @@ case class AST(val symbol : ConcreteFunctionSymbol, val label : Label, val child
   def <(that : AST) = {
     (this.symbol.sort, that.symbol.sort) match {
        //case (IntegerSort, IntegerSort) => intLessThan(this, that)
+      case (RealSort, RealSort) => realLessThan(this, that)
        case (f1 : FPSort, f2 : FPSort) => floatLessThan(this, that)
      }
   }
@@ -233,6 +242,7 @@ case class AST(val symbol : ConcreteFunctionSymbol, val label : Label, val child
   def >=(that : AST) = {
     (this.symbol.sort, that.symbol.sort) match {
        //case (IntegerSort, IntegerSort) => intLessThanOrEqual(this, that)
+      case (RealSort, RealSort) => realGreaterThanOrEqual(this, that)
        case (f1 : FPSort, f2 : FPSort) => floatGreaterThanOrEqual(this, that)
      }
   }
@@ -240,6 +250,7 @@ case class AST(val symbol : ConcreteFunctionSymbol, val label : Label, val child
   def >(that : AST) = {
     (this.symbol.sort, that.symbol.sort) match {
        //case (IntegerSort, IntegerSort) => intLessThan(this, that)
+      case (RealSort, RealSort) => realGreaterThan(this, that)
        case (f1 : FPSort, f2 : FPSort) => floatGreaterThan(this, that)
      }
   }
