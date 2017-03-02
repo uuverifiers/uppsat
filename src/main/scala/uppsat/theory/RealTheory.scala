@@ -125,7 +125,7 @@ object RealTheory extends Theory {
 
   val sorts = List(RealSort)
   val symbols = List( RealZero,
-                      RealNegation
+                      RealNegation,
                       RealAddition,
                       RealSubstraction, 
                       RealMultiplication,
