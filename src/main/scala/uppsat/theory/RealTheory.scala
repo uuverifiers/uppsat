@@ -104,8 +104,8 @@ object RealTheory extends Theory {
   def parseLiteral(lit : String) = {
     val IntRegex  = """([+-]?[0-9]+)""".r
     val FracRegex = """([+-]?[0-9]+) */ *([0-9]+)""".r
-    val DecRegex  = """([+-]?[0-9]*)\.*([0-9]*)""".r
-    val DecRegexE = """([+-]?[0-9]*)\.*([0-9]*)[eE]([+-]?[0-9]+)""".r
+    val DecRegex  = """([+-]?[0-9]*\.[0-9]*)""".r
+    val DecRegexE = """([+-]?[0-9]*\.[0-9]*)[eE]([+-]?[0-9]+)""".r
     
     lit match {
       case IntRegex(i) => BigInt(i)      
@@ -158,8 +158,14 @@ object RealTheory extends Theory {
     symbol match {     
       case RealAddition => "+"
       case RealSubstraction => "-"
+      case RealNegation => "-"
+      case RealMultiplication => "*"
+      case RealDivision => "/"
       case RealEquality => "="
       case RealLEQ => "<="
+      case RealGEQ => "<="
+      case RealLT => "<"      
+      case RealGT => ">"
       case RealNumeral(value) => value.toString()
       case RealDecimal(value) => value.toString()
       case RealVar(name) => name

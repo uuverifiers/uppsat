@@ -243,7 +243,8 @@ case class AST(val symbol : ConcreteFunctionSymbol, val label : Label, val child
     (this.symbol.sort, that.symbol.sort) match {
        //case (IntegerSort, IntegerSort) => intLessThanOrEqual(this, that)
       case (RealSort, RealSort) => realGreaterThanOrEqual(this, that)
-       case (f1 : FPSort, f2 : FPSort) => floatGreaterThanOrEqual(this, that)
+      case (_ : FPSort, _ : FPSort) => floatGreaterThanOrEqual(this, that)
+      case _ => throw new Exception("Sort mismatch : " + this.simpleString() +"\t " + that.simpleString())
      }
   }
   

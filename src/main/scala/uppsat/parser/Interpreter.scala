@@ -5,6 +5,7 @@ import uppsat.globalOptions.verbose
 
 import uppsat.theory.FloatingPointTheory.FPSortFactory.FPSort
 import uppsat.theory.BooleanTheory._
+import uppsat.theory.RealTheory._
 
 import smtlib._
 import smtlib.Absyn._
@@ -115,21 +116,26 @@ object Interpreter {
   protected def translateSpecConstant(c : SpecConstant) : uppsat.ast.AST = {
     c match {
       case c : NumConstant => {
-        uppsat.ast.Leaf(uppsat.theory.IntegerTheory.IntLiteral(c.numeral_.toInt))
+        uppsat.ast.Leaf(uppsat.theory.RealTheory.RealNumeral(BigInt(c.numeral_.toString)))
       }
-      case c : RatConstant => {
-        val bits = java.lang.Long.toBinaryString(java.lang.Double.doubleToRawLongBits(c.rational_.toDouble))
-        // TODO: We always store rationals as floats, good? bad? probably we should use reals.
-        // TODO: Is the leading bits dropped
-        val allBits = (("0" * (64 - bits.length)) ++ bits).map(_.toString.toInt)
-        val sign = allBits.head
-        val eBits = allBits.tail.take(11).map(_.toInt).toList
-        val sBits = allBits.tail.drop(11).map(_.toInt).toList
+      case c : RatConstant => 
+        uppsat.ast.Leaf(uppsat.theory.RealTheory.RealDecimal(BigDecimal(c.rational_.toString())))
         
-        // TODO: Should this be 53,11 or 52,11?
-        val fpsort = FPSortFactory(List(11, 53))
-        uppsat.ast.Leaf(FloatingPointTheory.FloatingPointLiteral(sign.toInt, eBits, sBits, fpsort))
-      }
+//      {
+//        val bits = java.lang.Long.toBinaryString(java.lang.Double.doubleToRawLongBits(c.rational_.toDouble))
+//        // TODO: We always store rationals as floats, good? bad? probably we should use reals.
+//        // TODO: Is the leading bits dropped
+//        val allBits = (("0" * (64 - bits.length)) ++ bits).map(_.toString.toInt)
+//        val sign = allBits.head
+//        val eBits = allBits.tail.take(11).map(_.toInt).toList
+//        val sBits = allBits.tail.drop(11).map(_.toInt).toList
+//        
+//        // TODO: Should this be 53,11 or 52,11?
+//        val fpsort = FPSortFactory(List(11, 53))
+//        uppsat.ast.Leaf(FloatingPointTheory.FloatingPointLiteral(sign.toInt, eBits, sBits, fpsort))
+//      }
+        
+        
   //    case c : HexConstant =>
   //      (MyIntLit(c.hexadecimal_ substring (2, 16)), SMTInteger)
   //    case c : BinConstant =>
@@ -184,6 +190,7 @@ object Interpreter {
           val symbol = res match {
             case IntegerSort => new uppsat.theory.IntegerTheory.IntVar(name)
             case BooleanSort => new uppsat.theory.BooleanTheory.BoolVar(name)
+            case RealSort => new uppsat.theory.RealTheory.RealVar(name)
             case fp : FPSort => new uppsat.theory.FloatingPointTheory.FPVar(name, fp)
           }
 
@@ -203,6 +210,7 @@ object Interpreter {
         res match {
           case IntegerSort => new uppsat.theory.IntegerTheory.IntVar(name)
           case BooleanSort => new uppsat.theory.BooleanTheory.BoolVar(name)
+          case RealSort => new uppsat.theory.RealTheory.RealVar(name)
           case sort => throw new SMTParserException("Unsupported sort: " + sort)
         }
 
@@ -339,6 +347,7 @@ object Interpreter {
     s match {
       case s : IdentSort => asString(s.identifier_) match {
         case "Int" => IntegerSort
+        case "Real" => RealSort
         case "Bool" => BooleanSort
         case "RoundingMode" => RoundingModeSort
         case fpPattern(eBits, sBits) => uppsat.theory.FloatingPointTheory.FPSortFactory(List(eBits.toInt, sBits.toInt))
@@ -387,6 +396,16 @@ object Interpreter {
       -translateTerm(args(0))
     }      
     
+    case PlainSymbol("*") => {
+      checkArgs("*", 2, args)
+      translateTerm(args(0)) * translateTerm(args(1))
+    }
+    
+    case PlainSymbol("/") => {
+      checkArgs("/", 2, args)
+      translateTerm(args(0)) / translateTerm(args(1))
+    }
+    
     
     //   ////////////////////////////////////////////////////////////////////////////
     //   // Hardcoded predicates (which might also operate on booleans)
@@ -395,6 +414,27 @@ object Interpreter {
       checkArgs("=", 2, args)
       translateTerm(args(0)) === translateTerm(args(1))
     }
+    
+    case PlainSymbol("<") => {
+      checkArgs("<", 2, args)
+      translateTerm(args(0)) < translateTerm(args(1))
+    }
+    
+    case PlainSymbol("<=") => {
+      checkArgs("<=", 2, args)
+      translateTerm(args(0)) <= translateTerm(args(1))
+    }
+    
+    case PlainSymbol(">") => {
+      checkArgs(">", 2, args)
+      translateTerm(args(0)) > translateTerm(args(1))
+    }
+    
+    case PlainSymbol(">=") => {
+      checkArgs(">=", 2, args)
+      translateTerm(args(0)) >= translateTerm(args(1))
+    }
+    
     
     // 
     //  FLOATING POINT SYMBOLS
