@@ -29,7 +29,7 @@ object globalOptions {
   var STARTTIME : Option[Long] = None
   var PARANOID = false
   
-  var chosenBackend = 1
+  var chosenBackend = 0
   
   val REG_SOLVERS = List( Z3Solver, MathSatSolver, MathSatACDCLSolver)
   val REG_APPROXS = List(   new PostOrderNodeBasedApproximation(IJCARSmallFloatsApp),
