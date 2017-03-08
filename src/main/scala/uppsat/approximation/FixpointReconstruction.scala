@@ -450,9 +450,9 @@ trait FixpointReconstruction extends ApproximationCore {
                 // have not been evaluated yet and have no unknowns
                 // Consider cascading expressions, do we need to watch all of them
                 //evaluateNode(decodedModel, candidateModel, crit)
-                ModelReconstructor.onlineSolver.asInstanceOf[Z3OnlineSolver].silent = false
+                ModelReconstructor.onlineSolver.get.asInstanceOf[Z3OnlineSolver].silent = false
                 AST.postVisit(crit, candidateModel, candidateModel, evaluateNode)
-                ModelReconstructor.onlineSolver.asInstanceOf[Z3OnlineSolver].silent = true
+                ModelReconstructor.onlineSolver.get.asInstanceOf[Z3OnlineSolver].silent = true
                 if (crit.symbol.sort == BooleanSort && candidateModel(crit) != decodedModel(crit)) {
                   println("Migration violates : \n " + node.symbol + "->" + decodedModel(node) +
                           "\n on literal \n" + crit.simpleString() +
