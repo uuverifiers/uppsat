@@ -26,6 +26,7 @@ class Regression extends FunSpec {
    
    describe("SAT : " ) {
      for (f <- satFiles) {
+         println("Testing " + f)
          val args =  Array(f.toString())
          val result = uppsat.main.main_aux(args)
          result match {
@@ -45,6 +46,7 @@ class Regression extends FunSpec {
    
     describe("UNSAT : " ) {
      for (f <- unsatFiles) {
+         println("Testing " + f)
          val args =  Array(f.toString())
          val result = uppsat.main.main_aux(args)
          result match {

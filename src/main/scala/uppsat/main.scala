@@ -19,6 +19,7 @@ import uppsat.ApproximationSolver.Answer
 import uppsat.ApproximationSolver.Unknown
 import uppsat.ApproximationSolver.Unsat
 import uppsat.ApproximationSolver.Sat
+import uppsat.ApproximationSolver.Answer
 
 object globalOptions {
   // FLAGS
@@ -27,11 +28,17 @@ object globalOptions {
   var DEADLINE : Option[Long] = None
   var STARTTIME : Option[Long] = None
   var PARANOID = false
+  
+  var chosenBackend = 1
+  
+  val REG_SOLVERS = List( Z3Solver, MathSatSolver, MathSatACDCLSolver)
   val REG_APPROXS = List(   new PostOrderNodeBasedApproximation(IJCARSmallFloatsApp),
                             new AnalyticalFramework(FxPntSmallFloatsApp))
   var chosenApproximation = 1
   
   def getApproximation = REG_APPROXS(chosenApproximation)
+  
+  def getBackendSolver = REG_SOLVERS(chosenBackend)
   
   def verbose(str : String) = {
     if (globalOptions.VERBOSE) {
@@ -110,7 +117,7 @@ object main {
 //    (rootNode, List(x, y), new SMTTranslator(FloatingPointTheory), SmallFloatsApproximation)
 //  }
   
-  def main(args: Array[String]) = {
+  
 //    val (formula, vars, translator, approximation) = real()
 //    println("-----------------------------------------------")
 //    println("Formula ")
@@ -120,8 +127,8 @@ object main {
 //    ApproximationSolver.loop(formula, translator, approximation)
 //    println("Running time: -- ms")
 //    
+  def main(args: Array[String]) = {
     verbose("Args: " + args.mkString("|"))
-    
     main_aux(args) match {
       case _ : Sat => System.exit(10)
       case Unsat   => System.exit(20)
@@ -129,16 +136,33 @@ object main {
     }
   }    
   
-  def main_aux(args : Array[String]) : Answer = {
-      import java.io._
-    import scala.collection.JavaConversions._
+  def printUsage() = {
+    println("Usage: uppsat [-options] input file")
+    println("Options:")
+    println("\t-v - verbose output")
+    println("\t-d - debugging output")
+    println("\t-p - run a second check using z3 to verify internal queries")
+    println("\t-b=NUM - use one of the following backends:")
+    println("\t\t 0 : Z3 (default)")
+    println("\t\t 1 : MathSat")
+    println("\t\t 2 : MathSat(ACDCL)")
+    println("\t -a=NUM - use one of the following approximations:")
+    println("\t\t 0 : Smallfloats (node based reconstruction)")
+    println("\t\t 1 : Smallfloats (fixpoint based reconstruction)")
+    println("\t -t=NUM - set a soft timeout in seconds. Soft means that timeout is checked between iterations only.")
     
-    globalOptions.STARTTIME = Some(System.currentTimeMillis())
-    
-    for (a <- args) yield {
+  }
+  
+  def printHelpInfo() = {
+    println("Input file missing. Call uppsat -h or uppsat -help for usage help.")
+  }
+  
+  def parseArgument( arg : String) : Unit = {
       val timeoutPattern = "-t=([0-9.]+)".r
       val appPattern = "-a=([0-9.])".r
-      a match {
+      val backend = "-b=([0-9.]+)".r
+      val dashPattern = "-.*".r
+      arg match {
         
         case "-v" => globalOptions.VERBOSE = true
                      
@@ -146,33 +170,52 @@ object main {
         
         case "-p" => globalOptions.PARANOID =  true
         
+        case "-h" | "-help" => printUsage()
+        
+        case backend(i) => 
+           i.toInt match {
+             case 0 | 1 | 2 => globalOptions.chosenBackend = i.toInt
+             case _ => throw new Exception("Unsupported backend solver")
+           }
+        
         case appPattern(i) => globalOptions.chosenApproximation = i.toInt
         
         case timeoutPattern(t) =>   globalOptions.DEADLINE = Some(t.toInt * 1000)
-                     
+               
+        case dashPattern() => printUsage()
         case _ => ()
       }
+  }
+  
+  def main_aux(args : Array[String]) : Answer = {
+    import java.io._
+    import scala.collection.JavaConversions._
+    
+    globalOptions.STARTTIME = Some(System.currentTimeMillis())
+    
+    for (a <- args) yield {
+      parseArgument(a)
     }
       
     val nonOptions = args.filterNot(_.startsWith("-"))  
-      
-    val file =
-      if (nonOptions.isEmpty)
-        "debug.smt2"
-      else
-        nonOptions.toList(0)
-        
-    val reader = () => new java.io.BufferedReader (new java.io.FileReader(new java.io.File(file)))            
-    val l = new smtlib.Yylex(reader())
-    val p = new smtlib.parser(l)
-    val script = p.pScriptC
-    Timer.reset
-    Timer.measure("main") {
-      Interpreter.reset()
-      Interpreter.interpret(script)
+    
+    if (nonOptions.isEmpty) {
+       printHelpInfo()
+       Unknown
+    } else {
+      val file = nonOptions.toList(0)
+      val reader = () => new java.io.BufferedReader (new java.io.FileReader(new java.io.File(file)))            
+      val l = new smtlib.Yylex(reader())
+      val p = new smtlib.parser(l)
+      val script = p.pScriptC
+      Timer.reset
+      Timer.measure("main") {
+        Interpreter.reset()
+        Interpreter.interpret(script)
+      }
+      println(Timer.toString())
+      Interpreter.myEnv.result
     }
-    println(Timer.toString())
-    Interpreter.myEnv.result
-}
+  }
 }
 

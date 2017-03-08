@@ -527,16 +527,16 @@ case class FPSpecialValuesFactory(symbolName : String) extends FPGenConstantFact
   
   
   def parseLiteral(lit : String) = {
-    val bitPattern = "\\(fp (\\S*) (\\S*) (\\S*)\\)".r
-    val zeroPattern = "\\(_ ([\\+\\-])zero (\\d+) (\\d+)\\)".r
-    val infPattern = "\\(_ ([\\+\\-])oo (\\d+) (\\d+)\\)".r
-    val nanPattern = "\\(_ NaN (\\d+) (\\d+)\\)".r
+    val bitPattern = """\(?fp (\S+) (\S+) ([^\s)]+)[)]*""".r    
+    val zeroPattern = "\\(?_ ([\\+\\-])zero (\\d+) (\\d+)\\)*".r
+    val infPattern = "\\(?_ ([\\+\\-])oo (\\d+) (\\d+)\\)*".r
+    val nanPattern = "\\(?_ NaN (\\d+) (\\d+)\\)*".r
     lit match {
-      case "roundNearestTiesToEven" => RoundToNearestTiesToEven
-      case "roundNearestTiesToAway" => RoundToNearestTiesToAway 
-      case "roundTowardPositive" => RoundToPositive
-      case "roundTowardNegative" => RoundToNegative
-      case "roundTowardZero" => RoundToZero      
+      case "roundNearestTiesToEven" | "RNE" => RoundToNearestTiesToEven
+      case "roundNearestTiesToAway" | "RNA"  => RoundToNearestTiesToAway 
+      case "roundTowardPositive" | "RTP" => RoundToPositive
+      case "roundTowardNegative" | "RTN"  => RoundToNegative
+      case "roundTowardZero" | "RTZ" => RoundToZero      
 
       case bitPattern(s1, s2, s3) => {
         val sign = 

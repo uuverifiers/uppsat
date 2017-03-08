@@ -115,25 +115,25 @@ object Interpreter {
 
   protected def translateSpecConstant(c : SpecConstant) : uppsat.ast.AST = {
     c match {
-      case c : NumConstant => {
-        uppsat.ast.Leaf(uppsat.theory.RealTheory.RealNumeral(BigInt(c.numeral_.toString)))
-      }
-      case c : RatConstant => 
-        uppsat.ast.Leaf(uppsat.theory.RealTheory.RealDecimal(BigDecimal(c.rational_.toString())))
-        
-//      {
-//        val bits = java.lang.Long.toBinaryString(java.lang.Double.doubleToRawLongBits(c.rational_.toDouble))
-//        // TODO: We always store rationals as floats, good? bad? probably we should use reals.
-//        // TODO: Is the leading bits dropped
-//        val allBits = (("0" * (64 - bits.length)) ++ bits).map(_.toString.toInt)
-//        val sign = allBits.head
-//        val eBits = allBits.tail.take(11).map(_.toInt).toList
-//        val sBits = allBits.tail.drop(11).map(_.toInt).toList
-//        
-//        // TODO: Should this be 53,11 or 52,11?
-//        val fpsort = FPSortFactory(List(11, 53))
-//        uppsat.ast.Leaf(FloatingPointTheory.FloatingPointLiteral(sign.toInt, eBits, sBits, fpsort))
+//      case c : NumConstant => {
+//        //uppsat.ast.Leaf(uppsat.theory.RealTheory.RealNumeral(BigInt(c.numeral_.toString)))
 //      }
+      case c : RatConstant => 
+        //uppsat.ast.Leaf(uppsat.theory.RealTheory.RealDecimal(BigDecimal(c.rational_.toString())))
+        
+      {
+        val bits = java.lang.Long.toBinaryString(java.lang.Double.doubleToRawLongBits(c.rational_.toDouble))
+        // TODO: We always store rationals as floats, good? bad? probably we should use reals.
+        // TODO: Is the leading bits dropped
+        val allBits = (("0" * (64 - bits.length)) ++ bits).map(_.toString.toInt)
+        val sign = allBits.head
+        val eBits = allBits.tail.take(11).map(_.toInt).toList
+        val sBits = allBits.tail.drop(11).map(_.toInt).toList
+        
+        // TODO: Should this be 53,11 or 52,11?
+        val fpsort = FPSortFactory(List(11, 53))
+        uppsat.ast.Leaf(FloatingPointTheory.FloatingPointLiteral(sign.toInt, eBits, sBits, fpsort))
+      }
         
         
   //    case c : HexConstant =>

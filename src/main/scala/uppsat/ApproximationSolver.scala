@@ -5,7 +5,7 @@ import uppsat.theory.BooleanTheory._
 import uppsat.theory._
 import uppsat.ast._
 import uppsat.theory.FloatingPointTheory._
-import uppsat.theory.IntegerTheory._
+import uppsat.theory.RealTheory._
 import uppsat.solver._
 import uppsat.approximation._
 import uppsat.precision.PrecisionMap.Path
@@ -63,8 +63,9 @@ object ApproximationSolver {
     pmap = pmap.cascadingUpdate(formula, approximation.precisionOrdering.minimalPrecision)
     var iterations = 0
     
+    val smtSolver = globalOptions.getBackendSolver
     def tryReconstruct(encodedSMT : String) : (Option[ExtModel], Option[PrecisionMap[approximation.P]]) = Timer.measure("tryReconstruct") {
-      val stringModel = Z3Solver.getStringModel(encodedSMT, translator.getDefinedSymbols.toList)
+      val stringModel = smtSolver.getStringModel(encodedSMT, translator.getDefinedSymbols.toList)
       val appModel = translator.getModel(formula, stringModel)
       
       debug("Approximate model: " + appModel.getAssignmentsFor(formula).mkString("\n\t") + "\n")
@@ -86,7 +87,7 @@ object ApproximationSolver {
       if (globalOptions.VERBOSE)
         formula.ppWithModels("", appModel, reconstructedModel)
       
-      if (ModelReconstructor.valAST(formula, assignments.toList, approximation.inputTheory, Z3Solver)) {
+      if (ModelReconstructor.valAST(formula, assignments.toList, approximation.inputTheory, smtSolver)) {
         val extModel =
           for ((symbol, value) <- reconstructedModel.getModel) yield {
           (symbol, value.symbol.theory.toSMTLib(value.symbol) )
@@ -119,7 +120,7 @@ object ApproximationSolver {
 
       verbose(encodedSMT)
       
-      if (Z3Solver.checkSat(encodedSMT)) {
+      if (smtSolver.checkSat(encodedSMT)) {
         val (extModel, newPMap) = tryReconstruct(encodedSMT)
         (extModel, newPMap) match {
           case (Some(model), _) => return Sat(model)
