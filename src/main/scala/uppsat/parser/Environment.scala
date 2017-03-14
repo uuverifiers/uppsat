@@ -4,7 +4,7 @@ import uppsat.ast._
 import uppsat.theory.BooleanTheory._
 
 import scala.collection.mutable.Map
-
+import uppsat.theory._
 // We should not be adding || afterwards?
 
 class Environment {
@@ -12,8 +12,13 @@ class Environment {
   var definitions : Map[String, (ConcreteFunctionSymbol, AST)] = Map()
   var assumptions : List[AST] = List()
   var result : uppsat.ApproximationSolver.Answer = uppsat.ApproximationSolver.Unknown
+  var theory : Option[Theory] = None
   //var synonyms : Map[ConcreteFunctionSymbol, ConcreteFunctionSymbol] = Map()
-
+  
+  def setTheory(t : Theory) = {
+    theory = Some(t)
+  }
+  
   def addSymbol(id : String, symbol : ConcreteFunctionSymbol) = {
     symbols += id -> symbol
   }

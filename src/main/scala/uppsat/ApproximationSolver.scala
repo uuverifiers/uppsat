@@ -64,11 +64,11 @@ object ApproximationSolver {
     var iterations = 0
     
     val smtSolver = globalOptions.getBackendSolver
-    def tryReconstruct(encodedSMT : String) : (Option[ExtModel], Option[PrecisionMap[approximation.P]]) = Timer.measure("tryReconstruct") {
+    def tryReconstruct(encodedFormula : AST, encodedSMT : String) : (Option[ExtModel], Option[PrecisionMap[approximation.P]]) = Timer.measure("tryReconstruct") {
       val stringModel = smtSolver.getStringModel(encodedSMT, translator.getDefinedSymbols.toList)
-      val appModel = translator.getModel(formula, stringModel)
+      val appModel = translator.getModel(encodedFormula, stringModel)
       
-      debug("Approximate model: " + appModel.getAssignmentsFor(formula).mkString("\n\t") + "\n")
+      debug("Approximate model: " + appModel.getAssignmentsFor(encodedFormula).mkString("\n\t") + "\n")
       verbose("Decoding model ... ")
       
       val decodedModel = approximation.decodeModel(formula, appModel, pmap)
@@ -121,7 +121,7 @@ object ApproximationSolver {
       verbose(encodedSMT)
       
       if (smtSolver.checkSat(encodedSMT)) {
-        val (extModel, newPMap) = tryReconstruct(encodedSMT)
+        val (extModel, newPMap) = tryReconstruct(encodedFormula, encodedSMT)
         (extModel, newPMap) match {
           case (Some(model), _) => return Sat(model)
           case (_, Some(p)) => pmap = pmap.merge(p)

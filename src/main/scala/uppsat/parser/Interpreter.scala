@@ -20,6 +20,7 @@ import uppsat.solver.SMTSolver
 import uppsat.approximation.PostOrderNodeBasedApproximation
 import uppsat.approximation.IJCARSmallFloatsApp
 import uppsat.ApproximationSolver
+import uppsat.theory.RealTheory
 
 case class SMTParserException(msg : String) extends Exception(msg)
 
@@ -115,12 +116,10 @@ object Interpreter {
 
   protected def translateSpecConstant(c : SpecConstant) : uppsat.ast.AST = {
     c match {
-//      case c : NumConstant => {
-//        //uppsat.ast.Leaf(uppsat.theory.RealTheory.RealNumeral(BigInt(c.numeral_.toString)))
-//      }
-      case c : RatConstant => 
-        //uppsat.ast.Leaf(uppsat.theory.RealTheory.RealDecimal(BigDecimal(c.rational_.toString())))
-        
+      case c : NumConstant => {
+        uppsat.ast.Leaf(uppsat.theory.RealTheory.RealNumeral(BigInt(c.numeral_.toString)))
+      }
+      case c : RatConstant if myEnv.theory ==  Some(FloatingPointTheory) => 
       {
         val bits = java.lang.Long.toBinaryString(java.lang.Double.doubleToRawLongBits(c.rational_.toDouble))
         // TODO: We always store rationals as floats, good? bad? probably we should use reals.
@@ -134,6 +133,10 @@ object Interpreter {
         val fpsort = FPSortFactory(List(11, 53))
         uppsat.ast.Leaf(FloatingPointTheory.FloatingPointLiteral(sign.toInt, eBits, sBits, fpsort))
       }
+        
+//      case c : RatConstant => {
+//        uppsat.ast.Leaf(uppsat.theory.RealTheory.RealDecimal(BigDecimal(c.rational_.toString())))
+//      }
         
         
   //    case c : HexConstant =>
@@ -155,7 +158,11 @@ object Interpreter {
   private def parse(cmd : Command) : Unit = cmd match {
 
     case cmd : SetLogicCommand => {
-      verbose("Ignoring set-logic command")
+      println("Logic :_" + asString(cmd.symbol_)+ "_") 
+      asString(cmd.symbol_) match {
+        case "QF_FP" => myEnv.setTheory(FloatingPointTheory)
+        case _ => verbose("ignoring set-logic command")
+      }
     }
 
       //////////////////////////////////////////////////////////////////////////

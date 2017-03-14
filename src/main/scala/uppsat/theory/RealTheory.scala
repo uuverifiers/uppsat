@@ -1,5 +1,8 @@
 package uppsat.theory
 
+import uppsat.theory.IntegerTheory.IntZero
+import uppsat.theory.IntegerTheory.IntOne
+
 case class RealTheoryException(msg : String) extends Exception("Real Theory Exception: " + msg)
 
 import uppsat.theory.BooleanTheory._
@@ -34,32 +37,33 @@ object RealTheory extends Theory {
   class RealConstant(name :  String) extends RealFunctionSymbol(name, List(), RealSort) {
   }
   
-  case class RealNumeral(val value :  BigInt) extends RealConstant(value.toString()) {
+  case class RealNumeral(val num :  BigInt, val denom : BigInt = 1) extends RealConstant(num.toString()) {
   }
   
-  case class RealDecimal(val value : BigDecimal) extends RealConstant(value.toString()) {
+  case class RealDecimal(val num : BigInt, val denom : BigInt) extends RealConstant("( " + num.toString() + "/" + denom.toString() + " )") {
   }
   
   
   // Constants   
-  val RealZero = RealNumeral(0)  
+  val RealOne  = RealNumeral(1)
+  val RealZero = RealNumeral(0)
   
   
   // Symbols, conjunction and negation
-  case object RealAddition extends RealBinaryFunctionSymbol("+")   
-  case object RealSubstraction extends RealBinaryFunctionSymbol("-")
-  case object RealNegation extends RealBinaryFunctionSymbol("negation")
-  case object RealMultiplication extends RealBinaryFunctionSymbol("*")   
-  case object RealDivision extends RealBinaryFunctionSymbol("/")
-  case object RealEquality extends RealPredicateSymbol("=", List(RealSort, RealSort))
-  case object RealLEQ extends RealPredicateSymbol("<=", List(RealSort, RealSort))
-  case object RealLT extends RealPredicateSymbol("<", List(RealSort, RealSort))
-  case object RealGEQ extends RealPredicateSymbol(">=", List(RealSort, RealSort))
-  case object RealGT extends RealPredicateSymbol(">", List(RealSort, RealSort))
-  case object RealITE extends PolyITE("ite", RealSort)
+  case object RealAddition extends RealBinaryFunctionSymbol("real-addition")   
+  case object RealSubstraction extends RealBinaryFunctionSymbol("real-substraction")
+  case object RealNegation extends RealBinaryFunctionSymbol("real-negation")
+  case object RealMultiplication extends RealBinaryFunctionSymbol("real-multiplicatoin")   
+  case object RealDivision extends RealBinaryFunctionSymbol("real-division")
+  case object RealEquality extends RealPredicateSymbol("real-eq", List(RealSort, RealSort))
+  case object RealLEQ extends RealPredicateSymbol("real-leq", List(RealSort, RealSort))
+  case object RealLT extends RealPredicateSymbol("real-lt", List(RealSort, RealSort))
+  case object RealGEQ extends RealPredicateSymbol("real-geq", List(RealSort, RealSort))
+  case object RealGT extends RealPredicateSymbol("real-gt", List(RealSort, RealSort))
+  case object RealITE extends PolyITE("real-ite", RealSort)
   
   implicit def NumeralToAST(int : BigInt) = Leaf(new RealNumeral(int))
-  implicit def DecimalToAST(real : BigDecimal) = Leaf(new RealDecimal(real))
+  implicit def DecimalToAST(num : BigInt, denom : BigInt) = Leaf(new RealDecimal(num, denom))
   
   
   implicit def RealVarToAST(RealVar : RealVar) = Leaf(RealVar)
@@ -67,6 +71,10 @@ object RealTheory extends Theory {
   
   def realAddition(left: AST, right: AST) = {
     AST(RealAddition, List(left, right))
+  }
+  
+  def realNegate(arg : AST) = {
+    AST(RealNegation, List(arg))
   }
   
   def realSubstraction(left: AST, right: AST) = {
@@ -102,14 +110,18 @@ object RealTheory extends Theory {
   }
   
   def parseLiteral(lit : String) = {
-    val IntRegex  = """([+-]?[0-9]+)""".r
+    val BIntRegex = """([0-9]+\.0)""".r
+    val IntRegex  = """\(([+-]?) ([0-9]+\.0)\)""".r
     val FracRegex = """([+-]?[0-9]+) */ *([0-9]+)""".r
     val DecRegex  = """([+-]?[0-9]*\.[0-9]*)""".r
     val DecRegexE = """([+-]?[0-9]*\.[0-9]*)[eE]([+-]?[0-9]+)""".r
-    
+    val enumDenom = """\(\/ ([+-]?\d+\.0) (\d+\.0)\)""".r
+    println(lit)
     lit match {
-      case IntRegex(i) => BigInt(i)      
-      case DecRegex(i) => BigDecimal(i)
+      case BIntRegex(num) => RealNumeral(BigDecimal(num).toBigInt())
+      case IntRegex(sgn, num) =>  RealNumeral(BigDecimal(sgn + num).toBigInt())
+      case enumDenom(num, denom) => RealDecimal(BigDecimal(num).toBigInt(), BigDecimal(denom).toBigInt())
+      case DecRegex(i) => throw new Exception("Big decimal?" + i) //BigDecimal(i)
     }
   }
   
@@ -120,7 +132,7 @@ object RealTheory extends Theory {
     }  
   }
   // Make regular class; id is not support to be the identifier
-  class RealVar(name : String) extends RealConstant(name) {
+  class RealVar(_name : String) extends RealConstant(_name) {
   }
 
   val sorts = List(RealSort)
@@ -166,8 +178,8 @@ object RealTheory extends Theory {
       case RealGEQ => "<="
       case RealLT => "<"      
       case RealGT => ">"
-      case RealNumeral(value) => value.toString()
-      case RealDecimal(value) => value.toString()
+      case RealNumeral(num, _) => num.toString()
+      case RealDecimal(num, denom) => "(/ " + num + " " + denom + ")"
       case RealVar(name) => name
       case other => throw new RealTheoryException("Unknown symbol: " + symbol)
     }
@@ -184,8 +196,8 @@ object RealTheory extends Theory {
   def declarationToSMTLib(sym : ConcreteFunctionSymbol) : String = {
     sym match {
       case RealVar(name) => "(declare-fun " + name + " () " + toSMTLib(sym.sort) + ")" 
-      case RealNumeral(_) => ""
-      case RealDecimal(_) => ""
+      case RealNumeral(_, _) => ""
+      case RealDecimal(_, _) => ""
       case _ => throw new Exception("Not instance of RealVar : " + sym.getClass)
     }
   }

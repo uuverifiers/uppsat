@@ -75,6 +75,11 @@ case class AST(val symbol : ConcreteFunctionSymbol, val label : Label, val child
   
   def apply(path : Path) : AST = getPath(path)
   
+  def getPathOrElse(path : Path) : Option[AST] = {
+    val nodes = for (n <- this.iterator.toList if n.label == path) yield n    
+    nodes.headOption
+  }
+  
   def map(f : ConcreteFunctionSymbol => ConcreteFunctionSymbol) : AST = {
       AST(f(symbol), label, children map (_ map f))
     }
@@ -176,6 +181,7 @@ case class AST(val symbol : ConcreteFunctionSymbol, val label : Label, val child
   def unary_- = {
      this.symbol.sort match {
        case f : FPSort => floatNegate(this)
+       case RealSort => realNegate(this)
      }
   }
   

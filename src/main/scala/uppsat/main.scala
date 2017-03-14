@@ -33,8 +33,9 @@ object globalOptions {
   
   val REG_SOLVERS = List( Z3Solver, MathSatSolver, MathSatACDCLSolver)
   val REG_APPROXS = List(   new PostOrderNodeBasedApproximation(IJCARSmallFloatsApp),
-                            new AnalyticalFramework(FxPntSmallFloatsApp))
-  var chosenApproximation = 1
+                            new AnalyticalFramework(FxPntSmallFloatsApp),
+                            new PostOrderNodeBasedApproximation(FPARealApp))
+  var chosenApproximation = 2
   
   def getApproximation = REG_APPROXS(chosenApproximation)
   
@@ -94,7 +95,7 @@ object main {
     val x = new RealVar("x")
     val y = new RealVar("y")
 
-    val rootNode = (x === (y - NumeralToAST(4))) & ((x + y) === DecimalToAST(6.5))
+    val rootNode = (x === (y - NumeralToAST(4))) & ((x + y) === DecimalToAST(13, 2))
     (rootNode, List(x, y), new SMTTranslator(RealTheory), IntApproximation)
   }
   
@@ -128,6 +129,15 @@ object main {
 //    println("Running time: -- ms")
 //    
   def main(args: Array[String]) = {
+//    val (formula, vars, translator, approximation) = real()
+//    println("-----------------------------------------------")
+//    println("Formula ")
+//    println("-----------------------------------------------")
+//    val toSolve = formula.labelAST
+//    
+//    ApproximationSolver.loop(toSolve, translator, approximation)
+//    println("Running time: -- ms")
+    
     verbose("Args: " + args.mkString("|"))
     main_aux(args) match {
       case _ : Sat => System.exit(10)

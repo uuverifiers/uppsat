@@ -377,6 +377,11 @@ case class FPSpecialValuesFactory(symbolName : String) extends FPGenConstantFact
     Leaf(fp(sign, ebits, sbits)(sort))    
   }
   
+  def floatToAST(float : Float, sort : FPSort) = {
+    val (sign, ebits, sbits) = floatToBits(float)
+    Leaf(fp(sign, ebits, sbits)(sort))    
+  }
+  
   implicit def FPVarToAST(floatVar : FPVar) = Leaf(floatVar)
   implicit def RoundingModeToAST(rm : RoundingMode) = Leaf(rm)
 

@@ -119,17 +119,20 @@ class SMTTranslator(theory : Theory) {
 
   def getModel(ast : AST, stringModel : Map[String, String]) : Model = {
     val model = new Model()
-    
     (for ((k, v) <- stringModel) {
       val paths = IdToPaths(k).filter(!_.isEmpty)
       // We only need to extract the value from one of the paths
       if (paths.isEmpty) { 
         List()
       } else {
-        val valAST = ast(paths.head).symbol.sort.theory.parseLiteral(v.trim()) //AZ: Should the trim call go elsewhere?
-        val n = ast.getPath(paths.head)
-        model.set(n, valAST)
-        //(for (p <- paths) yield p -> valAST)
+        val node = ast.getPathOrElse(paths.head)
+        if (node.isEmpty) 
+          List()
+        else {
+          val n = node.get
+          val valAST = n.symbol.sort.theory.parseLiteral(v.trim()) //AZ: Should the trim call go elsewhere?
+          model.set(n, valAST)
+        }
       }
     })
     model
