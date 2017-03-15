@@ -158,7 +158,6 @@ object Interpreter {
   private def parse(cmd : Command) : Unit = cmd match {
 
     case cmd : SetLogicCommand => {
-      println("Logic :_" + asString(cmd.symbol_)+ "_") 
       asString(cmd.symbol_) match {
         case "QF_FP" => myEnv.setTheory(FloatingPointTheory)
         case _ => verbose("ignoring set-logic command")

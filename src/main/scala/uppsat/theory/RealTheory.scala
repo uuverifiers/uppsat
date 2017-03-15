@@ -1,8 +1,5 @@
 package uppsat.theory
 
-import uppsat.theory.IntegerTheory.IntZero
-import uppsat.theory.IntegerTheory.IntOne
-
 case class RealTheoryException(msg : String) extends Exception("Real Theory Exception: " + msg)
 
 import uppsat.theory.BooleanTheory._
@@ -116,7 +113,7 @@ object RealTheory extends Theory {
     val DecRegex  = """([+-]?[0-9]*\.[0-9]*)""".r
     val DecRegexE = """([+-]?[0-9]*\.[0-9]*)[eE]([+-]?[0-9]+)""".r
     val enumDenom = """\(\/ ([+-]?\d+\.0) (\d+\.0)\)""".r
-    println(lit)
+    //println(lit)
     lit match {
       case BIntRegex(num) => RealNumeral(BigDecimal(num).toBigInt())
       case IntRegex(sgn, num) =>  RealNumeral(BigDecimal(sgn + num).toBigInt())
