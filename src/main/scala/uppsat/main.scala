@@ -35,7 +35,7 @@ object globalOptions {
   val REG_APPROXS = List(   new PostOrderNodeBasedApproximation(IJCARSmallFloatsApp),
                             new AnalyticalFramework(FxPntSmallFloatsApp),
                             new PostOrderNodeBasedApproximation(FPARealApp))
-  var chosenApproximation = 2
+  var chosenApproximation = 0
   
   def getApproximation = REG_APPROXS(chosenApproximation)
   
