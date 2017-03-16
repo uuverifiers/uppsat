@@ -68,7 +68,7 @@ object ApproximationSolver {
       val stringModel = smtSolver.getStringModel(encodedSMT, translator.getDefinedSymbols.toList)
       val appModel = translator.getModel(encodedFormula, stringModel)
       
-      debug("Approximate model: " + appModel.getAssignmentsFor(encodedFormula).mkString("\n\t") + "\n")
+      println("Approximate model: " + appModel.getAssignmentsFor(encodedFormula).mkString("\n\t") + "\n")
       verbose("Decoding model ... ")
       
       val decodedModel = approximation.decodeModel(formula, appModel, pmap)
@@ -82,10 +82,11 @@ object ApproximationSolver {
       
       debug("Reconstructed model: \n" + appAssignments.mkString("\n\t") + "\n")
       verbose("Validating model ...")
-      
-      verbose("Model comparison : ")
-      if (globalOptions.VERBOSE)
-        formula.ppWithModels("", appModel, reconstructedModel)
+
+//      TODO: Align models and sorts somehow...
+//      verbose("Model comparison : ")
+//      if (globalOptions.VERBOSE)
+//        encodedFormula.ppWithModels("", appModel, reconstructedModel)
       
       if (ModelReconstructor.valAST(formula, assignments.toList, approximation.inputTheory, smtSolver)) {
         val extModel =
@@ -125,6 +126,8 @@ object ApproximationSolver {
         (extModel, newPMap) match {
           case (Some(model), _) => return Sat(model)
           case (_, Some(p)) => pmap = pmap.merge(p)
+          case (None, None) => verbose("Approximate model not found: maximal precision reached.")          
+                               return Unsat
           case (_, None) => verbose("Reconstruction yielded unknown results")
                             pmap = approximation.unsatRefine(formula, List(), pmap)
         }          

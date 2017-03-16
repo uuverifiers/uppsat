@@ -107,18 +107,19 @@ object RealTheory extends Theory {
   }
   
   def parseLiteral(lit : String) = {
-    val BIntRegex = """([0-9]+\.0)""".r
-    val IntRegex  = """\(([+-]?) ([0-9]+\.0)\)""".r
+    val BIntRegex = """([0-9]+[\.0]?)""".r
+    val IntRegex  = """\(?([+-]?)\s*([0-9]+[\.]?0*)\)?""".r
     val FracRegex = """([+-]?[0-9]+) */ *([0-9]+)""".r
     val DecRegex  = """([+-]?[0-9]*\.[0-9]*)""".r
     val DecRegexE = """([+-]?[0-9]*\.[0-9]*)[eE]([+-]?[0-9]+)""".r
     val enumDenom = """\(\/ ([+-]?\d+\.0) (\d+\.0)\)""".r
-    //println(lit)
+    
     lit match {
       case BIntRegex(num) => RealNumeral(BigDecimal(num).toBigInt())
       case IntRegex(sgn, num) =>  RealNumeral(BigDecimal(sgn + num).toBigInt())
       case enumDenom(num, denom) => RealDecimal(BigDecimal(num).toBigInt(), BigDecimal(denom).toBigInt())
       case DecRegex(i) => throw new Exception("Big decimal?" + i) //BigDecimal(i)
+      case _ => throw new Exception("Failed to match _"+lit+"_")
     }
   }
   

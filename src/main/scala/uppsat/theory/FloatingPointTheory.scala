@@ -673,7 +673,18 @@ case class FPSpecialValuesFactory(symbolName : String) extends FPGenConstantFact
           case FPNegateFactory => "fp.neg"
           case FPToFPFactory => "(_ to_fp " + fpFunSym.sort.eBitWidth + " " + fpFunSym.sort.sBitWidth + ")"         
           case FPConstantFactory(sign, eBits, sBits) => {
-            "(fp #b" + sign + " #b" + eBits.take(fpFunSym.sort.eBitWidth).mkString("") + " #b" + sBits.take(fpFunSym.sort.sBitWidth - 1).mkString("") + ")" 
+            val eDiff = eBits.length - fpFunSym.sort.eBitWidth
+            val ebits = if (eDiff >= 0)
+                          eBits.take(fpFunSym.sort.eBitWidth)
+                        else
+                          eBits.head :: List.fill(-eDiff)(0) ++ eBits.tail
+            val sDiff = sBits.length - fpFunSym.sort.sBitWidth + 1
+            val sbits = if (sDiff >= 0)
+                          sBits.take(fpFunSym.sort.sBitWidth)
+                        else
+                          sBits ++ List.fill(-sDiff)(0) 
+            
+            "(fp #b" + sign + " #b" + ebits.mkString("") + " #b" + sbits.mkString("") + ")" 
           }
           case str => throw new Exception("Unsupported FP symbol: " + str)
         }
