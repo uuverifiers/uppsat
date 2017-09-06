@@ -62,6 +62,21 @@ trait SmallFloatsCodec extends SmallFloatsCore with ApproximationCodec {
     } 
   }
   
+  def scaleReturnSort( fpSymbol : FloatingPointSymbol, p : Int ) : (Seq[ConcreteSort], ConcreteSort) = {
+    fpSymbol match {
+        case fnSym : FloatingPointFunctionSymbol => {
+          val newSort = scaleSort(fnSym.sort, p)
+          val arity = fnSym.args.length
+          (List.fill (arity) (newSort), newSort)
+        }
+        case prSym : FloatingPointPredicateSymbol => {
+          assert (false)
+          //TODO: Add children as parameter, or change symbol to include children
+          //val newSort = children.tail.foldLeft(children.head.symbol.sort)((x,y) => if (compareSorts(x, y.symbol.sort)) x else  y.symbol.sort)
+          (prSym.args,prSym.sort)
+        }
+    }
+  }
   // Encodes a node by scaling its sort based on precision and calling
   // cast to ensure sortedness.
   def encodeNode(ast : AST, children : List[AST], precision : Int) : AST = {
@@ -71,7 +86,7 @@ trait SmallFloatsCodec extends SmallFloatsCore with ApproximationCodec {
       }
       
       case fpSym : FloatingPointFunctionSymbol => {
-          val newSort = scaleSort(fpSym.sort, precision)
+          val newSort = scaleSort(fpSym.sort, precision)          
           val newChildren = 
             if (fpSym.getFactory == FPToFPFactory) {// No need to cast, this symbol does this!
               children
@@ -153,7 +168,7 @@ trait SmallFloatsCodec extends SmallFloatsCore with ApproximationCodec {
   }
 }
 
-trait SmallFloatsReconstructor extends SmallFloatsCore with EqualityAsAssignmentReconstructor {
+trait SmallFloatsReconstructor extends EqualityAsAssignmentReconstructor {
   def evaluateNode( decodedModel  : Model, candidateModel : Model, ast : AST) : Model = {
     val AST(symbol, label, children) = ast
     

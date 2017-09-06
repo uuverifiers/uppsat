@@ -115,7 +115,10 @@ object ApproximationSolver {
       verbose("Starting iteration " + iterations)
       verbose("-----------------------------------------------")
       
-      val encodedFormula = approximation.encodeFormula(formula, pmap) 
+      val encodedFormula = if (!pmap.isMaximal) 
+                              approximation.encodeFormula(formula, pmap)
+                           else
+                              formula
       //encodedFormula.prettyPrint
       val encodedSMT = translator.translate(encodedFormula)
 

@@ -156,11 +156,12 @@ object Interpreter {
  
 
   private def parse(cmd : Command) : Unit = cmd match {
-
+    
     case cmd : SetLogicCommand => {
       asString(cmd.symbol_) match {
         case "QF_FP" => myEnv.setTheory(FloatingPointTheory)
-        case _ => verbose("ignoring set-logic command")
+        case "QF_FPBV" => myEnv.setTheory(FloatingPointTheory)
+        case _ => verbose("ignoring set-logic command : \n"  + asString(cmd.symbol_))
       }
     }
 

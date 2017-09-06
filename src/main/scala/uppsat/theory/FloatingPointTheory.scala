@@ -26,8 +26,9 @@ object FloatingPointTheory extends Theory {
     }
   }
   
-  abstract class FloatingPointFunctionSymbol(val sort : FPSort) extends IndexedFunctionSymbol
-  abstract class FloatingPointPredicateSymbol extends IndexedFunctionSymbol
+  abstract class FloatingPointSymbol extends IndexedFunctionSymbol
+  abstract class FloatingPointFunctionSymbol(val sort : FPSort) extends FloatingPointSymbol
+  abstract class FloatingPointPredicateSymbol extends FloatingPointSymbol
   abstract class FloatingPointConstantSymbol(override val sort : FPSort) extends FloatingPointFunctionSymbol(sort)
   
 

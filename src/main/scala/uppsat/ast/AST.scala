@@ -27,7 +27,7 @@ object AST {
     val AST(symbol, label, children) = ast
     var accu = accumulator
    
-    for ((c, i) <- children zip children.indices) 
+    for (c <- children) 
       accu = postVisit( c, accu, work)
     
     work(accu, ast)
