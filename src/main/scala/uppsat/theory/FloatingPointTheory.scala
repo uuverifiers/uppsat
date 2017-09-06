@@ -578,18 +578,18 @@ case class FPSpecialValuesFactory(symbolName : String) extends FPGenConstantFact
     }
   }
   
-  object FPVar {
-    def apply(name : String)(implicit sort : FPSort) = {
-      new FPVar(name, sort)
-    }
+//  object FPVar {
+//    def apply(name : String)(implicit sort : FPSort) = {
+//      new FPVar(name, sort)
+//    }
     
-    def unapply(symbol : FPVar) : Option[(String, ConcreteSort)] = {
-        Some((symbol.name, symbol.sort))
-    }  
-  }
+//    def unapply(symbol : FPVar) : Option[(String, ConcreteSort)] = {
+//        Some((symbol.name, symbol.sort))
+//    }  
+//  }
   
   // Theory shouldn't be here
-  class FPVar(val name : String, val sort : FPSort) extends ConcreteFunctionSymbol {
+  case class FPVar(val name : String, val sort : FPSort) extends ConcreteFunctionSymbol {
     val args = List()
     val theory = FloatingPointTheory
   }
@@ -625,7 +625,7 @@ case class FPSpecialValuesFactory(symbolName : String) extends FPGenConstantFact
   }
   def isDefinedLiteral(symbol : ConcreteFunctionSymbol) = {
     symbol match {
-      case FPVar(_) => false
+      case FPVar(_, _) => false
       case RMVar(_) => false
       case _ => true
     }
@@ -633,7 +633,7 @@ case class FPSpecialValuesFactory(symbolName : String) extends FPGenConstantFact
   
   def isVariable(symbol : ConcreteFunctionSymbol) = {
     symbol match {
-      case FPVar(_) |
+      case FPVar(_, _) |
            RMVar(_) => true
       case _ => false
     }
@@ -717,7 +717,7 @@ case class FPSpecialValuesFactory(symbolName : String) extends FPGenConstantFact
   
   def declarationToSMTLib(sym : ConcreteFunctionSymbol) : String = {
     sym match {
-      case FPVar(name) => "(declare-fun " + name + " () " + toSMTLib(sym.sort) + ")"
+      case FPVar(name, _) => "(declare-fun " + name + " () " + toSMTLib(sym.sort) + ")"
       case _ => throw new Exception("Not instance of FPVar : " + sym.getClass)
     }
   }

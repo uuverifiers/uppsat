@@ -398,9 +398,9 @@ trait FixpointReconstruction extends ApproximationCore {
                         "\n Implied by : " + i.simpleString() + 
                         "\n on literal \n" + crit.simpleString() +
                         "\nDecodedModel ===================== " + decodedModel(crit) + "\n\t" +
-                        decodedModel.getAssignmentsFor(crit).mkString("\n\t") +
+                        decodedModel.variableAssignments(crit).mkString("\n\t") +
                         "\nCandidateModel ===================== "  + candidateModel(crit)  + "\n\t" +
-                        candidateModel.getAssignmentsFor(crit).mkString("\n\t")
+                        candidateModel.variableAssignments(crit).mkString("\n\t")
                         )                
               }              
             }            
@@ -457,15 +457,15 @@ trait FixpointReconstruction extends ApproximationCore {
                   println("Migration violates : \n " + node.symbol + "->" + decodedModel(node) +
                           "\n on literal \n" + crit.simpleString() +
                           "\nDecodedModel\n ===================== " + decodedModel(crit) + "\n\t"
-                          + decodedModel.getAssignmentsFor(crit).mkString("\n\t") +
+                          + decodedModel.variableAssignments(crit).mkString("\n\t") +
                           "\nCandidateModel\n ===================== "  + candidateModel(crit)  + "\n\t"
-                          + candidateModel.getAssignmentsFor(crit).mkString("\n\t")
+                          + candidateModel.variableAssignments(crit).mkString("\n\t")
                           )                
                   violated = crit :: violated
                 }
                 
                 if(!violated.isEmpty) {
-                  val eps = Leaf(FloatingPointTheory.getULP(decodedModel(node).symbol.asInstanceOf[FloatingPointLiteral]))
+                  val eps = uppsat.ast.Leaf(FloatingPointTheory.getULP(decodedModel(node).symbol.asInstanceOf[FloatingPointLiteral]))
                   val lessThan = node <= (decodedModel(node) + eps) 
                   val greaterThan = node >= (decodedModel(node) - eps)
                   val newConjuncts = lessThan :: greaterThan :: violated

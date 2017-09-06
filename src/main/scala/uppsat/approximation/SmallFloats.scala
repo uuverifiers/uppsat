@@ -111,7 +111,7 @@ trait SmallFloatsCodec extends SmallFloatsCore with ApproximationCodec {
       
       case fpVar : FPVar => {
         val newSort = scaleSort(fpVar.sort, precision)
-        val newVar = FPVar(fpVar.name)(newSort)
+        val newVar = FPVar(fpVar.name, newSort)
         uppsat.ast.Leaf(newVar, ast.label)
       }
       
@@ -141,7 +141,7 @@ trait SmallFloatsCodec extends SmallFloatsCore with ApproximationCodec {
           }
         }
       }      
-      
+      //  }
       case _ => value
     }
   }
@@ -151,9 +151,16 @@ trait SmallFloatsCodec extends SmallFloatsCore with ApproximationCodec {
     val appModel = args._1
     val pmap = args._2
     
-    if (!appModel.contains(ast))
+    // TEMPORARY TODO: FIX!
+    val newAST = 
+      if (FloatingPointTheory.isVariable(ast.symbol))    
+        encodeNode(ast, List(), pmap(ast.label))
+      else
+        ast
+    
+    if (!appModel.contains(newAST))
       throw new Exception("Node " + ast + " does not have a value in \n" + appModel.subexprValuation + "\n" + appModel.variableValuation )
-    val decodedValue = decodeSymbolValue(ast.symbol, appModel(ast), pmap(ast.label))
+    val decodedValue = decodeSymbolValue(ast.symbol, appModel(newAST), pmap(ast.label))
     
     if (decodedModel.contains(ast)){
       val existingValue = decodedModel(ast).symbol 
@@ -181,7 +188,7 @@ trait SmallFloatsReconstructor extends EqualityAsAssignmentReconstructor {
       val newAST = AST(symbol, label, newChildren.toList)
       val newValue = ModelReconstructor.evalAST(newAST, inputTheory)
       if ( globalOptions.PARANOID && symbol.sort == BooleanTheory.BooleanSort) { // TODO: Talk to Philipp about an elegant way to do flags
-        val assignments = candidateModel.getAssignmentsFor(ast).toList
+        val assignments = candidateModel.variableAssignments(ast).toList
         val backupAnswer = ModelReconstructor.valAST(ast, assignments.toList, this.inputTheory, Z3Solver)
         
         val answer = newValue.symbol.asInstanceOf[BooleanConstant] == BoolTrue

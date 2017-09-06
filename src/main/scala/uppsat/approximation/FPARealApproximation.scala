@@ -206,7 +206,7 @@ trait FPARealReconstructor extends FPARealCore with EqualityAsAssignmentReconstr
       val newAST = AST(symbol, label, newChildren.toList)
       val newValue = ModelReconstructor.evalAST(newAST, inputTheory)
       if ( globalOptions.PARANOID && symbol.sort == BooleanTheory.BooleanSort) { // TODO: Talk to Philipp about an elegant way to do flags
-        val assignments = candidateModel.getAssignmentsFor(ast).toList
+        val assignments = candidateModel.variableAssignments(ast).toList
         val backupAnswer = ModelReconstructor.valAST(ast, assignments.toList, this.inputTheory, Z3Solver)
         
         val answer = newValue.symbol.asInstanceOf[BooleanConstant] == BoolTrue

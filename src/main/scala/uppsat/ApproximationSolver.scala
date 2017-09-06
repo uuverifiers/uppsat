@@ -68,17 +68,17 @@ object ApproximationSolver {
       val stringModel = smtSolver.getStringModel(encodedSMT, translator.getDefinedSymbols.toList)
       val appModel = translator.getModel(encodedFormula, stringModel)
       
-      println("Approximate model: " + appModel.getAssignmentsFor(encodedFormula).mkString("\n\t") + "\n")
+      println("Approximate model: " + appModel.variableAssignments(encodedFormula).mkString("\n\t") + "\n")
       verbose("Decoding model ... ")
       
       val decodedModel = approximation.decodeModel(formula, appModel, pmap)
-      val appAssignments = decodedModel.getAssignmentsFor(formula)
+      val appAssignments = decodedModel.variableAssignments(formula)
       
       debug("Decoded model: \n" + appAssignments.mkString("\n\t") + "\n")
       verbose("Reconstructing model ...")
       
       val reconstructedModel = approximation.reconstruct(formula, decodedModel)
-      val assignments = reconstructedModel.getAssignmentsFor(formula)
+      val assignments = reconstructedModel.variableAssignments(formula)
       
       debug("Reconstructed model: \n" + appAssignments.mkString("\n\t") + "\n")
       verbose("Validating model ...")

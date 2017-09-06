@@ -8,3 +8,31 @@ project/
 
 
 timeuppsat/uppsat.jar
+
+*.txt#
+
+*.smt2#
+
+\.settings/org\.eclipse\.core\.resources\.prefs
+
+\.#debug\.smt2
+
+\.#translated\.smt2
+
+benchmarks/t\.smt2
+
+bm/
+
+debug\.smt2
+
+error\.smt2
+
+new\.smt2
+
+\.settings/org\.scala-ide\.sdt\.core\.prefs
+
+timeuppsat/benchmarks/
+
+timeuppsat/
+
+translated\.smt2

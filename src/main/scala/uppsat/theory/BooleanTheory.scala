@@ -43,11 +43,11 @@ object BooleanTheory extends Theory {
   case object BoolEquality extends BooleanBinaryFunctionSymbol("equality")
   case object BoolNegation extends BooleanUnaryFunctionSymbol("negation")
   
-  object BoolVar {
-    def unapply(symbol : BoolVar) : Option[String] = {
-        Some(symbol.name)
-    }  
-  }
+//  object BoolVar {
+//    def unapply(symbol : BoolVar) : Option[String] = {
+//        Some(symbol.name)
+//    }  
+//  }
   
   implicit def BoolVarToAST(boolVar : BoolVar) = Leaf(boolVar)
   implicit def BoolFunctionToAST(boolConst : BooleanConstant) = Leaf(boolConst)
@@ -69,7 +69,11 @@ object BooleanTheory extends Theory {
   }
   
   // Make regular class; id is not support to be the identifier
-  class BoolVar(name : String) extends BooleanConstant(name) {
+  // TODO: (Philipp) Can't we use case class? Please?
+  case class BoolVar(val name : String) extends ConcreteFunctionSymbol {
+    val args = List()
+    val theory = BooleanTheory
+    val sort = BooleanSort
   }
 
   val sorts = List(BooleanSort)
