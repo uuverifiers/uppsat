@@ -7,14 +7,15 @@ import scala.collection.mutable.{Map => MMap}
 import uppsat.ast._
 import uppsat.theory._
 
-class SMTTranslator(theory : Theory) {  
-  var nextAST = 0
+class SMTTranslator(theory : Theory) {
+  var nextAST = 0 // Counter to make node-names unique
   val IdToPaths = MMap() : MMap[String, List[Path]]
   val astSymbols = Set() : Set[(String, String)]
   val symbolAssertions = MutableList() : MutableList[String]
 
   case class SMTTranslatorException(msg : String) extends Exception("SMTTranslatorException: " + msg) 
-  
+
+   
   def translateASTaux(ast : AST) : String = { 
      ast match {
        case Leaf(symbol, label) => {
@@ -47,6 +48,15 @@ class SMTTranslator(theory : Theory) {
      }
   }
   
+  /** Translates ast to SMT
+   *  
+   *  Takes ast and translates into a SMT formula. 
+   *  Observe that auxiliary data structures are updated containing information to make the formula complete.  
+   *  
+		  @param ast The AST to be translated
+		  
+		  @return ast as a SMT-formula
+  */ 
   def translateAST(ast : AST) = {
     nextAST = 0
     IdToPaths.clear()
@@ -125,7 +135,7 @@ class SMTTranslator(theory : Theory) {
    *  Converts a string representation of a model (mapping nodes to values) to a internal Model. 
    *  The stringModel is checked pair by pair (key, value), and for each key a corresponding node
    *  in ast is found (if several found the first one is taken) and is used as the key in the 
-   *  resulting Model.
+   *  resulting Model. Nodes created during encoding might not have a representative in the original ast (e.g. casts).
    *  
 		  @param ast All nodes in ast are keys in the returned model.
 		  @param stringModel is a given model based on the output from some external solver.
@@ -136,20 +146,19 @@ class SMTTranslator(theory : Theory) {
     val model = new Model()
     (for ((k, v) <- stringModel) {
       val paths = IdToPaths(k).filter(!_.isEmpty)
-      // For every key in stringModel: (i) make sure there is a path to it,
-      // (ii) there is a node on such path in ast (iii) and add that
+      // For every key in stringModel: if (i) there is a path to it,
+      // make sure (ii) there is a node on such path in ast (iii) and add that
       // node to the model.
-      if (paths.isEmpty)
-        throw new SMTTranslatorException("Model key has no path (i)")
-      
-      val node = ast.getPathOrElse(paths.head)
-      
-      if (node.isEmpty)
-        throw new SMTTranslatorException("Model key path not found in ast (ii)")
-      
-      val n = node.get
-      val valAST = n.symbol.sort.theory.parseLiteral(v.trim()) //AZ: Should the trim call go elsewhere?
-      model.set(n, valAST)
+       
+      if (!paths.isEmpty) {     
+        val node = ast.getPathOrElse(paths.head)
+        if (node.isEmpty)
+          throw new SMTTranslatorException("Model key path not found in ast (ii)")
+        
+        val n = node.get
+        val valAST = n.symbol.sort.theory.parseLiteral(v.trim()) //AZ: Should the trim call go elsewhere?
+        model.set(n, valAST)
+      }
     })
     model
   }
