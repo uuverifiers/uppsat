@@ -32,35 +32,72 @@ trait SmallFloatsCore extends ApproximationCore {
    val outputTheory = FloatingPointTheory   
 }
 
+  /**
+   * The core of the smallfloats approximation!
+	 * Other approximations might add top level constraints over the domain rather than 
+   * change the sorts of the formula itself.
+	 */
+
 trait SmallFloatsCodec extends SmallFloatsCore with ApproximationCodec {
-  //The core of the smallfloats approximation!
-  //Other approximations might add top level constraints over the domain rather than 
-  // change the sorts of the formula itself.
+
+  class SmallFloatsException(msg : String) extends Exception("SmallFloats: " + msg)
+  
+  /**
+   * Scales sort according to the precision p
+	 *  
+   * @param sort is the full precision sort which will be scaled down.
+   * @param p is the precision used to calculate the new sort.
+   * 
+   * @return sort scaled down according to p 
+	 */
   def scaleSort(sort : FPSort, p : Int) = {
     val eBits = 3 + ((sort.eBitWidth - 3) * p)/precisionOrdering.maximalPrecision
     val sBits = 3 + ((sort.sBitWidth - 3) * p)/precisionOrdering.maximalPrecision
     sort.getFactory(List(eBits, sBits))
   }
-  
-  // Needed to determine what needs to cast
-  def compareSorts(s1 : Sort, s2 : Sort) = {
+
+  /**
+   * Checks whether s1 greater than s2 (i.e. has more number of bits).
+	 *  
+   * @param s1 first sort.
+   * @param s2 second sort.
+   * 
+   * @return true if s1 has more bits than s2.
+	 */  
+  def sortGreaterThan(s1 : Sort, s2 : Sort) = {
     (s1, s2) match {
       case (FPSort(eb1, sb1), FPSort(eb2, sb2)) => eb1 + sb1 > eb2 + sb2
-      case (FPSort(_, _), _) | (_, FPSort(_, _)) => true        
+      case (FPSort(_, _), _) | (_, FPSort(_, _)) =>
+        // TODO: (Aleks) I do not understand what this case is? This case used to return true
+        throw new SmallFloatsException("Comparing FPSort with non-FPSort (" + s1 + ") & (" + s2 + ")")
     }
   }
   
-  // Ensures the well-sortedness of the encoded formula
+  /**
+   * Creates a new AST casting to target .
+	 *  
+	 *  Creates a new AST identical to ast with the possible addition of a
+	 *  casting node at the root if ast is not of sort target. If the ast is not
+	 *  of a FPSort, it is returned as-is.
+	 *  
+   * @param ast The AST to be casted.
+   * @param target The sort to which ast is casted.
+   * 
+   * @return ast if sort of ast is target, otherwise ast with a new root node which casts ast to target sort. 
+	 */
   def cast(ast : AST, target : ConcreteSort) : AST = {
     val source = ast.symbol.sort
-    if (ast.symbol.sort != RoundingModeSort && source != target ) {      
-      val cast = FPToFPFactory(List(ast.symbol.sort, target))
-      val rtzNode = AST(RoundToZero, List(), List())
-      AST(cast, List(), List(rtzNode, ast))
-    } else {
-      ast
+    // TODO: (Aleks) Can we change these conditions. Why checking that it is not a RMSort instead of checking it is a FPSort?
+    //if (ast.symbol.sort != RoundingModeSort && source != target ) {
+    ast.symbol.sort match {
+      case FPSort(_, _) if ast.symbol.sort != target => {
+        val cast = FPToFPFactory(List(ast.symbol.sort, target))
+        val rtzNode = AST(RoundToZero, List(), List())
+        AST(cast, List(), List(rtzNode, ast))        
+      }
+      case _ => ast
     } 
-  }
+  }  
   
   def scaleReturnSort( fpSymbol : FloatingPointSymbol, p : Int ) : (Seq[ConcreteSort], ConcreteSort) = {
     fpSymbol match {
@@ -77,6 +114,7 @@ trait SmallFloatsCodec extends SmallFloatsCore with ApproximationCodec {
         }
     }
   }
+  
   // Encodes a node by scaling its sort based on precision and calling
   // cast to ensure sortedness.
   def encodeNode(ast : AST, children : List[AST], precision : Int) : AST = {
@@ -100,7 +138,7 @@ trait SmallFloatsCodec extends SmallFloatsCore with ApproximationCodec {
       }
       
       case fpPred : FloatingPointPredicateSymbol => {
-        val newSort = children.tail.foldLeft(children.head.symbol.sort)((x,y) => if (compareSorts(x, y.symbol.sort)) x else  y.symbol.sort)
+        val newSort = children.tail.foldLeft(children.head.symbol.sort)((x,y) => if (sortGreaterThan(x, y.symbol.sort)) x else  y.symbol.sort)
         val newChildren = 
           for ( c <- children) yield {
             cast(c, newSort)          
