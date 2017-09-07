@@ -25,7 +25,7 @@ object MathSatSolver extends SMTSolver {
   def evaluate(formula : String) = Timer.measure("MathSatSolver.runSolver") {
     import sys.process._
   
-    val process = Runtime.getRuntime().exec("mathsat -model")
+    val process = Runtime.getRuntime().exec("./mathsat -model")
     mathsatPrint("[Started process: " + process)
     val stdin = process.getOutputStream ()
     val stderr = process.getErrorStream ()

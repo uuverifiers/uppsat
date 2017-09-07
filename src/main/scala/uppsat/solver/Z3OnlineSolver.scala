@@ -29,7 +29,7 @@ class Z3OnlineSolver extends SMTSolver {
       println("[Z3] " + str)
   
   // Starting solver...
-  val process = Runtime.getRuntime().exec("z3 -in")
+  val process = Runtime.getRuntime().exec("./z3 -in")
   z3print("[Started process: " + process)
   val stdin = process.getOutputStream ()
   val stderr = process.getErrorStream ()

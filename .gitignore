@@ -36,3 +36,7 @@ timeuppsat/benchmarks/
 timeuppsat/
 
 translated\.smt2
+
+mathsat
+
+z3

@@ -24,8 +24,8 @@ object Z3Solver extends SMTSolver {
     
   def evaluate(formula : String) = Timer.measure("Z3Solver.runSolver") {
     import sys.process._
-  
-    val process = Runtime.getRuntime().exec("z3 -in -smt2")
+    
+    val process = Runtime.getRuntime().exec("./z3 -in -smt2")
     z3print("[Started process: " + process)
     val stdin = process.getOutputStream ()
     val stderr = process.getErrorStream ()
