@@ -41,7 +41,7 @@ object RealTheory extends Theory {
   }
   
   
-  // Constants   
+  // Constants    
   val RealOne  = RealNumeral(1)
   val RealZero = RealNumeral(0)
   
@@ -173,7 +173,7 @@ object RealTheory extends Theory {
       case RealDivision => "/"
       case RealEquality => "="
       case RealLEQ => "<="
-      case RealGEQ => "<="
+      case RealGEQ => ">="
       case RealLT => "<"      
       case RealGT => ">"
       case RealNumeral(num, _) => num.toString()

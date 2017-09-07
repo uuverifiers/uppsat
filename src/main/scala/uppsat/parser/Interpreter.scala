@@ -134,9 +134,25 @@ object Interpreter {
         uppsat.ast.Leaf(FloatingPointTheory.FloatingPointLiteral(sign.toInt, eBits, sBits, fpsort))
       }
         
-//      case c : RatConstant => {
-//        uppsat.ast.Leaf(uppsat.theory.RealTheory.RealDecimal(BigDecimal(c.rational_.toString())))
-//      }
+      case c : RatConstant => {
+        // RatConstant given as decimal number, convert to num/denum representation.
+        // TODO: This is probably slow
+        val bd = BigDecimal(c.rational_.toString()).toString
+        val parts = bd.split("\\.")
+        var num = BigInt(parts(0))
+        var den = BigInt(1)
+        val frac = parts(1)
+        for (i <- 0 until frac.length()) {
+          num *= 10
+          den *= 10
+        }
+        num += BigInt(frac)
+        val gcd = num.gcd(den)
+        num /= gcd
+        den /= gcd
+        println(num + "/" + den)        
+        uppsat.ast.Leaf(uppsat.theory.RealTheory.RealDecimal(num, den))
+      }
         
         
   //    case c : HexConstant =>
