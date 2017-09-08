@@ -98,31 +98,19 @@ trait SmallFloatsCodec extends SmallFloatsCore with ApproximationCodec {
       case _ => ast
     } 
   }  
-  
-  def scaleReturnSort( fpSymbol : FloatingPointSymbol, p : Int ) : (Seq[ConcreteSort], ConcreteSort) = {
-    fpSymbol match {
-        case fnSym : FloatingPointFunctionSymbol => {
-          val newSort = scaleSort(fnSym.sort, p)
-          val arity = fnSym.args.length
-          (List.fill (arity) (newSort), newSort)
-        }
-        case prSym : FloatingPointPredicateSymbol => {
-          assert (false)
-          //TODO: Add children as parameter, or change symbol to include children
-          //val newSort = children.tail.foldLeft(children.head.symbol.sort)((x,y) => if (compareSorts(x, y.symbol.sort)) x else  y.symbol.sort)
-          (prSym.args,prSym.sort)
-        }
-    }
-  }
-  
-  // Encodes a node by scaling its sort based on precision and calling
-  // cast to ensure sortedness.
+   
+  /** Encodes a node by scaling its sort based on precision and calling cast to ensure sortedness.
+   *  
+   *  @param ast Node of ast to encode.
+   *  @param precision Precision to encode
+   *  
+   *  @return ast encoded according to precision.
+   */
   def encodeNode(ast : AST, children : List[AST], precision : Int) : AST = {
       ast.symbol match {
-      case fpLit : FloatingPointConstantSymbol => {
-        ast 
-      }
+      case _ : FloatingPointConstantSymbol => ast 
       
+      // TODO: (Aleks) For fpSym we are just scaling the sort to get newSort, while in fpPred we are checking the children?
       case fpSym : FloatingPointFunctionSymbol => {
           val newSort = scaleSort(fpSym.sort, precision)          
           val newChildren = 
@@ -153,13 +141,18 @@ trait SmallFloatsCodec extends SmallFloatsCore with ApproximationCodec {
         uppsat.ast.Leaf(newVar, ast.label)
       }
       
-      case _ => {
-        AST(ast.symbol, ast.label, children) 
-      }
+      case _ => AST(ast.symbol, ast.label, children) 
     }
   }
   
-  // Describes translation of smallfloat values into values of the original formula.  
+  /** Decodes an approximative model value back to full precision.
+   *  
+   *  @param symbol A symbol representing the full precision sort.
+   *  @param value The value to be converted.
+   *  @param p The precision to which value was encoded.
+   *  
+   *  @return value decoded to the sort of symbol if it was encoded by precision p.
+   */  
   def decodeSymbolValue(symbol : ConcreteFunctionSymbol, value : AST, p : Int) = {
     (symbol.sort, value.symbol) match {
       case (FPSort(e, s), fp : FloatingPointTheory.FloatingPointLiteral) => {

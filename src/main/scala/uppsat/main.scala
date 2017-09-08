@@ -63,14 +63,13 @@ object globalOptions {
 }
 
 
-
-
 object main {
   
   def printUsage() = {
     println("Usage: uppsat [-options] input file")
     println("Options:")
     println("\t-v - verbose output")
+    println("\t-s - print statistics")    
     println("\t-d - debugging output")
     println("\t-p - run a second check using z3 to verify internal queries")
     println("\t-b=NUM - use one of the following backends:")

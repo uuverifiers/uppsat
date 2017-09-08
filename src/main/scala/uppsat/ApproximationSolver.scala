@@ -13,47 +13,50 @@ import uppsat.Encoder.PathMap
 import uppsat.ModelReconstructor.Model
 import uppsat.globalOptions._
 
-
+/** Static object which is the main control structure for the approximation framework.
+ *
+ *  
+ */
 object ApproximationSolver {
   
   type ExtModel = Map[ConcreteFunctionSymbol, String]
   
   trait Answer
-  
   case class Sat(model : ExtModel) extends Answer
   case object Unsat extends Answer
   case object Unknown extends Answer
-  
-  
+  /** Solves formula by means of approximation.
+ 	*
+	* @param formula The formula to be solved.
+	* @param translator SMT-translator translating formulas to SMT and back.
+	* 
+	* @return Sat, Unsat or Unknown depending on the formula.   		
+ 	*/
   def solve(formula : AST, translator : SMTTranslator, approximation : Approximation) : Answer = {
     verbose("-----------------------------------------------")
     verbose("Starting Approximation Framework")
     verbose("-----------------------------------------------")   
     verbose(translator.translate(formula))
+    
     val startTime = System.currentTimeMillis
     val retVal = loop(formula : AST, translator : SMTTranslator, approximation : Approximation) 
     val stopTime = System.currentTimeMillis
     
-    
+     
     verbose("Solving time: " + (stopTime - startTime) + "ms") 
     
+    // TODO: (Aleks) Do we need to stop the online solver or not?
     //ModelReconstructor.stopOnlineSolver()
     
     retVal match {
       case Sat(model) => {
         verbose("Model found:\n" + model.mkString("\t", "\n\t", "\n"))        
         println("sat")
-        Sat(model)
       }
-      case Unsat => {        
-        println("unsat")
-        Unsat
-      }
-      case Unknown => {        
-        println("unknown")
-        Unknown
-      }
+      case Unsat => println("unsat")
+      case Unknown => println("unknown")
     }
+    retVal
   }
   
   
@@ -61,10 +64,10 @@ object ApproximationSolver {
   def loop(formula : AST, translator : SMTTranslator, approximation : Approximation) : Answer = {  
     var pmap = PrecisionMap[approximation.P](formula)(approximation.precisionOrdering)
     pmap = pmap.cascadingUpdate(formula, approximation.precisionOrdering.minimalPrecision)
-    var iterations = 0
-       
+    var iterations = 0     
     
     val smtSolver = globalOptions.getBackendSolver
+    
     def tryReconstruct(encodedFormula : AST, encodedSMT : String) : (Option[ExtModel], Option[PrecisionMap[approximation.P]]) = Timer.measure("tryReconstruct") {
       val stringModel = smtSolver.getStringModel(encodedSMT, translator.getDefinedSymbols.toList)
       val appModel = translator.getModel(encodedFormula, stringModel)
@@ -72,18 +75,15 @@ object ApproximationSolver {
       verbose("Decoding model ... ")
       
       val decodedModel = approximation.decodeModel(formula, appModel, pmap)
-      val appAssignments = decodedModel.variableAssignments(formula)
 
-      debug("Decoded model: \n" + appAssignments.mkString("\n\t") + "\n")
       verbose("Reconstructing model ...")
 
       val reconstructedModel = approximation.reconstruct(formula, decodedModel)
       val assignments = reconstructedModel.variableAssignments(formula)
 
-      debug("Reconstructed model: \n" + appAssignments.mkString("\n\t") + "\n")
       verbose("Validating model ...")
 
-//      TODO: Align models and sorts somehow...
+//      TODO: (Aleks?) Align models and sorts somehow... What does this mean?
 //      verbose("Model comparison : ")
 //      if (globalOptions.VERBOSE)
 //        encodedFormula.ppWithModels("", appModel, reconstructedModel)
