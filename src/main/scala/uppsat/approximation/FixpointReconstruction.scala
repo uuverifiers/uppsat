@@ -493,7 +493,7 @@ trait FixpointReconstruction extends ApproximationCore {
  
  def satisfyConstraints( ast : AST, unknown : ConcreteFunctionSymbol, candidateModel : Model) : Option[AST] = {
     println("Satisfying constraints")
-    ast.prettyPrint
+    //ast.prettyPrint
     
     val vars = ast.iterator.toList.filter(_.isVariable)
     

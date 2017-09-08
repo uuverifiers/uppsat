@@ -24,6 +24,7 @@ import uppsat.ApproximationSolver.Answer
 object globalOptions {
   // FLAGS
   var VERBOSE = false
+  var STATS = false
   var DEBUG = false
   var DEADLINE : Option[Long] = None
   var STARTTIME : Option[Long] = None
@@ -66,86 +67,6 @@ object globalOptions {
 
 object main {
   
-  def boolean() = {
-
-    val a = new BoolVar("a")
-    val b = new BoolVar("b")
-    val c = new BoolVar("c")
-    val t = BoolTrue
-
-//    val rootNode = a & (!b & (t & (!c)))
-    val rootNode = AST(naryConjunction(3), List(a, b, c))
-    val translator = new SMTTranslator(BooleanTheory)
-    (rootNode, List(a, b, c), translator, EmptyApproximation)
-
-  }
-
-  def integer() = {
-
-    val x = new IntVar("x")
-    val y = new IntVar("y")
-
-    val rootNode = (x === (y - 4)) & ((x + y) === 6)
-    (rootNode, List(x, y), new SMTTranslator(RealTheory), IntApproximation)
-  }
-  
-  
-  def real() = {
-
-    val x = new RealVar("x")
-    val y = new RealVar("y")
-
-    val rootNode = (x === (y - NumeralToAST(4))) & ((x + y) === DecimalToAST(13, 2))
-    (rootNode, List(x, y), new SMTTranslator(RealTheory), IntApproximation)
-  }
-  
-  def contradiction() = {
-    val x = new IntVar("x")
-    val y = new IntVar("y")
-
-    val rootNode = (x + 3 === y + 5)
-    (rootNode, List(x, y), new SMTTranslator(RealTheory), EmptyApproximation)
-  }    
-  
-//  def floatingpoint() = {
-//    implicit val rmm = RoundToPositive
-//    implicit val fpsort = FPSortFactory(List(8,24))
-//    
-//    val x = FPVar("x")
-//    val y = FPVar("y")
-//    val c : AST = 1.75f
-//    val rootNode = (x + 1.75f === y) & (x === 2f)
-//    (rootNode, List(x, y), new SMTTranslator(FloatingPointTheory), SmallFloatsApproximation)
-//  }
-  
-  
-//    val (formula, vars, translator, approximation) = real()
-//    println("-----------------------------------------------")
-//    println("Formula ")
-//    println("-----------------------------------------------")
-//    formula.prettyPrint
-//    
-//    ApproximationSolver.loop(formula, translator, approximation)
-//    println("Running time: -- ms")
-//    
-  def main(args: Array[String]) = {
-//    val (formula, vars, translator, approximation) = real()
-//    println("-----------------------------------------------")
-//    println("Formula ")
-//    println("-----------------------------------------------")
-//    val toSolve = formula.labelAST
-//    
-//    ApproximationSolver.loop(toSolve, translator, approximation)
-//    println("Running time: -- ms")
-    
-    verbose("Args: " + args.mkString("|"))
-    main_aux(args) match {
-      case _ : Sat => System.exit(10)
-      case Unsat   => System.exit(20)
-      case Unknown => System.exit(30)        
-    }
-  }    
-  
   def printUsage() = {
     println("Usage: uppsat [-options] input file")
     println("Options:")
@@ -173,13 +94,10 @@ object main {
       val backend = "-b=([0-9.]+)".r
       val dashPattern = "-.*".r
       arg match {
-        
+        case "-s" => globalOptions.STATS = true
         case "-v" => globalOptions.VERBOSE = true
-                     
         case "-d" => globalOptions.DEBUG = true
-        
         case "-p" => globalOptions.PARANOID =  true
-        
         case "-h" | "-help" => printUsage()
         
         case backend(i) => 
@@ -207,14 +125,13 @@ object main {
       parseArgument(a)
     }
       
-    val nonOptions = args.filterNot(_.startsWith("-"))  
+    val files = args.filterNot(_.startsWith("-")).toList  
     
-    if (nonOptions.isEmpty) {
+    if (files.isEmpty) {
        printHelpInfo()
        Unknown
     } else {
-      val file = nonOptions.toList(0)
-      val reader = () => new java.io.BufferedReader (new java.io.FileReader(new java.io.File(file)))            
+      val reader = () => new java.io.BufferedReader (new java.io.FileReader(new java.io.File(files.head)))            
       val l = new smtlib.Yylex(reader())
       val p = new smtlib.parser(l)
       val script = p.pScriptC
@@ -223,9 +140,22 @@ object main {
         Interpreter.reset()
         Interpreter.interpret(script)
       }
-      println(Timer.toString())
+      debug(Timer.toString())
+      if (globalOptions.STATS)
+        println(Timer.stats)
       Interpreter.myEnv.result
     }
   }
+  
+  def main(args: Array[String]) = {
+    
+    verbose("Args: " + args.mkString("|"))
+    // TODO: (Aleks) Do we need these system exit codes? Usually non-zero means error I think?
+    main_aux(args) match {
+      case _ : Sat => System.exit(10)
+      case Unsat   => System.exit(20)
+      case Unknown => System.exit(30)        
+    }
+  }   
 }
 

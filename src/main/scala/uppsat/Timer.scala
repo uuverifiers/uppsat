@@ -114,4 +114,16 @@ object Timer {
     table + "\n" + iter + "\n" +  total
   }
   
+  def stats : String = {
+   
+    
+    val totalTime = (0l /: accumulatedTimes.valuesIterator)(_ + _)
+    val totalTimeInSec = totalTime.toDouble / 1000000000.0
+        
+    val iter = ":iterations " + iterations 
+    val total = ":time "  + totalTimeInSec + "s"
+    
+    iter + "\n" +  total
+  }  
+  
 }

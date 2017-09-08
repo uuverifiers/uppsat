@@ -62,24 +62,24 @@ object ApproximationSolver {
     var pmap = PrecisionMap[approximation.P](formula)(approximation.precisionOrdering)
     pmap = pmap.cascadingUpdate(formula, approximation.precisionOrdering.minimalPrecision)
     var iterations = 0
+       
     
     val smtSolver = globalOptions.getBackendSolver
     def tryReconstruct(encodedFormula : AST, encodedSMT : String) : (Option[ExtModel], Option[PrecisionMap[approximation.P]]) = Timer.measure("tryReconstruct") {
       val stringModel = smtSolver.getStringModel(encodedSMT, translator.getDefinedSymbols.toList)
       val appModel = translator.getModel(encodedFormula, stringModel)
       
-      println("Approximate model: " + appModel.variableAssignments(encodedFormula).mkString("\n\t") + "\n")
       verbose("Decoding model ... ")
       
       val decodedModel = approximation.decodeModel(formula, appModel, pmap)
       val appAssignments = decodedModel.variableAssignments(formula)
-      
+
       debug("Decoded model: \n" + appAssignments.mkString("\n\t") + "\n")
       verbose("Reconstructing model ...")
-      
+
       val reconstructedModel = approximation.reconstruct(formula, decodedModel)
       val assignments = reconstructedModel.variableAssignments(formula)
-      
+
       debug("Reconstructed model: \n" + appAssignments.mkString("\n\t") + "\n")
       verbose("Validating model ...")
 
@@ -87,7 +87,7 @@ object ApproximationSolver {
 //      verbose("Model comparison : ")
 //      if (globalOptions.VERBOSE)
 //        encodedFormula.ppWithModels("", appModel, reconstructedModel)
-      
+ 
       if (ModelReconstructor.valAST(formula, assignments.toList, approximation.inputTheory, smtSolver)) {
         val extModel =
           for ((symbol, value) <- reconstructedModel.getModel) yield {
@@ -119,7 +119,7 @@ object ApproximationSolver {
                               approximation.encodeFormula(formula, pmap)
                            else
                               formula
-      //encodedFormula.prettyPrint
+
       val encodedSMT = translator.translate(encodedFormula)
 
       verbose(encodedSMT)

@@ -203,7 +203,7 @@ trait SmallFloatsCodec extends SmallFloatsCore with ApproximationCodec {
     if (decodedModel.contains(ast)){
       val existingValue = decodedModel(ast).symbol 
       if ( existingValue != decodedValue.symbol) {
-         ast.prettyPrint("\t") 
+        ast.prettyPrint("\t") 
         throw new Exception("Decoding the model results in different values for the same entry : \n" + existingValue + " \n" + decodedValue.symbol)
       }
     } else {
