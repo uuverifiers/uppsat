@@ -172,7 +172,6 @@ trait SmallFloatsCodec extends SmallFloatsCore with ApproximationCodec {
           }
         }
       }      
-      //  }
       case _ => value
     }
   }

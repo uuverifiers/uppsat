@@ -277,7 +277,7 @@ trait FixpointReconstruction extends ApproximationCore {
     (definitions, critical, conjuncts)
   }
   
-  def fixPointBasedReconstruction(ast : AST, decodedModel : Model) : Model = {
+  def reconstruct(ast : AST, decodedModel : Model) : Model = {
     val candidateModel = new Model()  
    
     verbose("Starting fixpoint reconstruction")
@@ -492,31 +492,28 @@ trait FixpointReconstruction extends ApproximationCore {
   }
  
  def satisfyConstraints( ast : AST, unknown : ConcreteFunctionSymbol, candidateModel : Model) : Option[AST] = {
-    println("Satisfying constraints")
-    //ast.prettyPrint
+    verbose("Satisfying constraints")
     
-    val vars = ast.iterator.toList.filter(_.isVariable)
+    //    TODO: (Aleks) Eclipse says that v != unknown will *almost* never happen.
+    // 
+    //    val vars = ast.iterator.toList.filter(_.isVariable)
+    //    
+    //    val assertions : List[(ConcreteFunctionSymbol, AST)] = 
+    //      for ( v <- vars if( v != unknown && candidateModel.contains(v))) yield {        
+    //          (v.symbol, candidateModel(v))
+    //      }
     
-    val assertions : List[(ConcreteFunctionSymbol, AST)] = 
-      for ( v <- vars if( v != unknown && candidateModel.contains(v))) yield {        
-          (v.symbol, candidateModel(v))
-      }
-    
-    
+    val assertions = List()
     val result = ModelReconstructor.evalAST(ast, unknown, assertions, inputTheory)
     result match {
-      case Some(res) => println(">>>>> " + res.symbol) 
+      case Some(res) => debug(">>>>> " + res.symbol) 
                         Some (res)
-      case None => println("XXXXXX")
+      case None => debug("XXXXXX")
                    None
     }
     
   }
-  
-  def reconstruct(ast : AST, decodedModel : Model) : Model = {
-    fixPointBasedReconstruction(ast, decodedModel)
-  }
- 
+   
   def evaluateNode( decodedModel  : Model, candidateModel : Model, ast : AST) : Model = {
     val AST(symbol, label, children) = ast
     
