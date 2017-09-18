@@ -1,0 +1,69 @@
+Trying solvers:
+	IJCAR(z3) (scala uppsat.jar -a=0)
+	FxptRef(z3) (scala uppsat.jar -a=1)
+	IJCAR(MS) (scala uppsat.jar -a=0 -b=1)
+	FxptRef(MS) (scala uppsat.jar -a=1 -b=1)
+	IJCAR(ACDCL) (scala uppsat.jar -a=0 -b=2)
+	FxptRef(ACDCL) (scala uppsat.jar -a=1 -b=2)
+<--- RESULTS --->
+	 Time, Iterations, Answer
+File	IJCAR(z3), FxptRef(z3), IJCAR(MS), FxptRef(MS), IJCAR(ACDCL), FxptRef(ACDCL), IJCAR(z3), FxptRef(z3), IJCAR(MS), FxptRef(MS), IJCAR(ACDCL), FxptRef(ACDCL), IJCAR(z3), FxptRef(z3), IJCAR(MS), FxptRef(MS), IJCAR(ACDCL), FxptRef(ACDCL)
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/add_01_1000_1.smt2, 38.254997, 38.273087, 11.209343, 11.1817, 0.77100617, 0.76087546, 6, 6, 6, 6, 6, 6, unsat, unsat, unsat, unsat, unsat, unsat
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/add_01_1000_2.smt2, 54.03349, 53.91796, 16.579693, 16.489035, 3.3978758, 3.4009833, 6, 6, 6, 6, 6, 6, unsat, unsat, unsat, unsat, unsat, unsat
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/add_01_1000_3.smt2, 118.86035, 118.82455, 37.126724, 37.110355, 72.84899, 72.8212, 6, 6, 6, 6, 6, 6, unsat, unsat, unsat, unsat, unsat, unsat
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/add_01_1000_4.smt2, 161.83437, 162.53397, 73.97146, 74.21993, t/o, t/o, 6, 6, 6, 6, -, -, unsat, unsat, unsat, unsat, -, -
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/add_01_100_1.smt2, 52.38414, 52.335278, 15.91563, 15.838376, 3.4532878, 3.4436188, 6, 6, 6, 6, 6, 6, unsat, unsat, unsat, unsat, unsat, unsat
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/add_01_100_2.smt2, 108.35032, 108.64498, 37.269535, 37.210804, 98.39353, 98.38518, 6, 6, 6, 6, 6, 6, unsat, unsat, unsat, unsat, unsat, unsat
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/add_01_100_3.smt2, 172.7129, 173.25905, 75.95085, 76.318405, t/o, t/o, 6, 6, 6, 6, -, -, unsat, unsat, unsat, unsat, -, -
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/add_01_100_4.smt2, 223.56567, 223.58798, 91.6409, 92.14125, t/o, t/o, 6, 6, 6, 6, -, -, unsat, unsat, unsat, unsat, -, -
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/add_01_10_1.smt2, 122.790955, 122.493996, 40.701855, 40.299084, 104.3172, 104.58578, 6, 6, 6, 6, 6, 6, unsat, unsat, unsat, unsat, unsat, unsat
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/add_01_10_2.smt2, 185.37201, 185.471, 75.94131, 75.42309, t/o, t/o, 6, 6, 6, 6, -, -, unsat, unsat, unsat, unsat, -, -
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/add_01_10_3.smt2, 371.30057, 372.00684, 146.40279, 145.76817, t/o, t/o, 6, 6, 6, 6, -, -, unsat, unsat, unsat, unsat, -, -
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/add_01_10_4.smt2, 448.25906, 447.1434, 228.19214, 228.52112, t/o, t/o, 6, 6, 6, 6, -, -, unsat, unsat, unsat, unsat, -, -
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/add_01_1_1.smt2, 230.09103, 229.29295, 93.33338, 93.65229, t/o, t/o, 6, 6, 6, 6, -, -, unsat, unsat, unsat, unsat, -, -
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/add_01_1_2.smt2, 332.57892, 332.69058, 190.38403, 190.87492, t/o, t/o, 6, 6, 6, 6, -, -, unsat, unsat, unsat, unsat, -, -
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/add_01_1_3.smt2, 582.91345, 584.14954, 265.06497, 263.15417, t/o, t/o, 6, 6, 6, 6, -, -, unsat, unsat, unsat, unsat, -, -
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/add_01_1_4.smt2, t/o, t/o, 336.65317, 337.03058, t/o, t/o, -, -, 6, 6, -, -, -, -, unsat, unsat, -, -
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/div.c.10.smt2, 2.0050154, 4.803395, 29.176283, 3.6005108, 45.611984, 13.598502, 1, 2, 8, 1, 8, 2, sat, sat, sat, sat, sat, sat
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/div.c.20.smt2, 5.0726495, 3.867766, 172.69601, 29.471039, t/o, t/o, 1, 1, 10, 2, -, -, sat, sat, sat, sat, -, -
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/div.c.3.smt2, 0.7946844, 0.6838117, 0.8825131, 1.62816, 5.0810084, 0.8426938, 1, 1, 1, 1, 8, 1, sat, sat, sat, sat, sat, sat
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/div.c.30.smt2, 9.458547, 8.685183, 44.68774, 27.816286, t/o, t/o, 1, 1, 6, 2, -, -, sat, sat, sat, sat, -, -
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/div.c.40.smt2, 10.535066, 8.509925, 17.568056, 71.54541, t/o, t/o, 1, 1, 2, 2, -, -, sat, sat, sat, sat, -, -
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/div.c.50.smt2, 55.226852, 121.4982, t/o, 37.84568, t/o, t/o, 3, 3, -, 2, -, -, sat, sat, -, sat, -, -
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/div2.c.10.smt2, 2.0525932, 1.8655062, 15.103172, 1.8671495, t/o, t/o, 1, 1, 6, 1, -, -, sat, sat, sat, sat, -, -
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/div2.c.20.smt2, 4.3083816, 3.5924234, 50.450237, 33.40784, t/o, t/o, 1, 1, 7, 3, -, -, sat, sat, sat, sat, -, -
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/div2.c.3.smt2, 1.5433842, 2.9807928, 9.901264, 1.7450068, t/o, 1.5392022, 2, 2, 8, 1, -, 1, sat, sat, sat, sat, -, sat
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/div2.c.30.smt2, 14.030039, 25.646124, t/o, t/o, t/o, t/o, 2, 2, -, -, -, -, sat, sat, -, -, -, -
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/div2.c.40.smt2, 24.869411, 36.469112, t/o, t/o, t/o, t/o, 2, 2, -, -, -, -, sat, sat, -, -, -, -
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/div2.c.50.smt2, 46.582043, 17.358986, 306.7197, t/o, t/o, t/o, 3, 1, 9, -, -, -, sat, sat, sat, -, -, -
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/div3.c.10.smt2, 2.0146577, 4.783084, 14.562764, 1.8978659, 26.3345, 8.1935, 1, 2, 6, 1, 7, 7, sat, sat, sat, sat, sat, sat
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/div3.c.20.smt2, 8.024571, 14.102754, 14.277594, 4.46288, 2.7616322, 2.6531653, 2, 2, 4, 1, 1, 1, sat, sat, sat, sat, sat, sat
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/div3.c.3.smt2, 1.540036, 2.724554, 1.5966097, 0.8976075, 3.864204, 0.7909669, 2, 3, 2, 1, 7, 1, sat, sat, sat, sat, sat, sat
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/div3.c.30.smt2, 29.739933, 33.810608, 11.641197, 15.795989, 6.3327084, 6.020593, 3, 2, 2, 2, 1, 1, sat, sat, sat, sat, sat, sat
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/div3.c.40.smt2, 10.518724, 9.668479, 15.13272, 21.154678, 7.636791, 7.0385346, 1, 1, 2, 2, 1, 1, sat, sat, sat, sat, sat, sat
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/div3.c.50.smt2, 17.854876, 18.070112, 8.016077, 55.019516, 6.177375, 5.620942, 1, 1, 1, 3, 1, 1, sat, sat, sat, sat, sat, sat
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/e1.c.smt2, 1.0396804, 0.9738783, 0.6422218, 0.7888975, 8.458273, 1.2268717, 2, 2, 1, 1, 8, 2, sat, sat, sat, sat, sat, sat
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/e1_1.c.smt2, 0.49081782, 0.49129415, 1.4186676, 6.015649, 4.900196, 0.6374294, 1, 1, 3, 10, 9, 1, sat, sat, sat, sat, sat, sat
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/e1_2.c.smt2, 0.4891824, 0.48249137, 1.4096279, 6.033384, 4.9171576, 0.6512884, 1, 1, 3, 10, 9, 1, sat, sat, sat, sat, sat, sat
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/e2.c.smt2, 1.2031142, 1.05606, 1.2298312, 1.3760586, 3.1909962, 2.1408987, 1, 1, 1, 1, 3, 2, sat, sat, sat, sat, sat, sat
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/e2_1.c.smt2, 0.9069316, 0.6519378, 0.99003065, 1.0531203, 0.9086839, 0.98252684, 1, 1, 1, 1, 1, 1, sat, sat, sat, sat, sat, sat
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/e2_2.c.smt2, 0.838358, 0.554433, 1.661649, 0.99846476, 0.85389864, 0.97945946, 1, 1, 2, 1, 1, 1, sat, sat, sat, sat, sat, sat
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/e2_3.c.smt2, 0.87676495, 0.57548696, 0.9335234, 1.0040555, 0.8947966, 0.91034865, 1, 1, 1, 1, 1, 1, sat, sat, sat, sat, sat, sat
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/e2a_1.c.smt2, 0.6371478, 0.70667446, 1.2512347, 0.7885951, 0.6430436, 0.75562507, 1, 1, 2, 1, 1, 1, sat, sat, sat, sat, sat, sat
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/e2a_2.c.smt2, 0.64364576, 0.6320665, 0.7048163, 0.8217555, 3.324684, 3.6563969, 1, 1, 1, 1, 7, 7, sat, sat, sat, sat, sat, sat
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/e2a_3.c.smt2, 0.629474, 0.5600514, 0.6993684, 0.7622699, 3.5870867, 3.602887, 1, 1, 1, 1, 7, 7, sat, sat, sat, sat, sat, sat
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/e3.c.smt2, 6.821419, 6.834766, t/o, t/o, t/o, t/o, 6, 6, -, -, -, -, unsat, unsat, -, -, -, -
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/e3_1.c.smt2, 1.1550497, 1.1287857, 6.3630195, 2.0818396, 1.9512979, 3.6738234, 1, 1, 4, 2, 2, 3, sat, sat, sat, sat, sat, sat
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/e3_2.c.smt2, 1.0617535, 1.0577506, 2.038521, 2.0709772, 1.8253034, 6.722896, 1, 1, 2, 2, 2, 6, sat, sat, sat, sat, sat, sat
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/f23.smt2, t/o, t/o, t/o, t/o, t/o, t/o, -, -, -, -, -, -, -, -, -, -, -, -
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/gaussian.c.125.smt2, t/o, t/o, t/o, t/o, t/o, t/o, -, -, -, -, -, -, -, -, -, -, -, -
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/gaussian.c.175.smt2, t/o, t/o, t/o, t/o, t/o, t/o, -, -, -, -, -, -, -, -, -, -, -, -
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/gaussian.c.25.smt2, t/o, t/o, t/o, t/o, t/o, t/o, -, -, -, -, -, -, -, -, -, -, -, -
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/gaussian.c.75.smt2, t/o, t/o, t/o, t/o, t/o, t/o, -, -, -, -, -, -, -, -, -, -, -, -
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/mul_000003_30000_1.smt2, t/o, t/o, t/o, t/o, t/o, t/o, -, -, -, -, -, -, -, -, -, -, -, -
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/mul_03_3000_1.smt2, t/o, t/o, t/o, t/o, t/o, t/o, -, -, -, -, -, -, -, -, -, -, -, -
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/mul_03_30_1.smt2, 534.55725, 535.32336, 73.76875, 73.533066, t/o, t/o, 6, 6, 6, 6, -, -, unsat, unsat, unsat, unsat, -, -
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/mul_03_30_2.smt2, 505.8626, 506.20657, 84.26265, 83.30003, t/o, t/o, 6, 6, 6, 6, -, -, unsat, unsat, unsat, unsat, -, -
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/mul_03_30_3.smt2, 502.94016, 503.9078, 80.86116, 80.8703, t/o, t/o, 6, 6, 6, 6, -, -, unsat, unsat, unsat, unsat, -, -
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/mul_03_30_4.smt2, t/o, t/o, t/o, t/o, t/o, t/o, -, -, -, -, -, -, -, -, -, -, -, -
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/mul_03_30_5.smt2, 481.78146, 481.76138, 86.79562, 86.26415, t/o, t/o, 6, 6, 6, 6, -, -, unsat, unsat, unsat, unsat, -, -

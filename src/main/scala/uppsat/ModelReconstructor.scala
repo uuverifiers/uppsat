@@ -156,6 +156,7 @@ object ModelReconstructor {
     ast.symbol.sort.theory.parseLiteral(answer.trim())    
   }
   
+  // answer is the value in the model we are looking for
   def evalAST(ast : AST, answer : ConcreteFunctionSymbol, assignments : List[(ConcreteFunctionSymbol, AST)], theory : Theory) : Option[AST] = {
     if (onlineSolver.isEmpty)
       startOnlineSolver()
