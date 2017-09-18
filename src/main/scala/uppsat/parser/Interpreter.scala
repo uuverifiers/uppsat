@@ -117,7 +117,6 @@ object Interpreter {
           (asString(binding.symbol_), boundTerm)
         }).toList
         myEnv.pushLet(bindings)
-        myEnv.print
         val ast = translateTerm(t.term_)
         myEnv.popLet()
         ast
