@@ -52,6 +52,20 @@ import uppsat.solver.Z3OnlineSolver
 
 trait FixpointReconstruction extends ApproximationCore {
   
+class FixpointException(msg : String) extends Exception("FixpointException: " + msg)
+  
+  // A critical atom is a Boolean node which has at least one non-Boolean child and all ancestors are Boolean nodes
+  
+  /**
+   * Returns all critical atoms in ast using decoded model to decide which are relevant
+   * 
+   * If a conjunction has been evaluated to true in decodedModel, then all children are critical atoms
+   * since they all must be true for the conjunction to be true. On the other hand, if a disjunction is true
+   * only one child need to be evaluted to true and the first such child is picked as a critical atom.
+   * 
+   * @param decodedModel Model giving values to the nodes in ast.
+   * @param ast The ast which critical atoms are extracted from.
+   */
   def retrieveCriticalAtoms(decodedModel : Model)(ast : AST) : List[AST] = {
       val value = decodedModel(ast)
       ast match {
@@ -63,21 +77,23 @@ trait FixpointReconstruction extends ApproximationCore {
             (symbol, value.symbol) match {
           
               case (_ : NaryConjunction, BoolTrue)
-              |    (    BoolConjunction, BoolTrue) => 
-                (for (c <- children) yield retrieveCriticalAtoms(decodedModel)(c)).flatten
+              |    (    BoolConjunction, BoolTrue) =>
+                children.map(retrieveCriticalAtoms(decodedModel)).flatten
                 
               case (_ : NaryConjunction, BoolFalse)
               |    (    BoolConjunction, BoolFalse) => {
                 val falseConjuncts = children.filter((x : AST) => decodedModel(x).symbol == BoolFalse)
                 if (falseConjuncts.length == 0)
-                  throw new Exception("False conjunction has no false children")
+                  throw new FixpointException("False conjunction with no false child.")
+                // TODO: We must not always take the first false child. Heuristics possible.
                 retrieveCriticalAtoms(decodedModel)(falseConjuncts.head)
               }
               
               case (BoolDisjunction, BoolTrue) =>
                 val trueDisjuncts = children.filter((x : AST) => decodedModel(x).symbol == BoolTrue)
                 if (trueDisjuncts.length == 0)
-                  throw new Exception("True disjunction has no true children")
+                  throw new FixpointException("True disjunction with no true child")
+                // TODO: We must not always take the first false child. Heuristics possible.
                 retrieveCriticalAtoms(decodedModel)(trueDisjuncts.head)
                 
               case (BoolDisjunction, BoolFalse) => 
@@ -284,6 +300,52 @@ trait FixpointReconstruction extends ApproximationCore {
     (definitions, critical, conjuncts) // TODO: Inspect the correct returns
   }
   
+  /** Returns a topological sorting of the dependencies
+   * 
+   *  Returns a list of corresponding to a topological sorting of the dependency graph implied by allDependencies. 
+   *  Uses the function sortLessThan as a sorting of sorts to choose which to pick first. 
+   * 
+   * @param allDependencies Dependency edges in the dependency graph.
+   * 
+   * @return A topological sort of the nodes in allDependencies 
+   */
+  
+  //TODO: Remove the Boolean filter from this function. It should be generic.
+  def topologicalSort(allDependencies : HashMap[ConcreteFunctionSymbol, Set[ConcreteFunctionSymbol]]) : List[ConcreteFunctionSymbol] = {
+    var dependencies = new HashMap[ConcreteFunctionSymbol, Set[ConcreteFunctionSymbol]] with MultiMap[ConcreteFunctionSymbol, ConcreteFunctionSymbol]
+    for ((k, vs) <- allDependencies;
+        v <- vs)
+      dependencies.addBinding(k, v)
+      
+    val allVars = dependencies.keys.toList
+    var independentVars =  allVars.filter(_.sort != BooleanSort).filterNot(dependencies.contains(_)).sortWith((x , y) => !sortLessThan(x.sort,y.sort))
+        
+      for ( variable <- independentVars; 
+            (k, v) <- dependencies) {
+            dependencies.removeBinding(k, variable)
+      }
+      verbose("Variables :\n\t" + independentVars.mkString("\n\t"))
+      verbose("Dependency graph : \n\t" + dependencies.mkString("\n\t"))
+      while (!dependencies.isEmpty) {
+        var next = dependencies.keys.head
+        var cnt = dependencies(next).size
+        for ( (key, set) <- dependencies) {
+          val curr = set.size
+          if (curr < cnt || (curr == cnt && sortLessThan(next.sort, key.sort))){
+            next = key
+            cnt = curr
+          }
+        }
+        // TODO: if cyclic dependency exists, all the remaining keys need to be removed
+        dependencies.remove(next)
+        independentVars = next :: independentVars
+        for ((k, v) <- dependencies) {
+          dependencies.removeBinding(k, next)
+        }
+      }
+      independentVars.toList.reverse
+  }
+  
   def reconstruct(ast : AST, decodedModel : Model) : Model = {
     val candidateModel = new Model()  
    
@@ -329,31 +391,7 @@ trait FixpointReconstruction extends ApproximationCore {
       }
     }
     
-    var independentVars =  allVars.filter(_.sort != BooleanSort).filterNot(varDependency.contains(_)).sortWith((x , y) => !sortLessThan(x.sort,y.sort))
-    
-    for ( variable <- independentVars; 
-          (k, v) <- varDependency) {
-          varDependency.removeBinding(k, variable)
-    }
-    verbose("Variables :\n\t" + independentVars.mkString("\n\t"))
-    verbose("Dependency graph : \n\t" + varDependency.mkString("\n\t"))
-    while (!varDependency.isEmpty) {
-      var next = varDependency.keys.head
-      var cnt = varDependency(next).size
-      for ( (key, set) <- varDependency) {
-        val curr = set.size
-        if (curr < cnt || (curr == cnt && sortLessThan(next.sort, key.sort))){
-          next = key
-          cnt = curr
-        }
-      }
-      // TODO: if cyclic dependency exists, all the remaining keys need to be removed
-      varDependency.remove(next)
-      independentVars = next :: independentVars
-      for ((k, v) <- varDependency) {
-        varDependency.removeBinding(k, next)
-      }
-    }
+    val independentVars = topologicalSort(varDependency)
     
     
     // TODO: This is theory specific...
@@ -369,7 +407,7 @@ trait FixpointReconstruction extends ApproximationCore {
       }
     }
     
-    val vars = independentVars.filterNot(candidateModel.variableValuation.contains(_)).reverse
+    val vars = independentVars.filterNot(candidateModel.variableValuation.contains(_))
     verbose("Sorted variables :\n\t" + vars.mkString("\n\t"))
 //    val (nonLhs, lhs) = nonBoolVars.partition(occursOnLhs.contains(_))  
 //    val vars = nonLhs ++ lhs
