@@ -108,6 +108,8 @@ trait FixpointReconstruction extends ApproximationCore {
   
   
   // Precondition : number of undefined arguments it at most one. 
+  // Some we have a value
+  // None means unsat
   def getImplication(candidateModel : Model, ast : AST) : Option[(AST, AST)] = {
     val vars = ast.iterator.toList.filter(_.isVariable)
     
@@ -162,6 +164,7 @@ trait FixpointReconstruction extends ApproximationCore {
   }
   
   def chooseVar(atoms : List[AST], undefVars : List[AST]) : AST = {
+    // TODO: make this smarter
     undefVars.head
   }
   
@@ -184,6 +187,7 @@ trait FixpointReconstruction extends ApproximationCore {
     }
   }
   
+  // TODO: make meta equality  
   def getDefinitions(ast : AST, polarity : Boolean) = {
     (ast.symbol, polarity) match {
       case (pred : FloatingPointPredicateSymbol, true) 
@@ -208,10 +212,12 @@ trait FixpointReconstruction extends ApproximationCore {
     }
   }
   
+  // TODO: make legible
   def isAtom(ast : AST) : Boolean = { 
      ast.symbol.sort == BooleanSort && (ast.isVariable || !ast.children.map(_.symbol.sort).filterNot(_ == BooleanSort).isEmpty)
   }
   
+  // TODO: refactor
   def getBoolDefinitions(ast : AST, polarity : Boolean) : Option[(AST,AST)] = {
     (ast.symbol, polarity) match {
       case (BoolEquality, true) | (RoundingModeEquality, true) | (FPEqualityFactory(_), true) => { 
@@ -233,6 +239,7 @@ trait FixpointReconstruction extends ApproximationCore {
     }
   }
   
+  // TODO: This should be elsewhere, implement using an explicit ordering
   import uppsat.theory.FloatingPointTheory.FPSortFactory.FPSort
   def sortLessThan(s1 : Sort, s2 : Sort) = {
     (s1, s2) match {      
@@ -246,7 +253,7 @@ trait FixpointReconstruction extends ApproximationCore {
     }
   }
   
-  
+  // TODO: This should be implicit in AST
   def varToNode(variable : ConcreteFunctionSymbol) : AST = {
     AST(variable, List(), List())
   }
@@ -274,7 +281,7 @@ trait FixpointReconstruction extends ApproximationCore {
       todo ++= toBeAdded.map(_._2)
       definitions = toKeep
     }
-    (definitions, critical, conjuncts)
+    (definitions, critical, conjuncts) // TODO: Inspect the correct returns
   }
   
   def reconstruct(ast : AST, decodedModel : Model) : Model = {
@@ -322,13 +329,13 @@ trait FixpointReconstruction extends ApproximationCore {
       }
     }
     
-    var variables =  allVars.filter(_.sort != BooleanSort).filterNot(varDependency.contains(_)).sortWith((x , y) => !sortLessThan(x.sort,y.sort))
+    var independentVars =  allVars.filter(_.sort != BooleanSort).filterNot(varDependency.contains(_)).sortWith((x , y) => !sortLessThan(x.sort,y.sort))
     
-    for ( variable <- variables; 
+    for ( variable <- independentVars; 
           (k, v) <- varDependency) {
           varDependency.removeBinding(k, variable)
     }
-    verbose("Variables :\n\t" + variables.mkString("\n\t"))
+    verbose("Variables :\n\t" + independentVars.mkString("\n\t"))
     verbose("Dependency graph : \n\t" + varDependency.mkString("\n\t"))
     while (!varDependency.isEmpty) {
       var next = varDependency.keys.head
@@ -340,20 +347,21 @@ trait FixpointReconstruction extends ApproximationCore {
           cnt = curr
         }
       }
-      // Cyclic dependency exists, all the remaining keys need to be removed
+      // TODO: if cyclic dependency exists, all the remaining keys need to be removed
       varDependency.remove(next)
-      variables = next :: variables
+      independentVars = next :: independentVars
       for ((k, v) <- varDependency) {
         varDependency.removeBinding(k, next)
       }
     }
     
     
-                        
+    // TODO: This is theory specific...
+    // TODO: Independent of the topological sort
     // First migrate special values
     verbose("Migrating special values")
     
-    for (v <- variables if v.sort.isInstanceOf[FPSort]) {      
+    for (v <- independentVars if v.sort.isInstanceOf[FPSort]) {      
       decodedModel(varToNode(v)).symbol.asInstanceOf[IndexedFunctionSymbol].getFactory match { 
         case FPSpecialValuesFactory(_) => verbose("Migrating special value " + decodedModel(varToNode(v)))
                                           candidateModel.set(varToNode(v), decodedModel(varToNode(v)))
@@ -361,7 +369,7 @@ trait FixpointReconstruction extends ApproximationCore {
       }
     }
     
-    val vars = variables.filterNot(candidateModel.variableValuation.contains(_)).reverse
+    val vars = independentVars.filterNot(candidateModel.variableValuation.contains(_)).reverse
     verbose("Sorted variables :\n\t" + vars.mkString("\n\t"))
 //    val (nonLhs, lhs) = nonBoolVars.partition(occursOnLhs.contains(_))  
 //    val vars = nonLhs ++ lhs
@@ -370,13 +378,18 @@ trait FixpointReconstruction extends ApproximationCore {
       verbose("=============================\nPatching iteration " + iteration)
       
       
-      val implications = critical.filter { x => x.children.length > 0 && isDefinition(x) && numUndefValues(candidateModel, x) == 1 }.sortBy(_.iterator.size)
+      val implications = 
+        critical.filter { x => x.children.length > 0 && //TODO:  reocnsider the first condition
+                               isDefinition(x) &&
+                               numUndefValues(candidateModel, x) == 1 }
+                .sortBy(_.iterator.size)
+                
       verbose("Implications(" + implications.length + "):")
       verbose(implications.map(_.simpleString()).mkString("\n\t"))
       verbose("**************************************************")
       changed = false
       
-      
+      // TODO: Some implications might become fully set? x = y*y?
       for (i <- implications if numUndefValues(candidateModel, i) == 1 )  {
         val imp = getImplication(candidateModel, i) 
         
@@ -392,6 +405,8 @@ trait FixpointReconstruction extends ApproximationCore {
               // have not been evaluated yet and have no unknowns
               // Consider cascading expressions, do we need to watch all of them
               //evaluateNode(decodedModel, candidateModel, crit)
+              
+              // TODO: When does this fail?
               AST.postVisit(crit, candidateModel, candidateModel, evaluateNode)
               if (crit.symbol.sort == BooleanSort && candidateModel(crit) != decodedModel(crit)) {
                 println("Reconstruction fails for : \n " + node.symbol + "->" + value +
@@ -406,7 +421,7 @@ trait FixpointReconstruction extends ApproximationCore {
             }            
             changed = true
           }
-          case None => ()
+          case None => () // TODO: Model failed to be reconstructed
         }
       }
       
@@ -416,18 +431,21 @@ trait FixpointReconstruction extends ApproximationCore {
          verbose("No implications ... ")
          val undefVars = vars.filterNot(candidateModel.containsVariable(_)).toList
          if (undefVars.isEmpty) {
-           verbose("No undefined variables ...\n Done satisfying critical atoms.")
+           verbose("No undefined variables ...\n Done supporting critical atoms.")
            
-           for ( (variable, value) <- decodedModel.variableValuation if (!candidateModel.contains(varToNode(variable))))
-             candidateModel.set(varToNode(variable), value)
+           for ( (variable, value) <- decodedModel.variableValuation 
+                 if (!candidateModel.contains(varToNode(variable))))
+             throw new Exception ("Decoded model contains extra assignments")
+             //candidateModel.set(varToNode(variable), value)
            
-           val unevaluatedAtoms = critical.filter { x => numUndefValues(candidateModel, x) > 0 }
-           for (a <- unevaluatedAtoms) {
-             AST.postVisit(a, candidateModel, decodedModel, evaluateNode)
-           }
+           //TODO: This should not ever be true
+//           val unevaluatedAtoms = critical.filter (!candidateModel.contains(_))
+//           for (a <- unevaluatedAtoms) {
+//             AST.postVisit(a, candidateModel, decodedModel, evaluateNode)
+//           }
            done = true
          } else {
-           val chosen = undefVars.head
+           val chosen = undefVars.head // TODO: Call the method 
            val node = varToNode(chosen)
            verbose("Copying from decoded model " + chosen + " -> " + decodedModel(node).getSMT())
            
@@ -436,7 +454,7 @@ trait FixpointReconstruction extends ApproximationCore {
            var done =  false
            var value = decodedModel(node)
            var violated : List[AST] = List()
-           while (!done && attempts < 3) {
+           while (!done && attempts < 3) { // TODO: Tactic parameter
              attempts += 1
              
              
@@ -450,9 +468,11 @@ trait FixpointReconstruction extends ApproximationCore {
                 // have not been evaluated yet and have no unknowns
                 // Consider cascading expressions, do we need to watch all of them
                 //evaluateNode(decodedModel, candidateModel, crit)
+               
                 ModelReconstructor.onlineSolver.get.asInstanceOf[Z3OnlineSolver].silent = false
                 AST.postVisit(crit, candidateModel, candidateModel, evaluateNode)
                 ModelReconstructor.onlineSolver.get.asInstanceOf[Z3OnlineSolver].silent = true
+                
                 if (crit.symbol.sort == BooleanSort && candidateModel(crit) != decodedModel(crit)) {
                   println("Migration violates : \n " + node.symbol + "->" + decodedModel(node) +
                           "\n on literal \n" + crit.simpleString() +
@@ -464,6 +484,7 @@ trait FixpointReconstruction extends ApproximationCore {
                   violated = crit :: violated
                 }
                 
+                // TODO:
                 if(!violated.isEmpty) {
                   val eps = uppsat.ast.Leaf(FloatingPointTheory.getULP(decodedModel(node).symbol.asInstanceOf[FloatingPointLiteral]))
                   val lessThan = node <= (decodedModel(node) + eps) 
@@ -486,6 +507,7 @@ trait FixpointReconstruction extends ApproximationCore {
       }
     }
     
+    // TODO: Is this actually a partial model we are completing
     verbose("Completing the model")
     AST.postVisit(ast, candidateModel, decodedModel, copyFromDecodedModelIfNotSet)
     candidateModel

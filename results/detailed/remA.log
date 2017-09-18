@@ -1,0 +1,10 @@
+Trying solvers:
+	z3 (z3 -smt2 -st)
+	MathSat (mathsat -stats)
+	ACDCL (mathsat -stats -theory.fp.mode=2)
+<--- RESULTS --->
+	 Time, Iterations, Answer
+File	z3, MathSat, ACDCL, z3, MathSat, ACDCL, z3, MathSat, ACDCL
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/test_v7_r7_vr10_c1_s32506.smt2, t/o, t/o, t/o, -, -, -, -, -, -
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/test_v7_r7_vr1_c1_s22845.smt2, t/o, 285.13, t/o, -, -, -, -, sat, -
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/test_v7_r7_vr1_c1_s24449.smt2, t/o, 434.783, t/o, -, -, -, -, unsat, -

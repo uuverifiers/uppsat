@@ -1,0 +1,56 @@
+Trying solvers:
+	IJCAR(z3) (scala uppsat.jar -a=0)
+	FxptRef(z3) (scala uppsat.jar -a=1)
+	IJCAR(MS) (scala uppsat.jar -a=0 -b=1)
+	FxptRef(MS) (scala uppsat.jar -a=1 -b=1)
+	IJCAR(ACDCL) (scala uppsat.jar -a=0 -b=2)
+	FxptRef(ACDCL) (scala uppsat.jar -a=1 -b=2)
+<--- RESULTS --->
+	 Time, Iterations, Answer
+File	IJCAR(z3), FxptRef(z3), IJCAR(MS), FxptRef(MS), IJCAR(ACDCL), FxptRef(ACDCL), IJCAR(z3), FxptRef(z3), IJCAR(MS), FxptRef(MS), IJCAR(ACDCL), FxptRef(ACDCL), IJCAR(z3), FxptRef(z3), IJCAR(MS), FxptRef(MS), IJCAR(ACDCL), FxptRef(ACDCL)
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/test_v5_r10_vr5_c1_s8690.smt2, t/o, t/o, t/o, t/o, t/o, t/o, -, -, -, -, -, -, -, -, -, -, -, -
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/test_v5_r15_vr10_c1_s11127.smt2, t/o, t/o, t/o, t/o, t/o, t/o, -, -, -, -, -, -, -, -, -, -, -, -
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/test_v5_r15_vr10_c1_s14516.smt2, t/o, t/o, t/o, t/o, t/o, t/o, -, -, -, -, -, -, -, -, -, -, -, -
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/test_v5_r15_vr10_c1_s25268.smt2, t/o, t/o, t/o, t/o, t/o, t/o, -, -, -, -, -, -, -, -, -, -, -, -
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/test_v5_r15_vr1_c1_s26845.smt2, t/o, t/o, t/o, t/o, 11.481852, 11.391037, -, -, -, -, 6, 6, -, -, -, -, unsat, unsat
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/test_v5_r15_vr1_c1_s32559.smt2, t/o, t/o, t/o, t/o, 117.5792, 117.70563, -, -, -, -, 6, 6, -, -, -, -, unsat, unsat
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/test_v5_r15_vr1_c1_s8236.smt2, t/o, t/o, t/o, t/o, 57.233974, 57.302784, -, -, -, -, 6, 6, -, -, -, -, unsat, unsat
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/test_v5_r15_vr5_c1_s23844.smt2, t/o, t/o, t/o, t/o, t/o, t/o, -, -, -, -, -, -, -, -, -, -, -, -
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/test_v5_r15_vr5_c1_s26657.smt2, t/o, t/o, t/o, t/o, t/o, t/o, -, -, -, -, -, -, -, -, -, -, -, -
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/test_v5_r15_vr5_c1_s8246.smt2, t/o, t/o, t/o, t/o, t/o, t/o, -, -, -, -, -, -, -, -, -, -, -, -
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/test_v5_r5_vr10_c1_s5379.smt2, 100.20641, t/o, 181.34467, 31.698854, t/o, 14.722626, 7, -, 7, 2, -, 3, sat, -, sat, sat, -, sat
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/test_v5_r5_vr10_c1_s5996.smt2, 88.56187, t/o, 32.311222, 74.38114, t/o, 4.1742616, 7, -, 7, 4, -, 1, sat, -, sat, sat, -, sat
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/test_v5_r5_vr10_c1_s7194.smt2, t/o, 274.32208, 90.80099, 38.648067, t/o, 75.94801, -, 3, 7, 2, -, 3, -, sat, sat, sat, -, sat
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/test_v5_r5_vr1_c1_s14623.smt2, t/o, t/o, 205.47867, t/o, 5.7877903, 106.89952, -, -, 7, -, 7, 12, -, -, sat, -, sat, sat
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/test_v5_r5_vr1_c1_s15604.smt2, 338.47247, t/o, t/o, t/o, t/o, 72.86137, 7, -, -, -, -, 11, sat, -, -, -, -, sat
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/test_v5_r5_vr1_c1_s16138.smt2, 203.58334, t/o, 103.104416, t/o, 13.291998, 61.66131, 7, -, 7, -, 7, 12, sat, -, sat, -, sat, sat
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/test_v5_r5_vr5_c1_s24018.smt2, t/o, t/o, 120.443436, t/o, t/o, t/o, -, -, 7, -, -, -, -, -, sat, -, -, -
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/test_v5_r5_vr5_c1_s2800.smt2, t/o, t/o, t/o, t/o, t/o, 393.45975, -, -, -, -, -, 6, -, -, -, -, -, sat
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/test_v5_r5_vr5_c1_s9855.smt2, t/o, t/o, t/o, 6.764279, 5.6173735, 16.8472, -, -, -, 1, 7, 4, -, -, -, sat, sat, sat
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/test_v7_r12_vr10_c1_s15994.smt2, t/o, t/o, t/o, t/o, t/o, 40.91194, -, -, -, -, -, 1, -, -, -, -, -, sat
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/test_v7_r12_vr10_c1_s18160.smt2, t/o, t/o, t/o, t/o, t/o, t/o, -, -, -, -, -, -, -, -, -, -, -, -
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/test_v7_r12_vr10_c1_s30410.smt2, t/o, t/o, t/o, t/o, t/o, t/o, -, -, -, -, -, -, -, -, -, -, -, -
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/test_v7_r12_vr1_c1_s10576.smt2, t/o, t/o, t/o, t/o, 261.181, 261.47678, -, -, -, -, 6, 6, -, -, -, -, unsat, unsat
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/test_v7_r12_vr1_c1_s22787.smt2, t/o, t/o, t/o, t/o, t/o, t/o, -, -, -, -, -, -, -, -, -, -, -, -
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/test_v7_r12_vr1_c1_s703.smt2, t/o, t/o, t/o, t/o, t/o, t/o, -, -, -, -, -, -, -, -, -, -, -, -
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/test_v7_r12_vr5_c1_s14336.smt2, t/o, t/o, t/o, 401.16623, t/o, t/o, -, -, -, 2, -, -, -, -, -, sat, -, -
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/test_v7_r12_vr5_c1_s29826.smt2, t/o, t/o, t/o, t/o, t/o, t/o, -, -, -, -, -, -, -, -, -, -, -, -
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/test_v7_r12_vr5_c1_s8938.smt2, t/o, t/o, t/o, t/o, 596.87335, t/o, -, -, -, -, 7, -, -, -, -, -, sat, -
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/test_v7_r17_vr10_c1_s18654.smt2, t/o, t/o, t/o, t/o, t/o, t/o, -, -, -, -, -, -, -, -, -, -, -, -
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/test_v7_r17_vr10_c1_s3680.smt2, t/o, t/o, t/o, t/o, t/o, t/o, -, -, -, -, -, -, -, -, -, -, -, -
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/test_v7_r17_vr10_c1_s8773.smt2, t/o, t/o, t/o, t/o, t/o, t/o, -, -, -, -, -, -, -, -, -, -, -, -
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/test_v7_r17_vr1_c1_s23882.smt2, t/o, t/o, t/o, t/o, t/o, t/o, -, -, -, -, -, -, -, -, -, -, -, -
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/test_v7_r17_vr1_c1_s24331.smt2, t/o, t/o, t/o, t/o, t/o, t/o, -, -, -, -, -, -, -, -, -, -, -, -
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/test_v7_r17_vr1_c1_s30331.smt2, t/o, t/o, t/o, t/o, t/o, t/o, -, -, -, -, -, -, -, -, -, -, -, -
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/test_v7_r17_vr5_c1_s25451.smt2, t/o, t/o, t/o, t/o, t/o, t/o, -, -, -, -, -, -, -, -, -, -, -, -
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/test_v7_r17_vr5_c1_s2807.smt2, t/o, t/o, t/o, t/o, t/o, t/o, -, -, -, -, -, -, -, -, -, -, -, -
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/test_v7_r17_vr5_c1_s4772.smt2, t/o, t/o, t/o, t/o, t/o, t/o, -, -, -, -, -, -, -, -, -, -, -, -
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/test_v7_r7_vr10_c1_s10625.smt2, t/o, t/o, t/o, 244.44997, t/o, t/o, -, -, -, 2, -, -, -, -, -, sat, -, -
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/test_v7_r7_vr10_c1_s24535.smt2, t/o, t/o, t/o, t/o, t/o, 15.275914, -, -, -, -, -, 2, -, -, -, -, -, sat
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/test_v7_r7_vr10_c1_s32506.smt2, t/o, t/o, t/o, 51.09365, t/o, t/o, -, -, -, 1, -, -, -, -, -, sat, -, -
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/test_v7_r7_vr1_c1_s22845.smt2, t/o, t/o, t/o, t/o, t/o, t/o, -, -, -, -, -, -, -, -, -, -, -, -
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/test_v7_r7_vr1_c1_s24449.smt2, t/o, t/o, t/o, t/o, t/o, t/o, -, -, -, -, -, -, -, -, -, -, -, -
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/test_v7_r7_vr1_c1_s4574.smt2, t/o, t/o, t/o, t/o, t/o, t/o, -, -, -, -, -, -, -, -, -, -, -, -
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/test_v7_r7_vr5_c1_s14675.smt2, t/o, t/o, t/o, 11.063544, t/o, 43.035706, -, -, -, 1, -, 2, -, -, -, sat, -, sat
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/test_v7_r7_vr5_c1_s19694.smt2, t/o, t/o, t/o, t/o, t/o, t/o, -, -, -, -, -, -, -, -, -, -, -, -
+/home/aleks/benchmarks/QF_FP_R/griggio/fmcad12/test_v7_r7_vr5_c1_s3582.smt2, t/o, t/o, t/o, 16.671041, t/o, 28.668299, -, -, -, 1, -, 2, -, -, -, sat, -, sat
