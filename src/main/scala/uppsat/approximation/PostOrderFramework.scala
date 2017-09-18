@@ -46,7 +46,17 @@ class PostOrderNodeBasedApproximation(val appCore : ApproximationCore with Appro
   def satRefine(ast : AST, decodedModel : Model, failedModel : Model, pmap : PrecisionMap[P]) : PrecisionMap[P] = {
     val accu = Map[AST, Double]()
     val errorRatios = AST.postVisit(ast, accu, appCore.nodeError(decodedModel)(failedModel))
-    val sortedErrRatios = errorRatios.toList.sortWith((x,y) => x._2 > y._2)
+    println(errorRatios.mkString("\n"))
+    println(errorRatios.getClass)
+    
+    // TODO: (Aleks) Is this correct?
+    def compareFloatsWithSpecialNumbers(f1 : Double, f2: Double) : Boolean = {
+      val d1 = f1.doubleValue()
+      val d2 = f2.doubleValue()
+      d1.compareTo(d2) > 0
+    }
+    
+    val sortedErrRatios = errorRatios.toList.sortWith((x, y) => compareFloatsWithSpecialNumbers(x._2, y._2))
     val k = math.ceil(appCore.fractionToRefine * sortedErrRatios.length).toInt //TODO: Assertions
  
     def booleanComparisonOfModels(ast : AST, decodedModel : Model, failedModel : Model) : List[AST] = {
