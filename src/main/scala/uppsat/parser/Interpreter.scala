@@ -109,7 +109,18 @@ object Interpreter {
       case t : FunctionTerm =>    
         symApp(t.symbolref_, t.listterm_)
       case t : NullaryTerm =>
-        symApp(t.symbolref_, List())     
+        symApp(t.symbolref_, List())    
+      case t : LetTerm =>
+        val bindings = (for (b <- t.listbindingc_) yield {
+          val binding = b.asInstanceOf[Binding]
+          val boundTerm = translateTerm(binding.term_)
+          (asString(binding.symbol_), boundTerm)
+        }).toList
+        myEnv.pushLet(bindings)
+        myEnv.print
+        val ast = translateTerm(t.term_)
+        myEnv.popLet()
+        ast
       case _ => throw new SMTParserException("Unknown term: " + t.toString())
     }
   }
