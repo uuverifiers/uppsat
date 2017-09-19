@@ -123,35 +123,40 @@ class FixpointException(msg : String) extends Exception("FixpointException: " + 
   
   
   
-  // Precondition : number of undefined arguments it at most one. 
+  // Precondition : number of undefined arguments it exactly one. 
   // Some we have a value
   // None means unsat
+	/** Returns the assignment of one implied variable in ast (w.r.t. to candidateModel)
+	 *
+	 *  Assuming that ast w.r.t. candidateModel has exactly one undefined variable,
+	 *  getImplication isolates this variable and by calling the back-end solver 
+	 *  retrieves a value and returns Some(variable, value) for this pair. If no value
+	 *  is found None is returned (thus the candidateModel is *not* a model for ast).
+	 *  
+	 *  @param candidateModel Assignments of some values in ast.
+	 *  @param ast The AST with exactly one undefined variable.
+	 *  
+	 *  @return An assignment to the undefined variable in ast s.t. it is compatible with candidateModel.  
+ 	 *
+ 	 */
   def getImplication(candidateModel : Model, ast : AST) : Option[(AST, AST)] = {
     val vars = ast.iterator.toList.filter(_.isVariable)
-    
-    val assertions : List[(ConcreteFunctionSymbol, AST)] = 
-      for ( v <- vars if(candidateModel.contains(v))) yield {        
-          (v.symbol, candidateModel(v))
-      }
-    
     val unknown = vars.filterNot(candidateModel.contains(_)).map(x => (x.symbol, x)).toMap
     
-    
-    if (unknown.size > 1) 
-      throw new Exception("getImplication assumes at most one unknown" + unknown.mkString(", "))
-    
-    
-    if (unknown.size == 1) {
-      verbose("Implication of  " +  unknown.keys.head + "\n\t" + ast.simpleString())
-      val result = ModelReconstructor.evalAST(ast, unknown.keys.head, assertions, inputTheory)
-      result match {
-        case Some(res) => //println(">> " + res.symbol) 
-                          Some ((unknown.values.head, res))
-        case None => None
+    unknown.toList match {
+      case List(v) => {
+        verbose("Implication of  " +  unknown.keys.head + "\n\t" + ast.simpleString())
+        val assertions : List[(ConcreteFunctionSymbol, AST)] = 
+          for ( v <- vars if(candidateModel.contains(v))) yield 
+            (v.symbol, candidateModel(v))
+
+        ModelReconstructor.evalAST(ast, unknown.keys.head, assertions, inputTheory) match {
+          case Some(res) => Some ((unknown.values.head, res)) 
+          case None => None
+        }
       }
-    } else
-      None
-    
+      case _ => throw new FixpointException("getImplication assumes at most one unknown" + unknown.mkString(", ")) 
+    }    
   }
   
   
@@ -395,7 +400,6 @@ class FixpointException(msg : String) extends Exception("FixpointException: " + 
     
     
     // TODO: This is theory specific...
-    // TODO: Independent of the topological sort
     // First migrate special values
     verbose("Migrating special values")
     
