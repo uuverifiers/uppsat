@@ -140,18 +140,18 @@ class FixpointException(msg : String) extends Exception("FixpointException: " + 
  	 *
  	 */
   def getImplication(candidateModel : Model, ast : AST) : Option[(AST, AST)] = {
-    val vars = ast.iterator.toList.filter(_.isVariable)
+    val vars = ast.toList.filter(_.isVariable)
     val unknown = vars.filterNot(candidateModel.contains(_)).map(x => (x.symbol, x)).toMap
     
     unknown.toList match {
-      case List(v) => {
-        verbose("Implication of  " +  unknown.keys.head + "\n\t" + ast.simpleString())
-        val assertions : List[(ConcreteFunctionSymbol, AST)] = 
+      case List((unknownSymbol, unknownAST)) => {
+        verbose("Implication of  " +  unknownSymbol + "\n\t" + ast.simpleString())
+        val assertions = 
           for ( v <- vars if(candidateModel.contains(v))) yield 
             (v.symbol, candidateModel(v))
 
-        ModelReconstructor.evalAST(ast, unknown.keys.head, assertions, inputTheory) match {
-          case Some(res) => Some ((unknown.values.head, res)) 
+        ModelReconstructor.evalAST(ast, unknownSymbol, assertions, inputTheory) match {
+          case Some(res) => Some ((unknownAST, res)) 
           case None => None
         }
       }
