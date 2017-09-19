@@ -117,6 +117,7 @@ case class AST(val symbol : ConcreteFunctionSymbol, val label : Label, val child
     }
   }
     
+  def toList = iterator.toList
   def toSet = iterator.toSet 
     
   def prettyPrint : Unit =
