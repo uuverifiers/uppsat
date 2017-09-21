@@ -162,20 +162,20 @@ class FixpointException(msg : String) extends Exception("FixpointException: " + 
   
   
   
-  //undefinedVariables.Length
-  def numUndefValues(candidateModel : Model, ast : AST) : Int = {
-    undefinedVariables(candidateModel, ast).length    
-  }
-  
-  def undefinedVariables(candidateModel : Model, ast : AST) : List[ConcreteFunctionSymbol] = {
-    ast.iterator.toList.filter((x:AST) => x.isVariable && !candidateModel.contains(x)).map(_.symbol).distinct
-  }
+  /** The number of variables in ast that are not defined in candidateModel
+   *  
+   *  @param candidateModel Model (possibly) containing variable definitions
+   *  @param ast AST (possibly) containing variables
+   */
+  def numUndefValues(candidateModel : Model, ast : AST) =
+    ast.toList.filter((x:AST) => x.isVariable && !candidateModel.contains(x)).map(_.symbol).distinct.length
+
   
   def initializeCandidateModel(atoms : List[AST], decodedModel : Model, candidateModel : Model) = {
     // Assert the same literals as in the original model
     for (a <- atoms) {
       if (a.symbol.sort != BooleanSort)
-        throw new Exception("Non-boolean critical literal" + a)
+        throw new FixpointException("Non-boolean critical literal" + a)
       
       if (!candidateModel.contains(a)) 
         candidateModel.set(a, decodedModel(a))
@@ -185,54 +185,30 @@ class FixpointException(msg : String) extends Exception("FixpointException: " + 
   }
   
   def chooseVar(atoms : List[AST], undefVars : List[AST]) : AST = {
-    // TODO: make this smarter
+    // TODO: Add heuristic
     undefVars.head
   }
   
+  /** True if ast is a definition
+   *  
+   *  An ast is a definition if it is an equation where one (or both) sides is a variable.
+   *  
+   *  @param ast True if ast is a definition
+   * 
+   */
+  // TODO: make meta equality  
+
   def isDefinition(ast : AST) : Boolean = {
     ast.symbol match {
       case pred : FloatingPointPredicateSymbol 
-        if (pred.getFactory == FPEqualityFactory)  => {
-            if (ast.children(0).isVariable || ast.children(1).isVariable)
-              true
-            else
-              false
-        }
+        if (pred.getFactory == FPEqualityFactory)  => ast.children(0).isVariable || ast.children(1).isVariable
       case BoolEquality
       |    RoundingModeEquality =>
-        if (ast.children(0).isVariable || ast.children(1).isVariable)
-              true
-            else
-              false
+        ast.children(0).isVariable || ast.children(1).isVariable
       case _ => false
     }
   }
-  
-  // TODO: make meta equality  
-  def getDefinitions(ast : AST, polarity : Boolean) = {
-    (ast.symbol, polarity) match {
-      case (pred : FloatingPointPredicateSymbol, true) 
-        if (pred.getFactory == FPEqualityFactory)  =>
-            val left = if (ast.children(0).isVariable)   Some((ast.children(0), ast.children(1)))
-                       else None
-                          
-            val right = if (ast.children(1).isVariable)  Some((ast.children(1), ast.children(2)))
-                        else  None
-          
-            List(left, right)
-      case (BoolEquality, true)
-      |    (RoundingModeEquality, true) =>
-        val left = if (ast.children(0).isVariable)   Some((ast.children(0), ast.children(1)))
-                       else None
-                          
-        val right = if (ast.children(1).isVariable)  Some((ast.children(1), ast.children(2)))
-                    else  None
-      
-        List(left, right)
-      case _ => List()
-    }
-  }
-  
+    
   // TODO: make legible
   def isAtom(ast : AST) : Boolean = { 
      ast.symbol.sort == BooleanSort && (ast.isVariable || !ast.children.map(_.symbol.sort).filterNot(_ == BooleanSort).isEmpty)
@@ -274,12 +250,16 @@ class FixpointException(msg : String) extends Exception("FixpointException: " + 
     }
   }
   
-  // TODO: This should be implicit in AST
+  // TODO: This should be implicit in AST - this might require a meta-variable notion
   def varToNode(variable : ConcreteFunctionSymbol) : AST = {
     AST(variable, List(), List())
   }
   
-  def extractCriticalAtoms( ast : AST, decodedModel : Model) = {
+  /** Returns all critical atoms in ast)
+   *  
+   *  TODO (Aleks): What is the difference between this and retrieveCriticalAtoms?
+   */
+  def extractCriticalAtoms(ast : AST, decodedModel : Model) = {
     
     val (definitionAtoms, conjuncts) = topLvlConjuncts(ast).toList.partition(isDefinition(_))
     var definitions = for ( a <- definitionAtoms; b <- getBoolDefinitions(a, true)) yield b
@@ -577,39 +557,31 @@ class FixpointException(msg : String) extends Exception("FixpointException: " + 
   }
     
    
+  // TODO: (Aleks) Should this only update the candidateModel if ast has children?
   def evaluateNode( decodedModel  : Model, candidateModel : Model, ast : AST) : Model = {
-    val AST(symbol, label, children) = ast
-    
-    if (!candidateModel.contains(ast)) {
-      if (children.length > 0) {
-        val newChildren = for ( c <- children) yield {        
-          getCurrentValue(c, decodedModel, candidateModel)
-        }
-     
-        //Evaluation
-        //println("||Eval>> " + ast.simpleString())
+    ast match {
+      case AST(symbol, label, List()) => ()
+      case AST(symbol, label, children) if !candidateModel.contains(ast) => {
+        val newChildren = children.map(getCurrentValue(_, decodedModel, candidateModel))
         val newAST = AST(symbol, label, newChildren.toList)
         val newValue = ModelReconstructor.evalAST(newAST, inputTheory)
-        //println("||Result>> " + newValue.symbol + "\n")
         candidateModel.set(ast, newValue)
       }
     }
-      
     candidateModel  
-    
   }
     
   def getCurrentValue(ast : AST, decodedModel : Model, candidateModel : Model) : AST = {
-      if (! candidateModel.contains(ast)) {
-            candidateModel.set(ast, decodedModel(ast))
-      } 
-      candidateModel(ast)
-    }
+    if (! candidateModel.contains(ast)) {
+          candidateModel.set(ast, decodedModel(ast))
+    } 
+    candidateModel(ast)
+  }
   
-    def copyFromDecodedModelIfNotSet (decodedModel : Model, candidateModel : Model, ast : AST) = {
-      if (! candidateModel.contains(ast)) {
-            candidateModel.set(ast, decodedModel(ast))
-      }
-      candidateModel
+  def copyFromDecodedModelIfNotSet (decodedModel : Model, candidateModel : Model, ast : AST) = {
+    if (! candidateModel.contains(ast)) {
+          candidateModel.set(ast, decodedModel(ast))
     }
+    candidateModel
+  }
 }
