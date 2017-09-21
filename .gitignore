@@ -40,3 +40,5 @@ translated\.smt2
 mathsat
 
 z3
+
+*.gz
