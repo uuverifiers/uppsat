@@ -475,9 +475,16 @@ class FixpointException(msg : String) extends Exception("FixpointException: " + 
          if (undefVars.isEmpty) {
            verbose("No undefined variables ...\n Done supporting critical atoms.")
            
+           // TODO: (Aleks) Do we actually care if the decoded model has extra values?
            for ( (variable, value) <- decodedModel.variableValuation 
-                 if (!candidateModel.contains(varToNode(variable))))
-             throw new Exception ("Decoded model contains extra assignments")
+                 if (!candidateModel.contains(varToNode(variable)))) {
+//                   println("candidate")
+//                   println(candidateModel)
+//                   println("decoded")
+//                   println(decodedModel)
+//                   ast.prettyPrint
+//                   throw new Exception ("Decoded model contains extra assignments: " + variable)
+                 }
              //candidateModel.set(varToNode(variable), value)
            
            //TODO: This should not ever be true
@@ -511,9 +518,9 @@ class FixpointException(msg : String) extends Exception("FixpointException: " + 
                 // Consider cascading expressions, do we need to watch all of them
                 //evaluateNode(decodedModel, candidateModel, crit)
                
-                ModelReconstructor.onlineSolver.get.asInstanceOf[Z3OnlineSolver].silent = false
+//                ModelReconstructor.onlineSolver.get.asInstanceOf[Z3OnlineSolver].silent = false
                 AST.postVisit(crit, candidateModel, candidateModel, evaluateNode)
-                ModelReconstructor.onlineSolver.get.asInstanceOf[Z3OnlineSolver].silent = true
+//                ModelReconstructor.onlineSolver.get.asInstanceOf[Z3OnlineSolver].silent = true
                 
                 if (crit.symbol.sort == BooleanSort && candidateModel(crit) != decodedModel(crit)) {
                   println("Migration violates : \n " + node.symbol + "->" + decodedModel(node) +
@@ -528,21 +535,14 @@ class FixpointException(msg : String) extends Exception("FixpointException: " + 
                 
                 // TODO:
                 if(!violated.isEmpty) {
-                  val eps = uppsat.ast.Leaf(FloatingPointTheory.getULP(decodedModel(node).symbol.asInstanceOf[FloatingPointLiteral]))
-                  val lessThan = node <= (decodedModel(node) + eps) 
-                  val greaterThan = node >= (decodedModel(node) - eps)
-                  val newConjuncts = lessThan :: greaterThan :: violated
-                  val combinedConstraint = AST(NaryConjunction(newConjuncts.length), List(), newConjuncts)
-                  
-                  val res = satisfyConstraints(combinedConstraint, node.symbol, candidateModel)
-                  
-                  res match {
+                  violatedConstraint(decodedModel, node, candidateModel, violated) match {
                     case Some(v) => println("###")
-                                    value = v
+                        value = v
                     case None => done = true //TODO: Flag conflict for analysis? Widen the interval?
-                  }
-                } else 
+                  }    
+                } else { 
                   done = true
+                }
               }
            }
          }           
@@ -555,28 +555,27 @@ class FixpointException(msg : String) extends Exception("FixpointException: " + 
     candidateModel
   }
  
- def satisfyConstraints( ast : AST, unknown : ConcreteFunctionSymbol, candidateModel : Model) : Option[AST] = {
-    verbose("Satisfying constraints")
-    
+  // TODO: (Aleks) Better name
+  def violatedConstraint(decodedModel : Model, node : AST, candidateModel : Model, violated : List[AST]) = {
+    val eps = uppsat.ast.Leaf(FloatingPointTheory.getULP(decodedModel(node).symbol.asInstanceOf[FloatingPointLiteral]))
+    val lessThan = node <= (decodedModel(node) + eps) 
+    val greaterThan = node >= (decodedModel(node) - eps)
+    val newConjuncts = lessThan :: greaterThan :: violated
+    val combinedConstraint = AST(NaryConjunction(newConjuncts.length), List(), newConjuncts)                  
+
     //    TODO: (Aleks) Eclipse says that v != unknown will *almost* never happen.
     // 
     //    val vars = ast.iterator.toList.filter(_.isVariable)
     //    
-    //    val assertions : List[(ConcreteFunctionSymbol, AST)] = 
+    //   val assertions : List[(ConcreteFunctionSymbol, AST)] = 
     //      for ( v <- vars if( v != unknown && candidateModel.contains(v))) yield {        
     //          (v.symbol, candidateModel(v))
     //      }
-    
+        
     val assertions = List()
-    val result = ModelReconstructor.evalAST(ast, unknown, assertions, inputTheory)
-    result match {
-      case Some(res) => debug(">>>>> " + res.symbol) 
-                        Some (res)
-      case None => debug("XXXXXX")
-                   None
-    }
-    
+    ModelReconstructor.evalAST(combinedConstraint, node.symbol, assertions, inputTheory)
   }
+    
    
   def evaluateNode( decodedModel  : Model, candidateModel : Model, ast : AST) : Model = {
     val AST(symbol, label, children) = ast
