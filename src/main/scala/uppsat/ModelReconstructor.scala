@@ -118,6 +118,10 @@ object ModelReconstructor {
         }
       }
     }
+    
+    override def toString() = {
+      variableValuation.mkString("\n")
+    }
   }
   
   var onlineSolver = None : Option[SMTSolver]
