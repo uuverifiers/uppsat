@@ -121,7 +121,7 @@ object ApproximationSolver {
                               formula
 
       val encodedSMT = translator.translate(encodedFormula)
-
+      
       verbose(encodedSMT)
       
       if (smtSolver.checkSat(encodedSMT)) {

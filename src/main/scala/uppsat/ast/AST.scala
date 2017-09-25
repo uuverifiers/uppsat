@@ -7,6 +7,8 @@ import uppsat.precision.PrecisionMap.Path
 import uppsat.theory.IntegerTheory._
 import uppsat.theory.FloatingPointTheory._
 import uppsat.theory.FloatingPointTheory.FPSortFactory.FPSort
+import uppsat.theory.BitVectorTheory._
+import uppsat.theory.BitVectorTheory.BVSortFactory.BVSort
 import uppsat.theory.RealTheory._
 import uppsat.ast.AST._
 
@@ -227,6 +229,7 @@ case class AST(val symbol : ConcreteFunctionSymbol, val label : Label, val child
       case (RealSort, RealSort) => realEquality(this, that)
       case (f1 : FPSort, f2 : FPSort) => floatEquality(this, that)
       case (RoundingModeSort, RoundingModeSort) => rmEquality(this, that)
+      case (bv1 : BVSort, bv2 : BVSort) => bvEquality(this, that)
      }
   }
   

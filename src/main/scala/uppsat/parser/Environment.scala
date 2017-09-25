@@ -20,7 +20,7 @@ class Environment {
   var letEquations : MutableList[AST] = MutableList()
   var letSuffix : Int = 0
   
-  
+
   //var synonyms : Map[ConcreteFunctionSymbol, ConcreteFunctionSymbol] = Map()
   
   def setTheory(t : Theory) = {

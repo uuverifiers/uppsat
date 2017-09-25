@@ -702,7 +702,8 @@ case class FPSpecialValuesFactory(symbolName : String) extends FPGenConstantFact
       }
       case uppsat.theory.FloatingPointTheory.RMVar(name) => name
       case FPVar(name, _) => name
-      case other => throw new FloatingPointTheoryException("Unknown symbol: " + symbol)      
+      case other =>
+        throw new FloatingPointTheoryException("Unknown symbol: " + symbol.sort)     
     }
   }
   

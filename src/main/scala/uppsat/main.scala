@@ -35,6 +35,7 @@ object globalOptions {
   val REG_SOLVERS = List( Z3Solver, MathSatSolver, MathSatACDCLSolver)
   val REG_APPROXS = List(   new PostOrderNodeBasedApproximation(IJCARSmallFloatsApp),
                             new AnalyticalFramework(FxPntSmallFloatsApp),
+                            EmptyApproximation,
                             new PostOrderNodeBasedApproximation(FPARealApp))
   var chosenApproximation = 0
   
@@ -79,6 +80,7 @@ object main {
     println("\t -a=NUM - use one of the following approximations:")
     println("\t\t 0 : Smallfloats (node based reconstruction)")
     println("\t\t 1 : Smallfloats (fixpoint based reconstruction)")
+    println("\t\t 2 : Empty Approximation (for debug purposes)")    
     println("\t -t=NUM - set a soft timeout in seconds. Soft means that timeout is checked between iterations only.")
     
   }
@@ -151,7 +153,7 @@ object main {
     verbose("Args: " + args.mkString("|"))
     // TODO: (Aleks) Do we need these system exit codes? Usually non-zero means error I think?
     main_aux(args) match {
-      case _ : Sat => System.exit(10)
+      case Sat(_) => System.exit(10)
       case Unsat   => System.exit(20)
       case Unknown => System.exit(30)        
     }

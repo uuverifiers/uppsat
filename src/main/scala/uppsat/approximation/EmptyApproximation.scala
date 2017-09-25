@@ -6,11 +6,13 @@ import uppsat.precision._
 import uppsat.ast._
 import uppsat.theory.FloatingPointTheory
 import uppsat.precision.PrecisionMap.Path
+import uppsat.theory.BitVectorTheory
 
 object EmptyApproximation extends Approximation {
   type P = Int
-  val inputTheory = FloatingPointTheory
-  val outputTheory = FloatingPointTheory
+  // TODO: How do we make this dynamic
+  val inputTheory = BitVectorTheory
+  val outputTheory = BitVectorTheory
   
   val precisionOrdering = new IntPrecisionOrdering(0, 10)
   

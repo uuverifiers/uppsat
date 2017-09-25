@@ -42,3 +42,5 @@ mathsat
 z3
 
 *.gz
+
+*.smt2

@@ -16,10 +16,10 @@ class SMTTranslator(theory : Theory) {
   case class SMTTranslatorException(msg : String) extends Exception("SMTTranslatorException: " + msg) 
 
    
-  def translateASTaux(ast : AST) : String = { 
+  def translateASTaux(ast : AST) : String = {
      ast match {
        case Leaf(symbol, label) => {
-         val smtSort  = symbol.sort.theory.toSMTLib(symbol.sort)           
+         val smtSort  = symbol.sort.theory.toSMTLib(symbol.sort) 
          val smtSymbol = symbol.theory.toSMTLib(symbol)         
          if (ast.isVariable) { //(!BooleanTheory.isDefinedLiteral(symbol) || !theory.isDefinedLiteral(symbol)) {
            IdToPaths += smtSymbol -> (label :: (IdToPaths.getOrElse(smtSymbol, List())))

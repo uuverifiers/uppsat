@@ -37,8 +37,9 @@ object BooleanTheory extends Theory {
   case object BoolFalse extends BooleanConstant("false")
   
   // Symbols, conjunction and negation
-  case object BoolConjunction extends BooleanBinaryFunctionSymbol("conjunction")  
+  case object BoolConjunction extends BooleanBinaryFunctionSymbol("conjunction")
   case object BoolDisjunction extends BooleanBinaryFunctionSymbol("disjunction")  
+  case object BoolExclusiveDisjunction extends BooleanBinaryFunctionSymbol("exclusive-disjunction")  
   case object BoolImplication extends BooleanBinaryFunctionSymbol("implication")
   case object BoolEquality extends BooleanBinaryFunctionSymbol("equality")
   case object BoolNegation extends BooleanUnaryFunctionSymbol("negation")
@@ -77,7 +78,7 @@ object BooleanTheory extends Theory {
   }
 
   val sorts = List(BooleanSort)
-  val symbols = List(BoolTrue, BoolFalse, BoolConjunction, BoolDisjunction, BoolNegation)
+  val symbols = List(BoolTrue, BoolFalse, BoolConjunction, BoolDisjunction, BoolExclusiveDisjunction, BoolNegation)
   
   
   def parseLiteral(lit : String) = {
@@ -113,6 +114,7 @@ object BooleanTheory extends Theory {
       case BoolConjunction => "and"
       case nc : NaryConjunction => "and"
       case BoolDisjunction => "or"
+      case BoolExclusiveDisjunction=> "xor"
       case BoolEquality => "="
       case BoolImplication => "implies"
       case BoolNegation => "not"

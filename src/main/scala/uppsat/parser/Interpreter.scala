@@ -1,9 +1,14 @@
+// Thank you Philipp and Princess!
+
 package uppsat.parser
 
 import uppsat.theory.IntegerTheory._
+
 import uppsat.globalOptions.verbose
 
 import uppsat.theory.FloatingPointTheory.FPSortFactory.FPSort
+import uppsat.theory.BitVectorTheory.BVSortFactory.BVSort
+import uppsat.theory.BitVectorTheory._
 import uppsat.theory.BooleanTheory._
 import uppsat.theory.RealTheory._
 
@@ -21,6 +26,7 @@ import uppsat.approximation.PostOrderNodeBasedApproximation
 import uppsat.approximation.IJCARSmallFloatsApp
 import uppsat.ApproximationSolver
 import uppsat.theory.RealTheory
+import uppsat.theory.BitVectorTheory
 
 case class SMTParserException(msg : String) extends Exception(msg)
 
@@ -159,20 +165,22 @@ object Interpreter {
         num += BigInt(frac)
         val gcd = num.gcd(den)
         num /= gcd
-        den /= gcd
-        println(num + "/" + den)        
+        den /= gcd        
         uppsat.ast.Leaf(uppsat.theory.RealTheory.RealDecimal(num, den))
       }
         
         
   //    case c : HexConstant =>
   //      (MyIntLit(c.hexadecimal_ substring (2, 16)), SMTInteger)
-  //    case c : BinConstant =>
-  //      val binPattern = "\\#b(\\d+)".r
-  //      val binPattern(bits) = c.binary_
-  //      val bitList = bits.map(_.toString.toInt).toList
-  //      throw new Exception(bitList + " (" + bitList.getClass + ")")
-        //(MyIntLit(c.binary_ substring (2, 2)), SMTInteger)
+      // TODO: (Aleks) Are Binary Constants always Bit Vectors?
+      case c : BinConstant =>
+        val binPattern = "\\#b(\\d+)".r
+        val binPattern(bits) = c.binary_
+        val bitList = bits.map(_.toString.toInt).toList
+        val sort = BitVectorTheory.BVSortFactory(List(bitList.length))
+        val value = BitVectorTheory.BitVectorLiteral(bitList, sort)
+        uppsat.ast.Leaf(value)
+//        (MyIntLit(c.binary_ substring (2, 2)), SMTInteger)
       case  c => {
         throw new Exception("Unknown SpecConstant: " + c + " (" + c.getClass +")")
       }
@@ -187,7 +195,8 @@ object Interpreter {
       asString(cmd.symbol_) match {
         case "QF_FP" => myEnv.setTheory(FloatingPointTheory)
         case "QF_FPBV" => myEnv.setTheory(FloatingPointTheory)
-        case _ => verbose("ignoring set-logic command : \n"  + asString(cmd.symbol_))
+        case "QF_BV" => myEnv.setTheory(BitVectorTheory)
+        case _ => throw new Exception("unknown set-logic command : \n"  + asString(cmd.symbol_))
       }
     }
 
@@ -225,6 +234,7 @@ object Interpreter {
             case BooleanSort => new uppsat.theory.BooleanTheory.BoolVar(name)
             case RealSort => new uppsat.theory.RealTheory.RealVar(name)
             case fp : FPSort => new uppsat.theory.FloatingPointTheory.FPVar(name, fp)
+            case bv : BVSort => new uppsat.theory.BitVectorTheory.BVVar(name, bv)
           }
 
           myEnv.addSymbol(fullname, symbol)
@@ -289,7 +299,11 @@ object Interpreter {
   //     //////////////////////////////////////////////////////////////////////////
     case cmd : CheckSatCommand => {
       val formula = myEnv.getFormula.labelAST     
-      val translator = new uppsat.solver.SMTTranslator(uppsat.theory.FloatingPointTheory)
+      val translator = 
+        if (myEnv.theory.isDefined) 
+          new uppsat.solver.SMTTranslator(myEnv.theory.get) 
+        else throw new SMTParserException("No theory defined")
+      
       val approximation = uppsat.globalOptions.getApproximation
       // TODO:  Hooks to user defined approximation
       myEnv.result = ApproximationSolver.Unknown
@@ -377,6 +391,7 @@ object Interpreter {
 
   protected def translateSort(s : Sort) : uppsat.ast.Sort = {
     val fpPattern = "FloatingPoint\\_(\\d+)\\_(\\d+)".r
+    val bvPattern = "BitVec\\_(\\d+)".r
     s match {
       case s : IdentSort => asString(s.identifier_) match {
         case "Int" => IntegerSort
@@ -384,6 +399,7 @@ object Interpreter {
         case "Bool" => BooleanSort
         case "RoundingMode" => RoundingModeSort
         case fpPattern(eBits, sBits) => uppsat.theory.FloatingPointTheory.FPSortFactory(List(eBits.toInt, sBits.toInt))
+        case bvPattern(bits) => uppsat.theory.BitVectorTheory.BVSortFactory(List(bits.toInt))
         case id => {
           throw new Exception("Unknown sort...:" + asString(s.identifier_))
         }
@@ -418,6 +434,14 @@ object Interpreter {
         throw new SMTParserException("and with more than 2 arguments...")
       uppsat.ast.AST(BoolConjunction, List(translateTerm(args(0)), translateTerm(args(1))))
     }    
+
+    // TODO: This could be more than 2 arguments!
+    case PlainSymbol("xor") => {
+      if (args.length > 2)
+        throw new SMTParserException("xor with more than 2 arguments...")
+      uppsat.ast.AST(BoolExclusiveDisjunction, List(translateTerm(args(0)), translateTerm(args(1))))
+    }    
+    
     
     case PlainSymbol("+") => {
       checkArgs("+", 2, args)
@@ -600,6 +624,131 @@ object Interpreter {
       }
     }    
     
+
+    // 
+    //  BITVECTOR SYMBOLS
+    //
+
+
+    case _ if ("bv(\\d+)_(\\d+)".r.findFirstIn(asString(sym)).isDefined) => {
+      
+      def toBinary(n:Int, bin: List[Int] = List.empty[Int]) : List[Int] = {
+        if(n/2 == 1) (1:: (n % 2) :: bin)
+        else {
+          val r = n % 2
+          val q = n / 2
+          toBinary(q, r::bin)
+        }
+      }      
+      
+      val p = "bv(\\d+)_(\\d+)".r
+      checkArgs("bv", 0, args)
+      asString(sym) match {
+        case p(constant, bits) => {
+          val sort = BVSort(bits.toInt)
+          val constantBitList = toBinary(constant.toInt)
+          val padding = List.fill(bits.toInt - constantBitList.length)(0)
+              
+          uppsat.ast.Leaf(uppsat.theory.BitVectorTheory.BitVectorLiteral(padding ++ constantBitList, sort))          
+        }
+      }
+    }      
+    
+    
+    // TODO: (Peter) This should be done more properly, probably with a val-defined pattern.
+    // TODO: (Aleks) Should it be "sign_extend_1" or "sign_extend 1" (notice the underscore)
+    case _ if ("sign_extend".r.findFirstIn(asString(sym)).isDefined) => {
+      val p = "sign_extend_(\\d+)".r
+      checkArgs("sign_extend", 1, args)
+      val arg = translateTerm(args(0))
+      (asString(sym), arg.symbol.sort) match {
+        case (p(count), BVSort(bits)) => {
+          val sort = BVSort(count.toInt+bits)
+          val value = BitVectorTheory.BVSignExtendFactory(count.toInt)(List(sort))
+          uppsat.ast.AST(value, List(arg))
+        }
+      }
+    }      
+
+    // TODO: (Aleks) Should it be "sign_extend_1" or "sign_extend 1" (notice the underscore)
+    case _ if ("zero_extend".r.findFirstIn(asString(sym)).isDefined) => {
+      val p = "zero_extend_(\\d+)".r
+      checkArgs("zero_extend", 1, args)
+      val arg = translateTerm(args(0))
+      (asString(sym), arg.symbol.sort) match {
+        case (p(count), BVSort(bits)) => {
+          val sort = BVSort(count.toInt+bits)
+          val value = BitVectorTheory.BVZeroExtendFactory(count.toInt)(List(sort))
+          uppsat.ast.AST(value, List(arg))
+        }
+      }
+    }      
+    
+    
+    // TODO: Do we want to check that argumentsort >= end-start > 0?
+    case _ if ("extract".r.findFirstIn(asString(sym)).isDefined) => {
+       val p = "extract_(\\d+)_(\\d+)".r
+       checkArgs("sign_extend", 1, args)
+       val arg = translateTerm(args(0))
+       (asString(sym)) match {
+         case p(start, end) => {
+           val sort = BVSort(start.toInt - end.toInt + 1)
+           val value = BitVectorTheory.BVExtractFactory(start.toInt, end.toInt)(List(sort))
+           uppsat.ast.AST(value, List(arg))
+         }
+       }
+     }
+
+    case PlainSymbol("bvnot") => {
+      checkArgs("bvnot", 1, args)
+      bvNot(translateTerm(args(0)))
+    }    
+
+    case PlainSymbol("bvmul") => {
+      checkArgs("bvand", 2, args)
+      bvMul(translateTerm(args(0)), translateTerm(args(1)))
+    }
+    
+    case PlainSymbol("bvashr") => {
+      checkArgs("bvashr", 2, args)
+      bvAshr(translateTerm(args(0)), translateTerm(args(1)))
+    }    
+    
+    case PlainSymbol("bvand") => {
+      checkArgs("bvand", 2, args)
+      bvAnd(translateTerm(args(0)), translateTerm(args(1)))
+    }
+
+    case PlainSymbol("bvor") => {
+      checkArgs("bvor", 2, args)
+      bvOr(translateTerm(args(0)), translateTerm(args(1)))
+    }    
+    
+    case PlainSymbol("bvxor") => {
+      checkArgs("bvxor", 2, args)
+      bvXor(translateTerm(args(0)), translateTerm(args(1)))
+    }    
+    
+
+    case PlainSymbol("bvslt") => {
+      checkArgs("bvslt", 2, args)
+      bvLessThan(translateTerm(args(0)), translateTerm(args(1)))
+    }
+    
+    case PlainSymbol("concat") => {
+      checkArgs("concat", 2, args)
+      val l = translateTerm(args(0))
+      val r = translateTerm(args(1))
+      (l.symbol.sort, r.symbol.sort) match {
+        case (BVSort(bits1), BVSort(bits2)) => {
+          val sort = BVSort(bits1 + bits2)
+          val value = BitVectorTheory.BVConcatFactory(List(sort))
+          uppsat.ast.AST(value, List(l, r))
+        }
+      }
+    }    
+    
+
    
     ////////////////////////////////////////////////////////////////////////////
     // Declared symbols from the environment
