@@ -336,8 +336,13 @@ object Interpreter {
 
 //     //////////////////////////////////////////////////////////////////////////
 
-     case cmd : GetModelCommand =>
-       throw new SMTParserException("Get-Model Command unsupported")
+     case cmd : GetModelCommand => {
+       myEnv.result match {
+         case ApproximationSolver.Sat(model) => println(model.mkString("\n"))
+         case _ => throw new SMTParserException("Get-Model Command with no model")
+       }
+       
+     }
 //     //////////////////////////////////////////////////////////////////////////
       
      case cmd : GetInfoCommand =>
