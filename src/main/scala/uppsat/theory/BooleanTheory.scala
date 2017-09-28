@@ -44,11 +44,6 @@ object BooleanTheory extends Theory {
   case object BoolEquality extends BooleanBinaryFunctionSymbol("equality")
   case object BoolNegation extends BooleanUnaryFunctionSymbol("negation")
   
-//  object BoolVar {
-//    def unapply(symbol : BoolVar) : Option[String] = {
-//        Some(symbol.name)
-//    }  
-//  }
   
   implicit def BoolVarToAST(boolVar : BoolVar) = Leaf(boolVar)
   implicit def BoolFunctionToAST(boolConst : BooleanConstant) = Leaf(boolConst)
@@ -103,9 +98,7 @@ object BooleanTheory extends Theory {
     }
   }
   
-  val SMTHeader = {
-    ""
-  }
+  val SMTHeader = ""
   
   def toSMTLib(symbol : ConcreteFunctionSymbol) = {
     symbol match {
@@ -120,22 +113,21 @@ object BooleanTheory extends Theory {
       case BoolNegation => "not"
       case BoolVar(name) => name
       case bc : BooleanConstant => bc.name 
-      case other => throw new BooleanTheoryException("Unknown symbol: " + symbol)
+      case _ => throw new BooleanTheoryException("Boolean translation of non-Boolean symbol: " + symbol)
     }
   }
   
   def toSMTLib(sort : ConcreteSort) = {
     sort match {
       case BooleanSort => "Bool"
+      case _ => throw new BooleanTheoryException("Boolean translation of non-Boolean sort: " + sort)
     }
   }
   
-  // TODO: Fix pattern-matching
   def declarationToSMTLib(sym : ConcreteFunctionSymbol) : String = {
-    if (sym.isInstanceOf[BoolVar]) {
-      "(declare-fun " + sym.asInstanceOf[BoolVar].name + " () " + toSMTLib(sym.asInstanceOf[BoolVar].sort) + ")"
-    } else {
-      "ERRRROR"
+    sym match {
+      case BoolVar(name) => "(declare-fun " + name + " () " + toSMTLib(BooleanSort) + ")"
+      case _ => throw new BooleanTheoryException("Boolean Declaration of non-Boolean symbol: " + sym)      
     }
   }
 }

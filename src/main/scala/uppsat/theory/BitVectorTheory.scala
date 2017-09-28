@@ -738,10 +738,9 @@ object BitVectorLiteral {
 //  }
 //  
   val SMTHeader = {
-    "(set-logic QF_BV)" //TODO: Check the actual logic
+    "(set-logic QF_BV)" 
   }
 //  
-//  //TODO: Change to SMTLIB names
   def toSMTLib(symbol : ConcreteFunctionSymbol) = {
     val retval = 
       symbol match {

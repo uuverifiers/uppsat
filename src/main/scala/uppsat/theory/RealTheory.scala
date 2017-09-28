@@ -161,7 +161,7 @@ object RealTheory extends Theory {
     }
   }
   val SMTHeader = {
-    "(set-logic QF_LRA)" //TODO: Check the actual logic
+    "(set-logic QF_LRA)"
   }
   
   def toSMTLib(symbol : ConcreteFunctionSymbol) = {

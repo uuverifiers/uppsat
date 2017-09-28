@@ -9,9 +9,7 @@ import uppsat.globalOptions
 
 object PrecisionMap {
   type Path = List[Int]
-  
-  //def apply[T](implicit pathToPath : Map[Path, Path], precisionOrdering : PrecisionOrdering[T]) = new PrecisionMap[T](Map.empty[Path, T])
-  
+    
   def apply[T](formula : AST)(implicit precisionOrdering : PrecisionOrdering[T]) = {
     def collectPathVarPairs (a : Map[Path, ConcreteFunctionSymbol], ast : AST) : Map[Path, ConcreteFunctionSymbol] = {
       if (ast.isVariable)
@@ -36,15 +34,6 @@ object PrecisionMap {
     }
     implicit val pathToPath = pathToPathIterator.toMap[Path, Path]
     
-//    println("var2P\n" + varToPaths.mkString("\n"))
-//    println("path2Var\n" + pathsToVar.mkString("\n"))
-//    println("path2Path\n" + pathToPath.mkString("\n"))
-//    
-//    println(allPaths.mkString("\n"))
-//    for (p <- allPaths) {
-//      if (!pathToPath.contains(p))
-//        throw new Exception("Init failed for " + p)
-//    }
    new PrecisionMap[T](Map.empty[Path, T])
   }
 }

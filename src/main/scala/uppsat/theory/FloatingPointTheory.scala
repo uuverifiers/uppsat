@@ -648,7 +648,7 @@ case class FPSpecialValuesFactory(symbolName : String) extends FPGenConstantFact
   }
   
   val SMTHeader = {
-    "(set-logic QF_FP)" //TODO: Check the actual logic
+    "(set-logic QF_FP)"
   }
   
   //TODO: Change to SMTLIB names

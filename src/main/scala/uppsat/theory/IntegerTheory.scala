@@ -30,7 +30,6 @@ object IntegerTheory extends Theory {
     override val theory = IntegerTheory
   }
   
-  // TODO: Range of integers under SMTLIB
   class IntegerConstant(name :  String) extends IntegerFunctionSymbol(name, List(), IntegerSort) {
   }
   
@@ -38,7 +37,6 @@ object IntegerTheory extends Theory {
   }
   
   
-  // Constants   
   val IntZero = IntLiteral(0)  
   
   

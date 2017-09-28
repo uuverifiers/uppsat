@@ -272,7 +272,6 @@ case class AST(val symbol : ConcreteFunctionSymbol, val label : Label, val child
 
 
 // TODO: How do we handle quantifiers. Should we have different types of AST?
-// TODO: What do we do with let-expressions.
 // TODO: Sharing, how do we accommodate? Enforced sharing (seems like a bad idea?)
 // TODO: We can use implicit conversion
 
