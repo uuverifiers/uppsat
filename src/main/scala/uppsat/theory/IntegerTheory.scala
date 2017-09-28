@@ -128,11 +128,10 @@ object IntegerTheory extends Theory {
     }
   }
   
-  // TODO: Fix intLiteral never called
   def declarationToSMTLib(sym : ConcreteFunctionSymbol) : String = {
     sym match {
       case IntVar(name) => "(declare-fun " + name + " () " + toSMTLib(sym.sort) + ")" 
-      case IntLiteral(_) => ""
+      case IntLiteral(i) => i.toString 
       case _ => throw new Exception("Not instance of IntVar : " + sym.getClass)
     }
   }
