@@ -181,7 +181,7 @@ trait SmallFloatsCodec extends SmallFloatsCore with ApproximationCodec {
     val appModel = args._1
     val pmap = args._2
     
-    // TEMPORARY TODO: FIX!
+    // TEMPORARY TODO: (Aleks) FIX!
     val newAST = 
       if (FloatingPointTheory.isVariable(ast.symbol))    
         encodeNode(ast, List(), pmap(ast.label))

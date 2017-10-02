@@ -230,11 +230,23 @@ object Interpreter {
         case _ : NoSorts => {
           val res = translateSort(cmd.sort_) 
           val symbol = res match {
-            case IntegerSort => new uppsat.theory.IntegerTheory.IntVar(name)
+            case IntegerSort => {
+              myEnv.theoryGuess = Some(uppsat.theory.IntegerTheory)
+              new uppsat.theory.IntegerTheory.IntVar(name)
+            }
             case BooleanSort => new uppsat.theory.BooleanTheory.BoolVar(name)
-            case RealSort => new uppsat.theory.RealTheory.RealVar(name)
-            case fp : FPSort => new uppsat.theory.FloatingPointTheory.FPVar(name, fp)
-            case bv : BVSort => new uppsat.theory.BitVectorTheory.BVVar(name, bv)
+            case RealSort => {
+              myEnv.theoryGuess = Some(uppsat.theory.RealTheory)
+              new uppsat.theory.RealTheory.RealVar(name)
+            }
+            case fp : FPSort => {
+              myEnv.theoryGuess = Some(uppsat.theory.FloatingPointTheory)
+              new uppsat.theory.FloatingPointTheory.FPVar(name, fp)
+            }
+            case bv : BVSort => {
+              myEnv.theoryGuess = Some(uppsat.theory.BitVectorTheory)
+              new uppsat.theory.BitVectorTheory.BVVar(name, bv)
+            }
           }
 
           myEnv.addSymbol(fullname, symbol)
@@ -299,10 +311,14 @@ object Interpreter {
   //     //////////////////////////////////////////////////////////////////////////
     case cmd : CheckSatCommand => {
       val formula = myEnv.getFormula.labelAST     
-      val translator = 
-        if (myEnv.theory.isDefined) 
-          new uppsat.solver.SMTTranslator(myEnv.theory.get) 
-        else throw new SMTParserException("No theory defined")
+
+      val usingTheory = 
+        if (myEnv.theory.isDefined)
+          myEnv.theory.get
+        else if (myEnv.theoryGuess.isDefined)
+          myEnv.theoryGuess.get\
+        else throw new SMTParserException("No theory defined") 
+      val translator = new uppsat.solver.SMTTranslator(usingTheory) 
       
       val approximation = uppsat.globalOptions.getApproximation
       // TODO:  Hooks to user defined approximation
