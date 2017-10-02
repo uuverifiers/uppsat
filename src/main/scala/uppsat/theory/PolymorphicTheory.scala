@@ -5,6 +5,8 @@ import uppsat.ast._
 
 object PolymorphicTheory extends Theory {
   val name = "Polymorphic"
+
+  class PolymorphicTheoryException(msg : String) extends Exception("PolymorphicTheoryException: " + msg)
   
   class PolymorphicFunctionSymbol(val name :  String, val args : Seq[ConcreteSort], val sort : ConcreteSort) extends ConcreteFunctionSymbol {
     override val theory = PolymorphicTheory : Theory
@@ -29,13 +31,13 @@ object PolymorphicTheory extends Theory {
     false
   }
   
-  val SMTHeader = {
-    "(set-info :source Poly logic needs no theory)"
-  }
+  val SMTHeader = ""
   
-  //TODO: Fix pattern-matching
   def toSMTLib(symbol : ConcreteFunctionSymbol) = {
-    "ite"
+    symbol match {
+      case pITE : PolyITE => "ite"
+      case _ => throw new PolymorphicTheoryException("Translation of undefined polymorphic symbol: " + symbol)
+    }
   }
   
   def toSMTLib(sort : ConcreteSort) = {
@@ -44,9 +46,7 @@ object PolymorphicTheory extends Theory {
     }
   }
   
-  // TODO: Fix pattern-matching
-  def declarationToSMTLib(sym : ConcreteFunctionSymbol) : String = {
-    throw new Exception("Requesting declaration of ITE symbol")
-  }
+  def declarationToSMTLib(sym : ConcreteFunctionSymbol) : String =
+    throw new Exception("Requesting declaration of polymorphic symbol: " + sym)
   
 }

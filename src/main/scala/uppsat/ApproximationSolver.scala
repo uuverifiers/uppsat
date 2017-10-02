@@ -73,7 +73,6 @@ object ApproximationSolver {
       val appModel = translator.getModel(encodedFormula, stringModel)
       
       verbose("Decoding model ... ")
-      
       val decodedModel = approximation.decodeModel(formula, appModel, pmap)
 
       verbose("Reconstructing model ...")

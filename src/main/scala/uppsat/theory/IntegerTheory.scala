@@ -103,7 +103,7 @@ object IntegerTheory extends Theory {
     }
   }
   val SMTHeader = {
-    "(set-logic QF_LIA)" //TODO: Check the actual logic
+    "(set-logic QF_LIA)"
   }
   
   def toSMTLib(symbol : ConcreteFunctionSymbol) = {
