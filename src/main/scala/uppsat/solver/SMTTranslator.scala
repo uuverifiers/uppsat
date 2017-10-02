@@ -35,7 +35,8 @@ class SMTTranslator(theory : Theory) {
            val smtAST = "(" + smtSymbol + " " + smtChildren.mkString(" ") + ")"
            
            // Create extra-symbol that contains the value of this ast
-           val newSymbol = ast.symbol.toString + nextAST.toString
+           // TODO: This creates problem if the formula contains something called "addition_0"
+           val newSymbol = ast.symbol.toString + "_" + nextAST.toString
            IdToPaths += newSymbol -> (label :: (IdToPaths.getOrElse(newSymbol, List())))
            nextAST += 1             
            

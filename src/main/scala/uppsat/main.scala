@@ -25,6 +25,7 @@ object globalOptions {
   // FLAGS
   var VERBOSE = false
   var STATS = false
+  var MODEL = false
   var DEBUG = false
   var DEADLINE : Option[Long] = None
   var STARTTIME : Option[Long] = None
@@ -70,7 +71,8 @@ object main {
     println("Usage: uppsat [-options] input file")
     println("Options:")
     println("\t-v - verbose output")
-    println("\t-s - print statistics")    
+    println("\t-s - print statistics")
+    println("\t-m - print model (debug purposes)3")
     println("\t-d - debugging output")
     println("\t-p - run a second check using z3 to verify internal queries")
     println("\t-b=NUM - use one of the following backends:")
@@ -96,6 +98,7 @@ object main {
       val dashPattern = "-.*".r
       arg match {
         case "-s" => globalOptions.STATS = true
+        case "-m" => globalOptions.MODEL = true
         case "-v" => globalOptions.VERBOSE = true
         case "-d" => globalOptions.DEBUG = true
         case "-p" => globalOptions.PARANOID =  true
@@ -144,6 +147,16 @@ object main {
       debug(Timer.toString())
       if (globalOptions.STATS)
         println(Timer.stats)
+      if (globalOptions.MODEL)
+        Interpreter.myEnv.result match {
+          case Sat(model) => {
+            println("<MODEL>")
+            for ((k, v) <- model)
+              println(k + "," + v)
+            println("</MODEL>")
+          }
+          case _ => 
+        }
       Interpreter.myEnv.result
     }
   }
