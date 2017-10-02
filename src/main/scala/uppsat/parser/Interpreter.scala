@@ -315,9 +315,11 @@ object Interpreter {
       val usingTheory = 
         if (myEnv.theory.isDefined)
           myEnv.theory.get
-        else if (myEnv.theoryGuess.isDefined)
-          myEnv.theoryGuess.get\
-        else throw new SMTParserException("No theory defined") 
+        else
+          uppsat.theory.FloatingPointTheory // Defaulting to FP since our project is currently focused on this.
+//        else if (myEnv.theoryGuess.isDefined)
+//          myEnv.theoryGuess.get
+//        else throw new SMTParserException("No theory defined") 
       val translator = new uppsat.solver.SMTTranslator(usingTheory) 
       
       val approximation = uppsat.globalOptions.getApproximation
