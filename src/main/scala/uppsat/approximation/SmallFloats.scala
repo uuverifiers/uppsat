@@ -91,7 +91,7 @@ trait SmallFloatsCodec extends SmallFloatsCore with ApproximationCodec {
     //if (ast.symbol.sort != RoundingModeSort && source != target ) {
     ast.symbol.sort match {
       case FPSort(_, _) if ast.symbol.sort != target => {
-        val cast = FPToFPFactory(List(ast.symbol.sort, target))
+        val cast = FPToFPFactory(ast.symbol.sort, target)
         val rtzNode = AST(RoundToZero, List(), List())
         AST(cast, List(), List(rtzNode, ast))        
       }
@@ -122,7 +122,7 @@ trait SmallFloatsCodec extends SmallFloatsCore with ApproximationCodec {
               }
             }
           val argSorts = newChildren.map( _.symbol.sort)
-          AST(fpSym.getFactory(argSorts ++ List(newSort)), ast.label, newChildren) 
+          AST(fpSym.getFactory(argSorts ++ List(newSort) : _*), ast.label, newChildren) 
       }
       
       case fpPred : FloatingPointPredicateSymbol => {
@@ -132,7 +132,7 @@ trait SmallFloatsCodec extends SmallFloatsCore with ApproximationCodec {
             cast(c, newSort)          
           }
         val argSorts = newChildren.map( _.symbol.sort)
-        AST(fpPred.getFactory(argSorts ++ List(fpPred.sort)), ast.label, newChildren)
+        AST(fpPred.getFactory(argSorts ++ List(fpPred.sort) : _*), ast.label, newChildren)
       }
       
       case fpVar : FPVar => {
@@ -157,11 +157,11 @@ trait SmallFloatsCodec extends SmallFloatsCore with ApproximationCodec {
     (symbol.sort, value.symbol) match {
       case (FPSort(e, s), fp : FloatingPointTheory.FloatingPointLiteral) => {
         fp.getFactory match {
-          case FPPlusInfinity => Leaf(FPPlusInfinity(List(FPSort(e, s))))
-          case FPMinusInfinity => Leaf(FPMinusInfinity(List(FPSort(e, s))))
-          case FPNaN => Leaf(FPNaN(List(FPSort(e, s))))
-          case FPPositiveZero => Leaf(FPPositiveZero(List(FPSort(e, s))))
-          case FPNegativeZero => Leaf(FPNegativeZero(List(FPSort(e, s))))
+          case FPPlusInfinity => Leaf(FPPlusInfinity(FPSort(e, s)))
+          case FPMinusInfinity => Leaf(FPMinusInfinity(FPSort(e, s)))
+          case FPNaN => Leaf(FPNaN(FPSort(e, s)))
+          case FPPositiveZero => Leaf(FPPositiveZero(FPSort(e, s)))
+          case FPNegativeZero => Leaf(FPNegativeZero(FPSort(e, s)))
           case _ => {
             // When padding exponent, we retain the bias bit in the first position,
             // pad with zeroes and retain the value of the small exponent.

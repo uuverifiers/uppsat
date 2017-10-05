@@ -513,7 +513,6 @@ class FixpointException(msg : String) extends Exception("FixpointException: " + 
                   violated = crit :: violated
                 }
                 
-                // TODO:
                 if(!violated.isEmpty) {
                   violatedConstraint(decodedModel, node, candidateModel, violated) match {
                     case Some(v) => println("###")

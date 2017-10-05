@@ -37,6 +37,8 @@ import uppsat.ast.IndexedFunctionSymbol
   trait ApproximationCodec extends ApproximationCore {
     def encodeNode(ast : AST, children : List[AST], precision : Precision) : AST //Codec
     def decodeNode( args : (Model, PrecisionMap[Precision]), decodedModel : Model, ast : AST) : Model
+    
+    // TODO: (Aleks) What is the purpose of this function. Casting things from A to B or B to A or both directions?
     def cast(ast : AST, target : ConcreteSort  ) : AST // PrecisionOrdering ?
   }
   
@@ -108,6 +110,7 @@ import uppsat.ast.IndexedFunctionSymbol
   
   // Error based refinement strategy uses a measure of error to 
   // determine which precisions need to be refined
+  // TODO: (Aleks) "Magic" numbers, I don't understand them
   trait ErrorBasedRefinementStrategy extends RefinementStrategy {
     val topK : Int
     val fractionToRefine : Double 

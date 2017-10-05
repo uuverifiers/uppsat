@@ -42,7 +42,7 @@ trait FPARealCodec extends FPARealCore with ApproximationCodec {
   def cast(ast : AST, target : ConcreteSort  ) : AST = {
     ast.symbol match {
       case f : FloatingPointLiteral =>
-        AST(f.getFactory (List(target)), ast.label, List())
+        AST(f.getFactory (target), ast.label, List())
       case _ => ast
     }
   }
@@ -129,10 +129,9 @@ trait FPARealCodec extends FPARealCore with ApproximationCodec {
   
   // Describes translation of smallfloat values into values of the original formula.  
   def decodeSymbolValue(symbol : ConcreteFunctionSymbol, value : AST, p : Int) = {
-    // TODO:
     (symbol.sort, value.symbol) match {
       case (FPSort(e, s), RealZero) => {
-          Leaf(FPPositiveZero(List(FPSort(e, s))))       
+          Leaf(FPPositiveZero(FPSort(e, s)))       
       }   
       case (FPSort(e, s), realValue : RealDecimal) => {
           //TODO: Refine this to be more sens

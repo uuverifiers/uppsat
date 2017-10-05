@@ -30,7 +30,7 @@ trait IndexedFunctionSymbol extends ConcreteFunctionSymbol {
 
 trait IndexedFunctionSymbolFactory {
   val arity : Int
-  def apply(idx : Seq[ConcreteSort]) : IndexedFunctionSymbol
+  def apply(idx : ConcreteSort*) : IndexedFunctionSymbol
   def unapply(f : ConcreteFunctionSymbol) : Option[IndexedFunctionSymbol] = {
     f match {
       case f : IndexedFunctionSymbol if f.getFactory == this => Some(f)

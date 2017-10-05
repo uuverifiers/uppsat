@@ -4,6 +4,7 @@ import uppsat.theory.BooleanTheory._
 import scala.math.BigInt.int2bigInt
 import uppsat.ast._
 import uppsat.theory.FloatingPointTheory.FPSortFactory.FPSort
+import scala.collection.mutable.WrappedArray
 
 case class FloatingPointTheoryException(msg : String) extends Exception("Floating Point Theory Exception: " + msg)
 
@@ -42,7 +43,7 @@ object FloatingPointTheory extends Theory {
       if (sort.eBitWidth != eBits.length || sort.sBitWidth != sBits.length + 1) {
         throw new Exception("Creating literal with wrong sort? " + sort + ", " + eBits + ", " + sBits)
       }
-      newFactory(List(sort)).asInstanceOf[FloatingPointLiteral]
+      newFactory(sort).asInstanceOf[FloatingPointLiteral]
     }
   }
 
@@ -73,7 +74,7 @@ object FloatingPointTheory extends Theory {
     val thisFactory = this
     
     val arity = 1 // Refers to the sorts
-    def apply(sorts : Seq[ConcreteSort]) = {
+    def apply(sorts : ConcreteSort*) = {
       sorts.reverse.head match {
         case fpsort : FPSort => {      
           val argSorts = sorts.take(sorts.length - 1).toList
@@ -87,7 +88,7 @@ object FloatingPointTheory extends Theory {
 
   case class FPPredicateSymbolFactory(symbolName : String, fpArity : Int) extends IndexedFunctionSymbolFactory {
     val arity = 1 // Refers to the sorts
-    override def apply(sort : Seq[ConcreteSort]) = {      
+    override def apply(sort : ConcreteSort*) = {      
       FPPredicateSymbol(sort.head, this)  
     }
   }
@@ -103,8 +104,8 @@ object FloatingPointTheory extends Theory {
     }
     
     val arity = 1 // Refers to the sorts
-    // TODO:  Change to repeated arguments
-    override def apply(sort : Seq[ConcreteSort]) = {
+    
+    override def apply(sort : ConcreteSort*) = {
       sort.head match {
         case fpsort : FPSort =>
           FloatingPointLiteral(fpsort, this)
@@ -119,8 +120,9 @@ case class FPSpecialValuesFactory(symbolName : String) extends FPGenConstantFact
     def getName(sort : FPSort) = symbolName
     
     val arity = 1 // Refers to the sorts
-    override def apply(sort : Seq[ConcreteSort]) = {
-      sort match {
+    override def apply(sort : ConcreteSort*) = {
+      // TODO: (Peter) Maybe we can avoid the sort.toList here
+      sort.toList match {
         case List(fpsort : FPSort) => {      
           FloatingPointLiteral(fpsort, this)
         }
@@ -334,7 +336,7 @@ case class FPSpecialValuesFactory(symbolName : String) extends FPGenConstantFact
   // Interface
   def fp(sign : Int, eBits : List[Int], sBits : List[Int])(implicit sort : FPSort) = {
     val factory = new FPConstantFactory(sign, eBits, sBits)
-    factory(List(sort))
+    factory(sort)
   } 
   
   def intToBits(int : Int, bitWidth : Int) = {
@@ -393,7 +395,7 @@ case class FPSpecialValuesFactory(symbolName : String) extends FPGenConstantFact
         if (l != r)
           throw new Exception("FP-Operation of non-equal sorts!")
         val children : List[AST] = List(rm, left, right)
-        AST(factory(List(l, l, l)), children)
+        AST(factory(l, l, l), children)
       }
       case _ => throw new Exception("FP-Operation of non-floating-point AST: " + left + " and " + right)
     }  
@@ -403,7 +405,7 @@ case class FPSpecialValuesFactory(symbolName : String) extends FPGenConstantFact
     arg.symbol.sort match {
       case sort : FPSort => {
         val children : List[AST] = List(arg)
-        AST(FPNegateFactory(List(sort, sort)), children)
+        AST(FPNegateFactory(sort, sort), children)
       }
       case _ => throw new Exception("FP-Operation of non-floating-point AST: " + arg)
     }
@@ -426,7 +428,7 @@ case class FPSpecialValuesFactory(symbolName : String) extends FPGenConstantFact
         if (l != r)
           throw new Exception("FP-Predicate of non-equal sorts!")
         val children : List[AST] = List(left, right)
-        val fpeq = factory(List(l))
+        val fpeq = factory(l)
         AST(fpeq, children)
       }
       case _ => throw new Exception("FP-Predicate of non-floating-point AST: " + left + " and " + right)
@@ -554,25 +556,25 @@ case class FPSpecialValuesFactory(symbolName : String) extends FPGenConstantFact
         val sBits = parseSymbol(s3).toList
         val constFactory = new FPConstantFactory(sign, eBits, sBits)
         val fpsort = FPSortFactory(List(eBits.length, sBits.length + 1))
-        Leaf(constFactory(List(fpsort)))
+        Leaf(constFactory(fpsort))
       }
       case zeroPattern(sign, eBits, sBits) => {
         val fpsort = FPSortFactory(List(eBits.toInt, sBits.toInt))
         if (sign == "+") 
-          Leaf(FPPositiveZero(List(fpsort)))
+          Leaf(FPPositiveZero(fpsort))
         else  
-          Leaf(FPNegativeZero(List(fpsort)))
+          Leaf(FPNegativeZero(fpsort))
       }
       case infPattern(sign, eBits, sBits) => {
         val fpsort = FPSortFactory(List(eBits.toInt, sBits.toInt))
         if (sign == "+")
-          Leaf(FPPlusInfinity(List(fpsort)))
+          Leaf(FPPlusInfinity(fpsort))
         else
-          Leaf(FPMinusInfinity(List(fpsort)))
+          Leaf(FPMinusInfinity(fpsort))
       } 
       case nanPattern(eBits, sBits) => {
         val fpsort = FPSortFactory(List(eBits.toInt, sBits.toInt))
-        Leaf(FPNaN(List(fpsort)))        
+        Leaf(FPNaN(fpsort))        
       }
       case _ => throw new Exception("Unknown FP literal: " + lit)
     }

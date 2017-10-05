@@ -557,7 +557,7 @@ object Interpreter {
       val ta = args.map(translateTerm)
       (ta(0).symbol.sort, ta(1).symbol.sort, ta(2).symbol.sort) match {
         case (RoundingModeSort, fp1 : FPSort, fp2 : FPSort) if (fp1 == fp2) =>
-          uppsat.ast.AST(FloatingPointTheory.FPAdditionFactory(List(fp1, fp1, fp1)), ta.toList)
+          uppsat.ast.AST(FloatingPointTheory.FPAdditionFactory(fp1, fp1, fp1), ta.toList)
         case (s1, s2, s3) => 
           throw new SMTParserException("Wrong sorts for fp.add: " + ((s1, s2, s3)))
       }    
@@ -568,7 +568,7 @@ object Interpreter {
       val ta = args.map(translateTerm)
       (ta(0).symbol.sort, ta(1).symbol.sort, ta(2).symbol.sort) match {
         case (RoundingModeSort, fp1 : FPSort, fp2 : FPSort) if (fp1 == fp2) =>
-          uppsat.ast.AST(FloatingPointTheory.FPMultiplicationFactory(List(fp1, fp1, fp1)), ta.toList)
+          uppsat.ast.AST(FloatingPointTheory.FPMultiplicationFactory(fp1, fp1, fp1), ta.toList)
         case (s1, s2, s3) => 
           throw new SMTParserException("Wrong sorts for fp.mul: " + ((s1, s2, s3)))
       }    
@@ -579,7 +579,7 @@ object Interpreter {
       val ta = args.map(translateTerm)
       (ta(0).symbol.sort, ta(1).symbol.sort, ta(2).symbol.sort) match {
         case (RoundingModeSort, fp1 : FPSort, fp2 : FPSort) if (fp1 == fp2) =>
-          uppsat.ast.AST(FloatingPointTheory.FPDivisionFactory(List(fp1, fp1, fp1)), ta.toList)
+          uppsat.ast.AST(FloatingPointTheory.FPDivisionFactory(fp1, fp1, fp1), ta.toList)
         case (s1, s2, s3) => 
           throw new SMTParserException("Wrong sorts for fp.div: " + ((s1, s2, s3)))
       }    
@@ -618,7 +618,7 @@ object Interpreter {
       asString(sym) match {
         case p(eBits, sBits) => {
           val targetSort = FloatingPointTheory.FPSortFactory(List(eBits.toInt, sBits.toInt))
-          val s = FloatingPointTheory.FPToFPFactory(List(targetSort))
+          val s = FloatingPointTheory.FPToFPFactory(targetSort)
           uppsat.ast.AST(s, List(translateTerm(args(0)), translateTerm(args(1))))
         }
       }
@@ -630,7 +630,7 @@ object Interpreter {
       asString(sym) match {
         case p(eBits, sBits) => {
           val sort = FloatingPointTheory.FPSortFactory(List(eBits.toInt, sBits.toInt))
-          val value = FloatingPointTheory.FPPlusInfinity(List(sort))
+          val value = FloatingPointTheory.FPPlusInfinity(sort)
           uppsat.ast.AST(value, List())
         }
       }
@@ -641,7 +641,7 @@ object Interpreter {
       asString(sym) match {
         case p(eBits, sBits) => {
           val sort = FloatingPointTheory.FPSortFactory(List(eBits.toInt, sBits.toInt))
-          val value = FloatingPointTheory.FPMinusInfinity(List(sort))
+          val value = FloatingPointTheory.FPMinusInfinity(sort)
           uppsat.ast.AST(value, List())
         }
       }
@@ -687,7 +687,7 @@ object Interpreter {
       (asString(sym), arg.symbol.sort) match {
         case (p(count), BVSort(bits)) => {
           val sort = BVSort(count.toInt+bits)
-          val value = BitVectorTheory.BVSignExtendFactory(count.toInt)(List(sort))
+          val value = BitVectorTheory.BVSignExtendFactory(count.toInt)(sort)
           uppsat.ast.AST(value, List(arg))
         }
       }
@@ -701,7 +701,7 @@ object Interpreter {
       (asString(sym), arg.symbol.sort) match {
         case (p(count), BVSort(bits)) => {
           val sort = BVSort(count.toInt+bits)
-          val value = BitVectorTheory.BVZeroExtendFactory(count.toInt)(List(sort))
+          val value = BitVectorTheory.BVZeroExtendFactory(count.toInt)(sort)
           uppsat.ast.AST(value, List(arg))
         }
       }
@@ -716,7 +716,7 @@ object Interpreter {
        (asString(sym)) match {
          case p(start, end) => {
            val sort = BVSort(start.toInt - end.toInt + 1)
-           val value = BitVectorTheory.BVExtractFactory(start.toInt, end.toInt)(List(sort))
+           val value = BitVectorTheory.BVExtractFactory(start.toInt, end.toInt)(sort)
            uppsat.ast.AST(value, List(arg))
          }
        }
@@ -765,7 +765,7 @@ object Interpreter {
       (l.symbol.sort, r.symbol.sort) match {
         case (BVSort(bits1), BVSort(bits2)) => {
           val sort = BVSort(bits1 + bits2)
-          val value = BitVectorTheory.BVConcatFactory(List(sort))
+          val value = BitVectorTheory.BVConcatFactory(sort)
           uppsat.ast.AST(value, List(l, r))
         }
       }
