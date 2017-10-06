@@ -29,6 +29,7 @@ object FloatingPointTheory extends Theory {
   abstract class FloatingPointSymbol extends IndexedFunctionSymbol
   abstract class FloatingPointFunctionSymbol(val sort : FPSort) extends FloatingPointSymbol
   abstract class FloatingPointPredicateSymbol extends FloatingPointSymbol
+  abstract class FloatingPointNonFPSymbol(val sort : ConcreteSort) extends FloatingPointSymbol
   abstract class FloatingPointConstantSymbol(override val sort : FPSort) extends FloatingPointFunctionSymbol(sort)
   
 
@@ -59,7 +60,7 @@ object FloatingPointTheory extends Theory {
   case class FPFunctionSymbol(val args : Seq[ConcreteSort], _sort : FPSort, val getFactory : FPFunctionSymbolFactory) 
              extends FloatingPointFunctionSymbol(_sort) {   
     val theory = FloatingPointTheory
-    val name = getFactory symbolName
+    val name = getFactory.symbolName
   }
   
   case class FPPredicateSymbol( val argSort : ConcreteSort, val getFactory : FPPredicateSymbolFactory) extends FloatingPointPredicateSymbol {   
@@ -67,6 +68,10 @@ object FloatingPointTheory extends Theory {
     val name = getFactory symbolName
     val sort = BooleanSort
     val args = List.fill(getFactory fpArity)(argSort)
+  }
+  case class FPToNonFPFunctionSymbol( val args : Seq[ConcreteSort], _sort : ConcreteSort, val getFactory : FPToNonFPFunctionSymbolFactory) extends FloatingPointNonFPSymbol(_sort) {
+    val theory = FloatingPointTheoryException
+    val name = getFactory symbolName
   }
   
   case class FPFunctionSymbolFactory(symbolName : String, isRounding : Boolean, fpArity : Int) extends IndexedFunctionSymbolFactory {
@@ -113,6 +118,16 @@ object FloatingPointTheory extends Theory {
     }    
   }
 
+  case class FPToNonFPFunctionSymbolFactory(symbolName : String, isRounding : Boolean, sort : ConcreteSort) extends IndexedFunctionSymbolFactory {
+    val thisFactory = this
+    
+    val arity = 1 // Refers to the sorts
+    def apply(fpSort : FPSort) = {
+      val argSorts = List(sort)
+      val args = if (isRounding) RoundingModeSort :: argSorts else argSorts
+      FPToNonFPFunctionSymbol(args, sort, this)
+    }
+  }
 case class FPSpecialValuesFactory(symbolName : String) extends FPGenConstantFactory {
     val thisFactory = this
 
@@ -310,9 +325,10 @@ case class FPSpecialValuesFactory(symbolName : String) extends FPGenConstantFact
   //
   //   ; to signed machine integer, represented as a 2's complement bit vector
   //   ((_ fp.to_sbv m) RoundingMode (_ FloatingPoint eb sb) (_ BitVec m)) 
-  //
+  // 
   //   ; to real
   //   (fp.to_real (_ FloatingPoint eb sb) Real)
+  val FPToReal = new FPToNonFPFunctionSymbolFactory("fp-to-real", false, RealTheory.RealSort) 
   // "
   // :notes
   // "All fp.to_* functions are unspecified for NaN and infinity input values.
