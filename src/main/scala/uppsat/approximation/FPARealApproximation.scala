@@ -48,8 +48,7 @@ trait FPARealCodec extends FPARealCore with ApproximationCodec {
         case FPSort(s,e) =>
           AST(RealToFPFactory(List(newSort)), List(), List(ast))
         case RealSort =>
-          AST(FPToRealFactory(ast.symbol.sort), List(), List(ast)
-          //TODO: FPToReal
+          AST(FPToRealFactory(List(ast.symbol.sort)), List(), List(ast))
       }
     }
   }
@@ -90,7 +89,7 @@ trait FPARealCodec extends FPARealCore with ApproximationCodec {
                     BigInt(1) << (- exp)
                   }
 
-                  (Leaf(RealDecimal(num, denom), ast.label),children)
+                  (Leaf(RealDecimal(num, denom), ast.label), children)
                 }
               }
             }
@@ -106,7 +105,7 @@ trait FPARealCodec extends FPARealCore with ApproximationCodec {
                 case FPSubstractionFactory => RealSubstraction
                 case FPMultiplicationFactory => RealMultiplication
                 case FPDivisionFactory => RealDivision
-                case FPToFPFactory => val r = newChildren(0).symbol
+                case FPToFPFactory => val r = nChildren(0).symbol
                   nLabel = nChildren(0).label
                   nChildren = nChildren(0).children
                   r
@@ -129,6 +128,9 @@ trait FPARealCodec extends FPARealCore with ApproximationCodec {
               (AST(ast.symbol, ast.label, children), children)
             }
           }
+
+        case _  =>
+          (ast, children)
       }
 
 
@@ -137,7 +139,7 @@ trait FPARealCodec extends FPARealCore with ApproximationCodec {
       yield
           cast(newChildren(i), newAst.symbol.args(i))
 
-    AST(newAst.symbol, newAst.label, sortedChildren)
+    AST(newAst.symbol, newAst.label, sortedChildren.toList)
   }
   // Describes translation of smallfloat values into values of the original formula.  
   def decodeSymbolValue(symbol : ConcreteFunctionSymbol, value : AST, p : Int) = {

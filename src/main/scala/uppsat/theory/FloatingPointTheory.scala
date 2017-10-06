@@ -70,7 +70,7 @@ object FloatingPointTheory extends Theory {
     val args = List.fill(getFactory fpArity)(argSort)
   }
   case class FPToNonFPFunctionSymbol( val args : Seq[ConcreteSort], _sort : ConcreteSort, val getFactory : FPToNonFPFunctionSymbolFactory) extends FloatingPointNonFPSymbol(_sort) {
-    val theory = FloatingPointTheoryException
+    val theory = FloatingPointTheory
     val name = getFactory symbolName
   }
   
@@ -122,9 +122,8 @@ object FloatingPointTheory extends Theory {
     val thisFactory = this
     
     val arity = 1 // Refers to the sorts
-    def apply(fpSort : FPSort) = {
-      val argSorts = List(sort)
-      val args = if (isRounding) RoundingModeSort :: argSorts else argSorts
+    def apply(argSorts : Seq[ConcreteSort]) = { //TODO : Should be FPSort, but this does not seem enforceable atm
+      val args = if (isRounding) RoundingModeSort :: argSorts.toList else argSorts
       FPToNonFPFunctionSymbol(args, sort, this)
     }
   }
@@ -328,7 +327,7 @@ case class FPSpecialValuesFactory(symbolName : String) extends FPGenConstantFact
   // 
   //   ; to real
   //   (fp.to_real (_ FloatingPoint eb sb) Real)
-  val FPToReal = new FPToNonFPFunctionSymbolFactory("fp-to-real", false, RealTheory.RealSort) 
+  val FPToRealFactory = new FPToNonFPFunctionSymbolFactory("fp-to-real", false, RealTheory.RealSort) 
   // "
   // :notes
   // "All fp.to_* functions are unspecified for NaN and infinity input values.
