@@ -411,7 +411,7 @@ class FixpointException(msg : String) extends Exception("FixpointException: " + 
       verbose("**************************************************")
       changed = false
       
-      // TODO: Some implications might become fully set? x = y*y?
+      // TODO: (Aleks) Some implications might become fully set? x = y*y?
       for (i <- implications if numUndefValues(candidateModel, i) == 1 )  {
         val imp = getImplication(candidateModel, i) 
         

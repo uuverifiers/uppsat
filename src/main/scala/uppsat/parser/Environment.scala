@@ -16,6 +16,8 @@ class Environment {
   var result : uppsat.ApproximationSolver.Answer = uppsat.ApproximationSolver.Unknown
   var theory : Option[Theory] = None
   
+  var theoryGuess : Option[Theory] = None
+  
   var letBindings : Stack[Map[String, ConcreteFunctionSymbol]] = new Stack()
   var letEquations : MutableList[AST] = MutableList()
   var letSuffix : Int = 0
