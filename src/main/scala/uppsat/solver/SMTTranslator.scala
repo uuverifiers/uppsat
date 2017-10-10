@@ -124,7 +124,8 @@ class SMTTranslator(theory : Theory) {
     "(eval " + answer.symbol + ")" 
   }
   
-  def header = theory.SMTHeader
+  // TODO: (Aleks) Shuld we ever use header (e.g. (set-logic ...)
+  def header = "" //theory.SMTHeader
   
   def footer = "(check-sat)"
   

@@ -640,7 +640,19 @@ case class FPSpecialValuesFactory(symbolName : String) extends FPGenConstantFact
       case _ => false
     }
   }
-  
+
+  /** Returns a FloatingPointSymbol which corresponds to the ULP of given fpValue
+   *  
+   *  Given a fpValue, getULP will create a new Floating Point Symbol which 
+   *  is equivalent with fpValue but will all significan bits except the last one set to 1.
+   *  This corresponds to the "unit in last place" (ULP) of fpValue.
+   *  
+   *  If fpValue is a subnormal number the return value is undefined.
+   *  
+   *  @param fpValue Floating Point value of which ULP is returned.
+   *  @return ULP of fpValue.
+   * 
+   */
   def getULP(fpValue : FloatingPointLiteral) = {
     // TODO :  Distinguish normal and subnormal numbers  
    
