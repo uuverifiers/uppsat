@@ -666,7 +666,7 @@ case class FPSpecialValuesFactory(symbolName : String) extends FPGenConstantFact
   }
   
   //TODO: Change to SMTLIB names
-  def toSMTLib(symbol : ConcreteFunctionSymbol) = { 
+  def symbolToSMTLib(symbol : ConcreteFunctionSymbol)(implicit translator : Option[uppsat.solver.SMTTranslator] = None) = { 
     symbol match {
       case RoundToZero => "RTZ"
       case RoundToPositive => "RTP"
@@ -723,7 +723,7 @@ case class FPSpecialValuesFactory(symbolName : String) extends FPGenConstantFact
   
   
   
-  def toSMTLib(sort : ConcreteSort) = {
+  def sortToSMTLib(sort : ConcreteSort)(implicit translator : Option[uppsat.solver.SMTTranslator] = None) = {
     sort match {
       case FPSort(e, s) => "(_ FloatingPoint " + e + " " + s + ")"
       case RoundingModeSort => "RoundingMode"
@@ -732,7 +732,7 @@ case class FPSpecialValuesFactory(symbolName : String) extends FPGenConstantFact
   
   def declarationToSMTLib(sym : ConcreteFunctionSymbol) : String = {
     sym match {
-      case FPVar(name, _) => "(declare-fun " + name + " () " + toSMTLib(sym.sort) + ")"
+      case FPVar(name, _) => "(declare-fun " + name + " () " + sortToSMTLib(sym.sort) + ")"
       case _ => throw new Exception("Not instance of FPVar : " + sym.getClass)
     }
   }

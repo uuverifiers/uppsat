@@ -205,32 +205,6 @@ trait SmallFloatsCodec extends SmallFloatsCore with ApproximationCodec {
   }
 }
 
-trait SmallFloatsReconstructor extends EqualityAsAssignmentReconstructor {
-  def evaluateNode( decodedModel  : Model, candidateModel : Model, ast : AST) : Model = {
-    val AST(symbol, label, children) = ast
-    
-    if (children.length > 0 && !equalityAsAssignment(ast, decodedModel, candidateModel)) {
-      val newChildren = for ( c <- children) yield {        
-        getCurrentValue(c, decodedModel, candidateModel)
-      }
-   
-      //Evaluation
-      val newAST = AST(symbol, label, newChildren.toList)
-      val newValue = ModelReconstructor.evalAST(newAST, inputTheory)
-      if ( globalOptions.PARANOID && symbol.sort == BooleanTheory.BooleanSort) { // TODO: Talk to Philipp about an elegant way to do flags
-        val assignments = candidateModel.variableAssignments(ast).toList
-        val backupAnswer = ModelReconstructor.valAST(ast, assignments.toList, this.inputTheory, Z3Solver)
-        
-        val answer = newValue.symbol.asInstanceOf[BooleanConstant] == BoolTrue
-        if ( backupAnswer != answer )
-          throw new Exception("Backup validation failed : \nEval: " + answer + "\nvalAst: " + backupAnswer)
-
-      }        
-      candidateModel.set(ast, newValue)
-    }
-    candidateModel
-  }
-}
 
 trait SmallFloatsRefinementStrategy extends SmallFloatsCore with ErrorBasedRefinementStrategy {
   val topK = 10 // K 
@@ -311,7 +285,7 @@ trait SmallFloatsRefinementStrategy extends SmallFloatsCore with ErrorBasedRefin
 
 object IJCARSmallFloatsApp extends SmallFloatsCore 
                               with SmallFloatsCodec
-                              with SmallFloatsReconstructor
+                              with EqualityAsAssignmentReconstructor
                               with SmallFloatsRefinementStrategy {
 }
 

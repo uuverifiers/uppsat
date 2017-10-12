@@ -37,7 +37,8 @@ object globalOptions {
   val REG_APPROXS = List(   new PostOrderNodeBasedApproximation(IJCARSmallFloatsApp),
                             new AnalyticalFramework(FxPntSmallFloatsApp),
                             EmptyApproximation,
-                            new PostOrderNodeBasedApproximation(FPARealApp))
+                            new PostOrderNodeBasedApproximation(FPARealApp),
+                            new PostOrderNodeBasedApproximation(FPABVApp))
   var chosenApproximation = 0
   
   def getApproximation = REG_APPROXS(chosenApproximation)
@@ -82,7 +83,8 @@ object main {
     println("\t -a=NUM - use one of the following approximations:")
     println("\t\t 0 : Smallfloats (node based reconstruction)")
     println("\t\t 1 : Smallfloats (fixpoint based reconstruction)")
-    println("\t\t 2 : Empty Approximation (for debug purposes)")    
+    println("\t\t 2 : Empty Approximation (for debug purposes)")
+    println("\t\t 4 : BitVector (node based reconstruction)")    
     println("\t -t=NUM - set a soft timeout in seconds. Soft means that timeout is checked between iterations only.")
     
   }

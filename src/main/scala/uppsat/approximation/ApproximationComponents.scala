@@ -99,22 +99,115 @@ import uppsat.ast.IndexedFunctionSymbol
         case _ => false
       }
     }
+    
+    def evaluateNode( decodedModel  : Model, candidateModel : Model, ast : AST) : Model = {
+        val AST(symbol, label, children) = ast
+        
+        if (children.length > 0 && !equalityAsAssignment(ast, decodedModel, candidateModel)) {
+          val newChildren = for ( c <- children) yield {        
+            getCurrentValue(c, decodedModel, candidateModel)
+          }
+       
+          //Evaluation
+          val newAST = AST(symbol, label, newChildren.toList)
+          val newValue = ModelReconstructor.evalAST(newAST, inputTheory)
+    //      if ( globalOptions.PARANOID && symbol.sort == BooleanTheory.BooleanSort) { // TODO: Talk to Philipp about an elegant way to do flags
+    //        val assignments = candidateModel.variableAssignments(ast).toList
+    //        val backupAnswer = ModelReconstructor.valAST(ast, assignments.toList, this.inputTheory, Z3Solver)
+    //        
+    //        val answer = newValue.symbol.asInstanceOf[BooleanConstant] == BoolTrue
+    //        if ( backupAnswer != answer )
+    //          throw new Exception("Backup validation failed : \nEval: " + answer + "\nvalAst: " + backupAnswer)
+    //
+    //      }        
+          candidateModel.set(ast, newValue)
+        }
+        candidateModel
+      }    
   }
+  
   
   // Refinement strategy specifies how the precision mapping  
   // changes, based on a failed model or an unsatCore/proofOfUnsat
-  trait RefinementStrategy extends ApproximationCore {  
-    def satRefinePrecision( node : AST, pmap : PrecisionMap[Precision]) : Precision
-    def unsatRefinePrecision( p : Precision) : Precision
+  trait RefinementStrategy extends ApproximationCore {
+    def satRefine(ast : AST, decodedModel : Model, failedModel : Model, pmap : PrecisionMap[Precision]) : PrecisionMap[Precision]
+    def unsatRefine(ast : AST, core : List[AST], pmap : PrecisionMap[Precision]) : PrecisionMap[Precision]    
+//    def satRefinePrecision( ast : AST, pmap : PrecisionMap[Precision]) : Precision
+//    def unsatRefinePrecision( p : Precision) : Precision
   }
   
   // Error based refinement strategy uses a measure of error to 
   // determine which precisions need to be refined
   // TODO: (Aleks) "Magic" numbers, I don't understand them
   trait ErrorBasedRefinementStrategy extends RefinementStrategy {
-    val topK : Int
+    val topK : Precision // TODO: (Aleks) Should this be int or precision?
     val fractionToRefine : Double 
     val precisionIncrement : Precision
+
+    def satRefinePrecision( ast : AST, pmap : PrecisionMap[Precision]) : Precision
+    def unsatRefinePrecision( p : Precision) : Precision    
+    
+  def satRefine(ast : AST, decodedModel : Model, failedModel : Model, pmap : PrecisionMap[Precision]) : PrecisionMap[Precision] = {
+    val accu = Map[AST, Double]()
+    val errorRatios = AST.postVisit(ast, accu, nodeError(decodedModel)(failedModel))
+    println(errorRatios.mkString("\n"))
+    println(errorRatios.getClass)
+    
+    // TODO: (Aleks) Is this correct?ErrorBasedRefinementStrategy
+    def compareFloatsWithSpecialNumbers(f1 : Double, f2: Double) : Boolean = {
+      val d1 = f1.doubleValue()
+      val d2 = f2.doubleValue()
+      d1.compareTo(d2) > 0
+    }
+    
+    val sortedErrRatios = errorRatios.toList.sortWith((x, y) => compareFloatsWithSpecialNumbers(x._2, y._2))
+    val k = math.ceil(fractionToRefine * sortedErrRatios.length).toInt //TODO: Assertions
+ 
+    def booleanComparisonOfModels(ast : AST, decodedModel : Model, failedModel : Model) : List[AST] = {
+      def boolCond( accu : List[AST], ast : AST) : Boolean = {
+        decodedModel(ast) != failedModel(ast)
+      }
+      
+      def boolWork( accu : List[AST], ast : AST) : List[AST] = {      
+        ast :: accu
+      }
+      
+      AST.boolVisit(ast, List(), boolCond, boolWork).toSet.toList
+    }
+    
+    val relevantNodes = booleanComparisonOfModels(ast, decodedModel, failedModel)
+    val nodesToRefine = sortedErrRatios.filter( x => relevantNodes.contains(x._1)).map(_._1)
+    
+    var newPMap = pmap
+    var changes = 0
+    for (node <- nodesToRefine.filter( x => precisionOrdering.lt(newPMap(x.label),  pmap.precisionOrdering.maximalPrecision)).take(k)) { 
+      newPMap = newPMap.update(node.label, satRefinePrecision(node, newPMap))
+      changes += 1      
+    }
+    
+    if (changes == 0) { // This could actually happen, that all the nodes where evaluation fails are at full precision. UnsatRefine in that case.
+      verbose("No changes, naive precision refinement")
+      newPMap = unsatRefine(ast, List(), pmap)
+    }
+    newPMap    
+  }
+  
+  def unsatRefine(ast : AST, core : List[AST], pmap : PrecisionMap[Precision]) : PrecisionMap[Precision] = {
+    pmap.map(unsatRefinePrecision)
+  }
+    
     
     def nodeError(decodedModel : Model)(failedModel : Model)(accu : Map[AST, Double], ast : AST) : Map[AST, Double]  
   }
+
+  trait UniformRefinementStrategy extends RefinementStrategy {
+    def increasePrecision(p : Precision) : Precision 
+    
+    def satRefine(ast : AST, decodedModel : Model, failedModel : Model, pmap : PrecisionMap[Precision])  = {
+      pmap.map(increasePrecision)
+    }
+    def unsatRefine(ast : AST, core : List[AST], pmap : PrecisionMap[Precision]) : PrecisionMap[Precision] = {
+      pmap.map(increasePrecision)
+    }
+  }  
+  

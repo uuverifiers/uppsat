@@ -164,7 +164,7 @@ object RealTheory extends Theory {
     "(set-logic QF_LRA)"
   }
   
-  def toSMTLib(symbol : ConcreteFunctionSymbol) = {
+  def symbolToSMTLib(symbol : ConcreteFunctionSymbol)(implicit translator : Option[uppsat.solver.SMTTranslator] = None) = {
     symbol match {     
       case RealAddition => "+"
       case RealSubstraction => "-"
@@ -185,7 +185,7 @@ object RealTheory extends Theory {
   
   
   
-  def toSMTLib(sort : ConcreteSort) = {
+  def sortToSMTLib(sort : ConcreteSort)(implicit translator : Option[uppsat.solver.SMTTranslator] = None) = {
     sort match {
       case RealSort => "Real"
     }
@@ -193,7 +193,7 @@ object RealTheory extends Theory {
   
   def declarationToSMTLib(sym : ConcreteFunctionSymbol) : String = {
     sym match {
-      case RealVar(name) => "(declare-fun " + name + " () " + toSMTLib(sym.sort) + ")" 
+      case RealVar(name) => "(declare-fun " + name + " () " + sortToSMTLib(sym.sort) + ")" 
       case RealNumeral(_, _) => ""
       case RealDecimal(_, _) => ""
       case _ => throw new Exception("Not instance of RealVar : " + sym.getClass)

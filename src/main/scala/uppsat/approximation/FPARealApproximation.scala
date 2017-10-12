@@ -192,33 +192,6 @@ trait FPARealCodec extends FPARealCore with ApproximationCodec {
   }
 }
 
-trait FPARealReconstructor extends FPARealCore with EqualityAsAssignmentReconstructor {
-  def evaluateNode( decodedModel  : Model, candidateModel : Model, ast : AST) : Model = {
-    val AST(symbol, label, children) = ast
-    
-    if (children.length > 0 && !equalityAsAssignment(ast, decodedModel, candidateModel)) {
-      val newChildren = for ( c <- children) yield {        
-        getCurrentValue(c, decodedModel, candidateModel)
-      }
-      
-      //Evaluation
-      val newAST = AST(symbol, label, newChildren.toList)
-      val newValue = ModelReconstructor.evalAST(newAST, inputTheory)
-      if ( globalOptions.PARANOID && symbol.sort == BooleanTheory.BooleanSort) { // TODO: Talk to Philipp about an elegant way to do flags
-        val assignments = candidateModel.variableAssignments(ast).toList
-        val backupAnswer = ModelReconstructor.valAST(ast, assignments.toList, this.inputTheory, Z3Solver)
-        
-        val answer = newValue.symbol.asInstanceOf[BooleanConstant] == BoolTrue
-        if ( backupAnswer != answer )
-          throw new Exception("Backup validation failed : \nEval: " + answer + "\nvalAst: " + backupAnswer)
-
-      }        
-      candidateModel.set(ast, newValue)
-    }
-    candidateModel
-  }
-}
-
 trait FPARealRefinementStrategy extends FPARealCore with ErrorBasedRefinementStrategy {
   val topK = 10 // K 
   val fractionToRefine = 1.0//K_percentage
@@ -227,7 +200,7 @@ trait FPARealRefinementStrategy extends FPARealCore with ErrorBasedRefinementStr
   def satRefinePrecision( node : AST, pmap : PrecisionMap[Int]) : Int = {
     val p =  pmap(node.label)    
     val newP = (p + precisionIncrement) max p
-    newP min pmap.precisionOrdering.maximalPrecision // TODO:  This check should be in the ordering somewhere?
+    precisionOrdering.min(newP, pmap.precisionOrdering.maximalPrecision) // TODO:  This check should be in the ordering somewhere?
   }
   
   def unsatRefinePrecision( p : Int) : Int = {
@@ -298,6 +271,6 @@ trait FPARealRefinementStrategy extends FPARealCore with ErrorBasedRefinementStr
 
 object FPARealApp extends FPARealCore 
                   with FPARealCodec
-                  with FPARealReconstructor
+                  with EqualityAsAssignmentReconstructor
                   with FPARealRefinementStrategy {
 }

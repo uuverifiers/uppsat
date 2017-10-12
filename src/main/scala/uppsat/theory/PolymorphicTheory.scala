@@ -33,14 +33,14 @@ object PolymorphicTheory extends Theory {
   
   val SMTHeader = ""
   
-  def toSMTLib(symbol : ConcreteFunctionSymbol) = {
+  def symbolToSMTLib(symbol : ConcreteFunctionSymbol)(implicit translator : Option[uppsat.solver.SMTTranslator] = None) = {
     symbol match {
       case pITE : PolyITE => "ite"
       case _ => throw new PolymorphicTheoryException("Translation of undefined polymorphic symbol: " + symbol)
     }
   }
   
-  def toSMTLib(sort : ConcreteSort) = {
+  def sortToSMTLib(sort : ConcreteSort)(implicit translator : Option[uppsat.solver.SMTTranslator] = None) = {
     sort match {
       case _ => throw new Exception("Translating ITE sort")
     }

@@ -7,5 +7,7 @@ trait PrecisionOrdering[P] {
   def lt(p1 : P, p2 : P) = order.lt(p1, p2)
   def min(p1 : P, p2 : P) = if (lt(p1, p2)) p1 else p2
   def max(p1 : P, p2 : P) = if (lt(p1, p2)) p2 else p1
+  
+  // TODO: Do we really need addition of precisions?
   def +(p1 : P, p2 : P) : P 
 }

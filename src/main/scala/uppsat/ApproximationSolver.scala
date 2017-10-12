@@ -90,7 +90,7 @@ object ApproximationSolver {
       if (ModelReconstructor.valAST(formula, assignments.toList, approximation.inputTheory, smtSolver)) {
         val extModel =
           for ((symbol, value) <- reconstructedModel.getModel) yield {
-          (symbol, value.symbol.theory.toSMTLib(value.symbol) )
+          (symbol, value.symbol.theory.symbolToSMTLib(value.symbol) )
         }
         (Some(extModel), None)
       } else {
@@ -118,7 +118,9 @@ object ApproximationSolver {
                               approximation.encodeFormula(formula, pmap)
                            else
                               formula
-
+                              
+      encodedFormula.prettyPrint("---")
+                              
       val encodedSMT = translator.translate(encodedFormula)
       
       verbose(encodedSMT)

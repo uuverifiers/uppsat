@@ -106,7 +106,7 @@ object IntegerTheory extends Theory {
     "(set-logic QF_LIA)"
   }
   
-  def toSMTLib(symbol : ConcreteFunctionSymbol) = {
+  def symbolToSMTLib(symbol : ConcreteFunctionSymbol)(implicit translator : Option[uppsat.solver.SMTTranslator] = None) = {
     symbol match {     
       case IntAddition => "+"
       case IntSubstraction => "-"
@@ -120,7 +120,7 @@ object IntegerTheory extends Theory {
   
   
   
-  def toSMTLib(sort : ConcreteSort) = {
+  def sortToSMTLib(sort : ConcreteSort)(implicit translator : Option[uppsat.solver.SMTTranslator] = None) = {
     sort match {
       case IntegerSort => "Int"
     }
@@ -128,7 +128,7 @@ object IntegerTheory extends Theory {
   
   def declarationToSMTLib(sym : ConcreteFunctionSymbol) : String = {
     sym match {
-      case IntVar(name) => "(declare-fun " + name + " () " + toSMTLib(sym.sort) + ")" 
+      case IntVar(name) => "(declare-fun " + name + " () " + sortToSMTLib(sym.sort) + ")" 
       case IntLiteral(i) => i.toString 
       case _ => throw new Exception("Not instance of IntVar : " + sym.getClass)
     }
