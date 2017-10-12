@@ -85,6 +85,9 @@ trait FPABVCodec extends FPABVCore with ApproximationCodec {
            val sort = FXSort(decimalWidth, fractionalWidth)
            val symbol = FX(decimalBits, fractionalBits)(sort)
            
+           println("£" + realValue)
+           println("\t" + symbol)
+           
            Leaf(symbol, ast.label)
             
             
@@ -123,7 +126,62 @@ trait FPABVCodec extends FPABVCore with ApproximationCodec {
 //  
 //  
 //  
+  
+  def floatToFixPoint(sign : Int, eBits : List[Int], sBits : List[Int], fxsort : FXSort) = {
+    val exp = ebitsToInt(eBits)
+    
+    
+    val FXSort(integralWidth, fractionalWidth) = fxsort
+    
+    // Position indicates the number of bits in the integral part of the number 
+    val position = exp + 1
+   
+    val (prependedBits, newPosition) = 
+      if (position - integralWidth < 0) {
+       (List.fill(integralWidth - position)(0) ++ (1 :: sBits), integralWidth) 
+      } else {
+        (1 :: sBits, position)
+      }
+    
+    
+    
+    val appendedBits =
+      if (integralWidth + fractionalWidth > prependedBits.length)
+        prependedBits ++ List.fill(integralWidth + fractionalWidth - prependedBits.length)(0)
+      else
+        prependedBits
+        
+    // TODO: No sign bit?
+    val iBits = appendedBits.drop(newPosition - integralWidth).take(integralWidth)
+    val fBits = appendedBits.drop(newPosition).take(fractionalWidth)
+    
+    
+    val (newiBits, newfBits) = 
+      if (sign == 1) {
+        // Do some 2-complements magic over iBits ++ fBits
+        throw new Exception("negative floating point literal")
+      } else {
+        (iBits, fBits)
+      }
+    println(sign)
+    println(eBits)
+    println(sBits)
+    println(fxsort)
+    
+    
+    println("exp: " + exp)
+    println("position: "+ position)
+    println("newPosition: "+ newPosition)
+    println("prepBits: " + prependedBits)
+    println("appendedBits: " + appendedBits)
+    println("iBits: " + iBits)
+    println("fBits: " + fBits)
+    FixPointLiteral(newiBits, newfBits, fxsort)    
+    
+  }
+  
   def encodeNode(ast : AST, children : List[AST], precision : (Int, Int)) : AST = {
+    println("encodeNode(" + ast + ")")
     val newSort = FXSortFactory(List(precision._1, precision._2))
       ast.symbol match {
       
@@ -131,6 +189,7 @@ trait FPABVCodec extends FPABVCore with ApproximationCodec {
         if (!fpToFXMap.contains(fpVar) || fpToFXMap(fpVar).sort != newSort) {
           fpToFXMap += (fpVar ->  new FXVar(fpVar.name, newSort))
         }
+        
         println("FPVAR: " + fpToFXMap(fpVar) + " (" + precision + ")")
         println("fpToFXMap(fpVar).sort: " + fpToFXMap(fpVar).sort)
         println("\t" + newSort)
@@ -145,42 +204,12 @@ trait FPABVCodec extends FPABVCore with ApproximationCodec {
       
       case fpLit : FloatingPointLiteral => {
         fpLit.getFactory match {
-           case FPConstantFactory(sign, ebits,  sbits) => {
-             // TODO: (Aleks) Can you help with this translation?
-             
-             // Currently ignoring the exponent.
-//             val exp = (sbits.length + 1 - (ebitsToInt(ebits)))
-//             
-//             val num = if (exp > 0) {
-//                 bitsToInt((1::sbits) ++ (List.fill(exp)(0)))
-//             } else {
-//               bitsToInt(1::sbits)
-//             }
-//             
-//             val denom = if (exp > 0) {
-//               BigInt(1)
-//             } else {
-//               BigInt(1) << (- exp)
-//             }
-             
-             
-//             val bits = num.toBinaryString.map(_ - 48).toList
-             val bits = sbits
-             val (decimalWidth, fractionalWidth) = precision
-             val decimalBits = 
-               if (bits.length < decimalWidth)
-                 List.fill(decimalWidth - bits.length)(0) ++ bits
-               else if (bits.length > decimalWidth)
-                 bits.drop(bits.length - decimalWidth)
-               else
-                 bits
-               bits.take(decimalWidth) 
-             val fractionalBits = List.fill(fractionalWidth)(0)
-             
-             val sort = FXSort(decimalWidth, fractionalWidth)
-             val symbol = FX(decimalBits, fractionalBits)(sort)
-             
-             Leaf(symbol, ast.label)
+           case FPConstantFactory(sign, eBits,  sBits) => {
+             val fxSymbol = floatToFixPoint(sign, eBits, sBits, newSort)
+             println("$" + fpLit)
+             println("\t" + fxSymbol)
+          
+             Leaf(fxSymbol, ast.label)
            }
         }
       }
@@ -188,6 +217,7 @@ trait FPABVCodec extends FPABVCore with ApproximationCodec {
       
       // TODO: (Aleks) We drop the RoundingModeSorts, but how are they reintroduced in the final model?
       case fpSym : FloatingPointFunctionSymbol => {
+        println("£" + fpSym)
         
         var newChildren = 
           for (c <- children if c.symbol.sort != RoundingModeSort) yield
@@ -229,18 +259,95 @@ trait FPABVCodec extends FPABVCore with ApproximationCodec {
         AST(newSymbol, ast.label, newChildren)
       }
       
+      case rm : RoundingMode => rm
       
-      
-      case _ => {
-        AST(ast.symbol, ast.label, children) 
+      case realValue : RealNumeral => throw new Exception("RealNumeral")
+      case rv : RealDecimal => {
+        val (sign, eBits, sBits) = floatToBits((rv.num / rv.denom).toFloat)
+        val fxSymbol = floatToFixPoint(sign, eBits, sBits, newSort)
+       println("$" + rv)
+       println("\t" + fxSymbol)
+    
+       Leaf(fxSymbol, ast.label)        
+        
       }
+      
+      case _ => AST(ast.symbol, ast.label, children) 
     }
   }
+  // 101.011
+  // 1.01011 = 2
   
-  def FixPointToFloat(decimalBits : List[Int], fractionalBits : List[Int]) : Float = {
-    val decimalValue = decimalBits.foldRight((0,1))((a,b) => (b._1 + a*b._2, b._2*2))._1
-    val fractionalValue = (fractionalBits.foldRight((0,1))((a,b) => (b._1 + a*b._2, b._2*2))._1) / (1 << fractionalBits.length).toFloat
-    decimalValue + fractionalValue    
+  // sbits = [1.110] 
+  // ebits = 2
+  // float -> smt-float
+  def FixPointToFloatAST(decimalBits : List[Int], fractionalBits : List[Int], fpsort : FPSort) : AST = {
+
+    val signBit = decimalBits.head
+    if (signBit == 1)
+      throw new Exception("2-completemtn!")
+    
+    val FPSort(eBits, sBits) = fpsort
+    
+    val position = decimalBits.length - 1
+    val allBits = decimalBits.tail ++ fractionalBits
+    
+    // Remove the return
+    val leadingZeroes = allBits.takeWhile(_ == 0).length
+    if (allBits.dropWhile(_ == 0).isEmpty) {
+      if (signBit == 0)
+        return Leaf(FPPositiveZero(fpsort))
+      else
+        return Leaf(FPNegativeZero(fpsort))
+    }
+    
+    val actualBits = allBits.dropWhile(_ == 0).tail // Dropping implicit one
+    
+    val exp = position - leadingZeroes - 1
+    
+        
+    // BIAS
+    import scala.BigInt._
+    val biasedExp = exp + 2.pow(eBits - 1).toInt - 1 
+    val expBits = biasedExp.toBinaryString.map(_ - 48).toList
+    
+    // BIAS: Ask Christoph
+    val exponent =
+      if (expBits.length < eBits) {
+        (List.fill(eBits - expBits.length)(0)) ++ expBits
+      } else if (expBits.length > eBits) {
+        // TODO: Maybe just set to max?
+        expBits.drop(expBits.length - eBits)
+      } else {
+        expBits
+      }
+    
+    // -1 for implicit one
+    val mantissa =  
+      if (actualBits.length < sBits - 1) {
+        actualBits ++ List.fill(sBits - 1 - actualBits.length)(0) 
+      } else if (actualBits.length > sBits - 1) {
+        actualBits.take(sBits - 1)
+      } else {
+        actualBits
+      }
+    
+//    println("FIX")
+//    println("decimalBits: " + decimalBits)
+//    println("fractionalBits: " + fractionalBits)
+//    println("exp: "+ exp)
+//    println("biasedExp: " + biasedExp)
+//    println("exponent: " + exponent)
+//    println("fpsort: " + fpsort)
+//    println("position: " + position)
+//    println("allBits: " + allBits)
+//    println("actualBits: " + actualBits)
+//    println("expBits: " + expBits)
+
+    val symbol = fp(signBit, exponent, mantissa)(fpsort)
+    println("symbol: " + symbol)
+    Leaf(symbol, List())
+    
   }
   
   // Describes translation of smallfloat values into values of the original formula.  
@@ -256,11 +363,17 @@ trait FPABVCodec extends FPABVCore with ApproximationCodec {
         }
         val decimalBits = bvl.bits.take(decimalWidth)
         val fractionalBits = bvl.bits.drop(decimalWidth)
-        floatToAST(FixPointToFloat(decimalBits, fractionalBits), FPSort(e, s))
+        val ret = FixPointToFloatAST(decimalBits, fractionalBits, FPSort(e, s))
+        println("&")
+        println(symbol)
+        println(value)
+        println(p)
+        println(ret)
+        ret
       }
       case (FPSort(e, s), fxl : FixPointLiteral) => {
 //        // TODO: (Aleks) How do we know that the float value here is correctly representing something of sort FPSort(e,s)
-        floatToAST(FixPointToFloat(fxl.decimalBits, fxl.fractionalBits), FPSort(e, s))      
+        FixPointToFloatAST(fxl.decimalBits, fxl.fractionalBits, FPSort(e, s))      
       }
       
       case (BooleanSort, _) => value

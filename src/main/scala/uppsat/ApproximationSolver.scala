@@ -75,11 +75,13 @@ object ApproximationSolver {
       verbose("Decoding model ... ")
       val decodedModel = approximation.decodeModel(formula, appModel, pmap)
 
+      println(decodedModel)
       verbose("Reconstructing model ...")
 
       val reconstructedModel = approximation.reconstruct(formula, decodedModel)
       val assignments = reconstructedModel.variableAssignments(formula)
 
+      
       verbose("Validating model ...")
 
 //      TODO: (Aleks?) Align models and sorts somehow... What does this mean?

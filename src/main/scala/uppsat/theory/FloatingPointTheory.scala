@@ -493,14 +493,11 @@ case class FPSpecialValuesFactory(symbolName : String) extends FPGenConstantFact
     }
     bti(bits, 0.5f, 0)
   }
+
   
   def ebitsToInt(bits : List[Int]) : Int = {
     val sum = bitsToInt(bits.tail.reverse)
-    if (bits.head == 0) {
-      sum - 2.pow(bits.length - 1).toInt
-    } else {
-      sum
-    }        
+    sum - 2.pow(bits.length - 1).toInt + 1
    }
   
   def fpToDouble(signBit : Int, eBits : List[Int], sBits : List[Int]) = {
