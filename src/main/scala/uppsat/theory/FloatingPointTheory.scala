@@ -123,7 +123,7 @@ object FloatingPointTheory extends Theory {
     val thisFactory = this
     
     val arity = 1 // Refers to the sorts
-    def apply(argSorts : Seq[ConcreteSort]) = { //TODO : Should be FPSort, but this does not seem enforceable atm
+    def apply(argSorts : ConcreteSort*) = { //TODO : Should be FPSort, but this does not seem enforceable atm
       val args = if (isRounding) RoundingModeSort :: argSorts.toList else argSorts
       FPToNonFPFunctionSymbol(args, sort, this)
     }
