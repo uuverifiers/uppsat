@@ -157,10 +157,15 @@ trait FPABVCodec extends FPABVCore with ApproximationCodec {
       if (sign == 1) {
         // Do some 2-complements magic over iBits ++ fBits
         val newBits = twosComplement(iBits ++ fBits)
-        if (newBits.length > iBits.length + fBits.length) {
-          throw new Exception("twos-complement overflow")  
-        }
-        (newBits.take(iBits.length), newBits.drop(iBits.length))
+          // TODO: (Aleks) Dropping bit at overflow?        
+        val nextBits = 
+          if (newBits.length > iBits.length + fBits.length) {
+            newBits.drop(newBits.length - (iBits.length + fBits.length))
+          } else {
+            newBits
+          }
+            
+        (nextBits.take(iBits.length), nextBits.drop(iBits.length))
       } else {
         (iBits, fBits)
       }
@@ -188,6 +193,18 @@ trait FPABVCodec extends FPABVCore with ApproximationCodec {
           
              Leaf(fxSymbol, ast.label)
            }
+           case FPPositiveZero => {
+             Leaf(FixPointLiteral(List.fill(newSort.decimalWidth)(0), List.fill(newSort.fractionalWidth)(0), newSort))
+           }
+           case FPNegativeZero => {
+             Leaf(FixPointLiteral(List.fill(newSort.decimalWidth)(0), List.fill(newSort.fractionalWidth)(0), newSort))
+           }
+           case FPPlusInfinity => {
+             Leaf(FixPointLiteral(0 :: List.fill(newSort.decimalWidth - 1)(1), List.fill(newSort.fractionalWidth)(1), newSort))
+           }
+           case FPMinusInfinity => {
+             Leaf(FixPointLiteral(1 :: List.fill(newSort.decimalWidth - 1)(0), List.fill(newSort.fractionalWidth - 1)(0) ++ List(1),  newSort))
+           }           
         }
       }
       
