@@ -949,7 +949,7 @@ object FixPointTheory extends Theory {
       symbol match {
         case fxFunSym : FixPointFunctionSymbol => {
           fxFunSym.getFactory match {
-            case FXNotFactory => "FXnot"
+            case FXNotFactory => "bvnot"
             case fxzef : FXZeroExtendFactory => "(_ zero_extend " + fxzef.count + ")"
             case fxsef : FXSignExtendFactory => "(_ sign_extend " + fxsef.count + ")"
             case fxef : FXExtractFactory => "(_ extract " + fxef.startBit + " "  + fxef.endBit + ")"
