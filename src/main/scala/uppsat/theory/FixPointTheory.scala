@@ -956,6 +956,21 @@ object FixPointTheory extends Theory {
     "(define-fun " + name + " ((bv1 " + sort + ") (bv2 " + sort + ")) " + sort + " (" + extract + " (bvmul (" + pad + " bv1) (" + pad + " bv2))))"
   }
   
+  def genFxDivName(d : Int, f : Int) = {
+    "fx.div-" + d + "-" + f
+  }
+  
+  def genFxDiv(d : Int, f : Int) = {
+    val name = genFxDivName(d, f)
+    val sort = "(_ BitVec " + (d + f) + ")"
+    val prep = "(_ sign_extend " + f + ")"
+    val appBits = "#b" + "0"*f
+    val extract = "(_ extract " + (d + f - 1) + " 0)"
+    "(define-fun " + name + " ((bv1 " + sort + ") (bv2 " + sort + ")) " + sort + " (" + extract + " (bvudiv (concat bv1 " + appBits + ") (" + prep + " bv2))))"
+  }  
+  
+                  //  
+  
   def symbolToSMTLib(symbol : ConcreteFunctionSymbol)(implicit translator : Option[uppsat.solver.SMTTranslator] = None) = {
     val retval = 
       symbol match {
@@ -979,7 +994,20 @@ object FixPointTheory extends Theory {
                 "fxmul"
               }
             }
-            case FXDivFactory => "bvdiv"              
+            
+            case FXDivFactory => {
+              if (translator.isDefined) {
+                val FXSort(d, f) = fxFunSym.sort
+                
+                if (!translator.get.smtDefs.contains(genFxDiv(d, f)))
+                  translator.get.smtDefs += genFxDiv(d, f)
+                println(">>>" + genFxDiv(d, f))
+                genFxDivName(d, f)                
+              } else {
+                "fxdiv"
+              }
+            }
+                          
             case FXAshrFactory => "bvashr"  
             case FXOrFactory => "bvor"
             case FXXorFactory => "bvxor"  

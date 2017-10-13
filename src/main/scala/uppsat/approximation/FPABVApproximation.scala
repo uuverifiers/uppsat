@@ -200,7 +200,7 @@ trait FPABVCodec extends FPABVCore with ApproximationCodec {
           case FPAdditionFactory => FXAddFactory(newSort)
           case FPSubstractionFactory => throw new Exception("Not handled: FP Substraction")
           case FPMultiplicationFactory => FXMulFactory(newSort)
-          case FPDivisionFactory => FXMulFactory(newSort)
+          case FPDivisionFactory => FXDivFactory(newSort)
           
           case FPToFPFactory => val r = newChildren(0).symbol
                                 label = newChildren(0).label
