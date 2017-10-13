@@ -944,18 +944,41 @@ object FixPointTheory extends Theory {
     "(define-fun " + funName + " ((fx (_ BitVec " + (sd + sf) + "))) (_ BitVec " + (td + tf) + ") " + secondStep + ")"
   }   
   
+  def genFxMulName(d : Int, f : Int) = {
+    "fx.mul-" + d + "-" + f
+  }
+  
+  def genFxMul(d : Int, f : Int) = {
+    val name = genFxMulName(d, f)
+    val sort = "(_ BitVec " + (d + f) + ")"
+    val pad = "(_ sign_extend " + f + ")"
+    val extract = "(_ extract " + (d + 2*f - 1) + " " + (f) + ")"
+    "(define-fun " + name + " ((bv1 " + sort + ") (bv2 " + sort + ")) " + sort + " (" + extract + " (bvmul (" + pad + " bv1) (" + pad + " bv2))))"
+  }
+  
   def symbolToSMTLib(symbol : ConcreteFunctionSymbol)(implicit translator : Option[uppsat.solver.SMTTranslator] = None) = {
     val retval = 
       symbol match {
         case fxFunSym : FixPointFunctionSymbol => {
           fxFunSym.getFactory match {
-            case FXNotFactory => "FXnot"
+            case FXNotFactory => "bvnot"
             case fxzef : FXZeroExtendFactory => "(_ zero_extend " + fxzef.count + ")"
             case fxsef : FXSignExtendFactory => "(_ sign_extend " + fxsef.count + ")"
             case fxef : FXExtractFactory => "(_ extract " + fxef.startBit + " "  + fxef.endBit + ")"
             case FXAndFactory => "bvand"
             case FXAddFactory => "bvadd"
-            case FXMulFactory => "bvmul"
+            case FXMulFactory => {
+              if (translator.isDefined) {
+                val FXSort(d, f) = fxFunSym.sort
+                
+                if (!translator.get.smtDefs.contains(genFxMul(d, f)))
+                  translator.get.smtDefs += genFxMul(d, f)
+                println(">>>" + genFxMul(d, f))
+                genFxMulName(d, f)                
+              } else {
+                "fxmul"
+              }
+            }
             case FXDivFactory => "bvdiv"              
             case FXAshrFactory => "bvashr"  
             case FXOrFactory => "bvor"

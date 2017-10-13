@@ -173,10 +173,7 @@ trait FPABVCodec extends FPABVCore with ApproximationCodec {
           fpToFXMap += (fpVar ->  new FXVar(fpVar.name, newSort))
         }
         
-        val symbol = fpToFXMap(fpVar)
-        val leaf = Leaf(fpToFXMap(fpVar), ast.label)
-        leaf.prettyPrint("leaf: ")
-        leaf
+        Leaf(fpToFXMap(fpVar), ast.label)
       }
       
       
@@ -344,13 +341,7 @@ trait FPABVCodec extends FPABVCore with ApproximationCodec {
         }
         val decimalBits = bvl.bits.take(decimalWidth)
         val fractionalBits = bvl.bits.drop(decimalWidth)
-        val ret = FixPointToFloatAST(decimalBits, fractionalBits, FPSort(e, s))
-        println("&")
-        println(symbol)
-        println(value)
-        println(p)
-        println(ret)
-        ret
+        FixPointToFloatAST(decimalBits, fractionalBits, FPSort(e, s))
       }
       
       case (FPSort(e, s), fxl : FixPointLiteral) => {
