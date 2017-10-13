@@ -30,6 +30,7 @@ object globalOptions {
   var DEADLINE : Option[Long] = None
   var STARTTIME : Option[Long] = None
   var PARANOID = false
+  var SURRENDER = false
   
   
   
@@ -125,6 +126,7 @@ object main {
         case "-d" => globalOptions.DEBUG = true
         case "-p" => globalOptions.PARANOID =  true
         case "-h" | "-help" => printUsage()
+        case "-surrender" => globalOptions.SURRENDER = true
         
         case backend(solver) => 
             if (globalOptions.REG_SOLVERS.contains(solver))
