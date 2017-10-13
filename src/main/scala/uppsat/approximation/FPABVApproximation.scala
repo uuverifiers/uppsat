@@ -85,9 +85,6 @@ trait FPABVCodec extends FPABVCore with ApproximationCodec {
            val sort = FXSort(decimalWidth, fractionalWidth)
            val symbol = FX(decimalBits, fractionalBits)(sort)
            
-           println("£" + realValue)
-           println("\t" + symbol)
-           
            Leaf(symbol, ast.label)
             
             
@@ -163,25 +160,11 @@ trait FPABVCodec extends FPABVCore with ApproximationCodec {
       } else {
         (iBits, fBits)
       }
-    println(sign)
-    println(eBits)
-    println(sBits)
-    println(fxsort)
-    
-    
-    println("exp: " + exp)
-    println("position: "+ position)
-    println("newPosition: "+ newPosition)
-    println("prepBits: " + prependedBits)
-    println("appendedBits: " + appendedBits)
-    println("iBits: " + iBits)
-    println("fBits: " + fBits)
     FixPointLiteral(newiBits, newfBits, fxsort)    
     
   }
   
   def encodeNode(ast : AST, children : List[AST], precision : (Int, Int)) : AST = {
-    println("encodeNode(" + ast + ")")
     val newSort = FXSortFactory(List(precision._1, precision._2))
       ast.symbol match {
       
@@ -190,13 +173,8 @@ trait FPABVCodec extends FPABVCore with ApproximationCodec {
           fpToFXMap += (fpVar ->  new FXVar(fpVar.name, newSort))
         }
         
-        println("FPVAR: " + fpToFXMap(fpVar) + " (" + precision + ")")
-        println("fpToFXMap(fpVar).sort: " + fpToFXMap(fpVar).sort)
-        println("\t" + newSort)
         val symbol = fpToFXMap(fpVar)
-        println("Symbol.sort: " + symbol.sort)
         val leaf = Leaf(fpToFXMap(fpVar), ast.label)
-        println("Leaf.symbol.sort: " + leaf.symbol.sort)
         leaf.prettyPrint("leaf: ")
         leaf
       }
@@ -206,8 +184,6 @@ trait FPABVCodec extends FPABVCore with ApproximationCodec {
         fpLit.getFactory match {
            case FPConstantFactory(sign, eBits,  sBits) => {
              val fxSymbol = floatToFixPoint(sign, eBits, sBits, newSort)
-             println("$" + fpLit)
-             println("\t" + fxSymbol)
           
              Leaf(fxSymbol, ast.label)
            }
@@ -217,7 +193,6 @@ trait FPABVCodec extends FPABVCore with ApproximationCodec {
       
       // TODO: (Aleks) We drop the RoundingModeSorts, but how are they reintroduced in the final model?
       case fpSym : FloatingPointFunctionSymbol => {
-        println("£" + fpSym)
         
         var newChildren = 
           for (c <- children if c.symbol.sort != RoundingModeSort) yield
@@ -265,9 +240,7 @@ trait FPABVCodec extends FPABVCore with ApproximationCodec {
       case rv : RealDecimal => {
         val (sign, eBits, sBits) = floatToBits((rv.num / rv.denom).toFloat)
         val fxSymbol = floatToFixPoint(sign, eBits, sBits, newSort)
-       println("$" + rv)
-       println("\t" + fxSymbol)
-    
+        
        Leaf(fxSymbol, ast.label)        
         
       }
@@ -275,22 +248,41 @@ trait FPABVCodec extends FPABVCore with ApproximationCodec {
       case _ => AST(ast.symbol, ast.label, children) 
     }
   }
-  // 101.011
-  // 1.01011 = 2
+
+  def twosComplement(bits : List[Int]) = {
+    // invert bits
+    val invBits = bits.map(x => if (x == 0) 1 else 0)
+    
+    def addOne(bits : List[Int]) : List[Int] = {
+      bits match {
+        case Nil => List(1)
+        case b :: rest => {
+          if (b == 0)
+            1 :: rest
+          else
+            0 :: addOne(rest)
+        }
+      }
+    }
+    addOne(invBits.reverse).reverse
+  }
   
-  // sbits = [1.110] 
-  // ebits = 2
   // float -> smt-float
   def FixPointToFloatAST(decimalBits : List[Int], fractionalBits : List[Int], fpsort : FPSort) : AST = {
-
     val signBit = decimalBits.head
-    if (signBit == 1)
-      throw new Exception("2-completemtn!")
     
     val FPSort(eBits, sBits) = fpsort
     
-    val position = decimalBits.length - 1
-    val allBits = decimalBits.tail ++ fractionalBits
+    val position = decimalBits.length
+
+    val aBits = decimalBits ++ fractionalBits
+    val allBits = 
+      if (signBit == 1) {
+        twosComplement(aBits)
+      } else {
+        aBits
+      }
+    
     
     // Remove the return
     val leadingZeroes = allBits.takeWhile(_ == 0).length
@@ -301,15 +293,17 @@ trait FPABVCodec extends FPABVCore with ApproximationCodec {
         return Leaf(FPNegativeZero(fpsort))
     }
     
+    
     val actualBits = allBits.dropWhile(_ == 0).tail // Dropping implicit one
+    val newPosition = position - leadingZeroes - 1
     
     val exp = position - leadingZeroes - 1
-    
-        
+            
     // BIAS
     import scala.BigInt._
-    val biasedExp = exp + 2.pow(eBits - 1).toInt - 1 
+    val biasedExp = exp + 2.pow(eBits - 1).toInt - 1
     val expBits = biasedExp.toBinaryString.map(_ - 48).toList
+    
     
     // BIAS: Ask Christoph
     val exponent =
@@ -332,20 +326,7 @@ trait FPABVCodec extends FPABVCore with ApproximationCodec {
         actualBits
       }
     
-//    println("FIX")
-//    println("decimalBits: " + decimalBits)
-//    println("fractionalBits: " + fractionalBits)
-//    println("exp: "+ exp)
-//    println("biasedExp: " + biasedExp)
-//    println("exponent: " + exponent)
-//    println("fpsort: " + fpsort)
-//    println("position: " + position)
-//    println("allBits: " + allBits)
-//    println("actualBits: " + actualBits)
-//    println("expBits: " + expBits)
-
     val symbol = fp(signBit, exponent, mantissa)(fpsort)
-    println("symbol: " + symbol)
     Leaf(symbol, List())
     
   }
@@ -371,6 +352,7 @@ trait FPABVCodec extends FPABVCore with ApproximationCodec {
         println(ret)
         ret
       }
+      
       case (FPSort(e, s), fxl : FixPointLiteral) => {
 //        // TODO: (Aleks) How do we know that the float value here is correctly representing something of sort FPSort(e,s)
         FixPointToFloatAST(fxl.decimalBits, fxl.fractionalBits, FPSort(e, s))      
@@ -410,7 +392,7 @@ trait FPABVCodec extends FPABVCore with ApproximationCodec {
 //    
   
   // In contrast to cast, this is working on scala-level, not in SMT
-  def decodeValue(ast : AST, target : ConcreteSort) = {
+  def decodeValue(ast : AST, target : ConcreteSort, p : Precision) = {
     (ast.symbol, target) match {
       case (fpl : FloatingPointLiteral, fps : FPSort) => {
 //        val castValue = cast(retrieveFromAppModel(ast.children(1), appModel), ast.symbol.sort)
@@ -426,18 +408,28 @@ trait FPABVCodec extends FPABVCore with ApproximationCodec {
         val float = fp(sign, eBits, sBits)
         Leaf(float)
       }
-//      case (fxl : FixPointLiteral, fps : FPSort) => {
+      case (fxl : FixPointLiteral, fps : FPSort) => {
+        throw new Exception("...")
 //        println("---")
 //        // TODO: Assuming integers right now
 //        val iValue = FXl.bits.foldRight((0,1))((a,b) => (b._1 + a*b._2, b._2*2))._1
 //        println(iValue)
 //        val float = FloatingPointTheory.floatToAST(iValue, fps)
 //        float
-//      }
+      }
+      
+      // TODO: We assume it is a fix point literal?
+      case (bvl : BitVectorLiteral, fpsort : FPSort) => {
+        val (decWidth, fracWidth) = p
+        FixPointToFloatAST(bvl.bits.take(decWidth), bvl.bits.drop(decWidth), fpsort)        
+      }
+
+      
 //      case (sort1, sort2) if sort1 == sort2 => ast
       case (sort1, sort2) => {
         println("Could not decode")
         ast.prettyPrint
+        println("FROM: " + ast.symbol.sort)
         println("TO: " + target)
         throw new Exception("Could not decode")
       }
@@ -452,10 +444,11 @@ trait FPABVCodec extends FPABVCore with ApproximationCodec {
     val appValue = retrieveFromAppModel(ast, appModel) 
     
     val decodedValue : AST = ast.symbol match {
-      case f : FPFunctionSymbol if f.getFactory == FPToFPFactory =>
-        val castValue = decodeValue(retrieveFromAppModel(ast.children(1), appModel), ast.symbol.sort)
-        val dv = decodeSymbolValue(ast.symbol, castValue, pmap(ast.label)) 
-        dv
+//      case f : FPFunctionSymbol if f.getFactory == FPToFPFactory =>
+//        val castValue = decodeValue(retrieveFromAppModel(ast.children(1), appModel), ast.symbol.sort, pmap(ast.label))
+//        println("\tcastValue: " + castValue)
+//        val dv = decodeSymbolValue(ast.symbol, castValue, pmap(ast.label)) 
+//        dv
       case _ => 
         decodeSymbolValue(ast.symbol, appValue, pmap(ast.label)) 
     }
@@ -467,9 +460,7 @@ trait FPABVCodec extends FPABVCore with ApproximationCodec {
         throw new Exception("Decoding the model results in different values for the same entry : \n" + existingValue + " \n" + decodedValue.symbol)
       }
     } else {
-      if (ast.isVariable)
-        println(">> "+ ast.symbol + " " + decodedValue.symbol + " /" + appValue.symbol +"/")
-      decodedModel.set(ast, decodedValue)
+        decodedModel.set(ast, decodedValue)
     }
     decodedModel
   }
