@@ -151,6 +151,22 @@ object ApproximationSolver {
           pmap = approximation.unsatRefine(formula, List(), pmap)
         }
       }
+      
+      if (pmap.isMaximal) {
+            val validator = globalOptions.getValidator  
+            val smtFormula = translator.translate(formula)
+            if (validator.checkSat(smtFormula)) {
+              val stringModel = smtSolver.getStringModel(smtFormula, translator.getDefinedSymbols.toList)
+              val model = translator.getModel(formula, stringModel) 
+              val extModel =
+                  for ((symbol, value) <- model.getModel) yield {
+                  (symbol, value.symbol.theory.symbolToSMTLib(value.symbol) )
+                  }
+              return Sat(extModel)
+            }          
+            else 
+              return Unsat
+      }
     }
     
     return Unknown

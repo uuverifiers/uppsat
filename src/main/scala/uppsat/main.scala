@@ -33,18 +33,27 @@ object globalOptions {
   
   
   
-  val REG_SOLVERS = List( Z3Solver, MathSatSolver, MathSatACDCLSolver)
-  val REG_APPROXS = List(   new PostOrderNodeBasedApproximation(IJCARSmallFloatsApp),
-                            new AnalyticalFramework(FxPntSmallFloatsApp),
-                            EmptyApproximation,
-                            new PostOrderNodeBasedApproximation(FPARealApp),
-                            new PostOrderNodeBasedApproximation(FPABVApp))
-  var chosenApproximation = 0
-  var chosenBackend = 0
+  val REG_SOLVERS = Map( "z3" -> new Z3Solver(),                           
+                         "mathsat" -> new MathSatSolver(),
+                         "acdcl" -> new MathSatSolver(" -theory.fp.mode=2 "),
+                         "nlsat" -> new Z3Solver("NLSAT","(check-sat-using qfnra-nlsat)\n"))
+                          
+  val REG_APPROXS = Map( "ijcar" ->  new PostOrderNodeBasedApproximation(IJCARSmallFloatsApp),
+                          "saturation" ->  new AnalyticalFramework(FxPntSmallFloatsApp),                            
+                          "reals" ->  new PostOrderNodeBasedApproximation(FPARealApp),
+                          "fixedpoint" ->  new PostOrderNodeBasedApproximation(FPABVApp),
+                          "empty" -> EmptyApproximation)
+                                            
+  var approximation = "ijcar"
+  var backend = "z3"
+  var validator = "z3"
   
-  def getApproximation = REG_APPROXS(chosenApproximation)
+  def getApproximation = REG_APPROXS(approximation.toLowerCase())
   
-  def getBackendSolver = REG_SOLVERS(chosenBackend)
+  def getBackendSolver = REG_SOLVERS(backend.toLowerCase())
+  
+  def getValidator = REG_SOLVERS(validator.toLowerCase())
+  
   
   def verbose(str : String) = {
     if (globalOptions.VERBOSE) {
