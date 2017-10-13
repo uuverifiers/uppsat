@@ -106,7 +106,13 @@ object main {
     println("Input file missing. Call uppsat -h or uppsat -help for usage help.")
   }
   
-  def parseArgument( arg : String) : Unit = {
+  /**
+   * Parses argument and sets globalOptions accordingly.
+   * 
+   * @param arg Argument to be parsed
+   * @return Returns true if arg was unparseable
+   */
+  def parseArgument( arg : String) : Boolean = {
       val timeoutPattern = "-t=([0-9.]+)".r
       val appPattern = "-app=(\\S+)".r
       val backend = "-backend=(\\S+)".r
@@ -141,8 +147,9 @@ object main {
         case timeoutPattern(t) =>   globalOptions.DEADLINE = Some(t.toInt * 1000)
                
         case dashPattern() => printUsage()
-        case _ => ()
+        case _ => true
       }
+      false
   }
   
   def main_aux(args : Array[String]) : Answer = {
@@ -152,7 +159,12 @@ object main {
     globalOptions.STARTTIME = Some(System.currentTimeMillis())
     
     for (a <- args) yield {
-      parseArgument(a)
+      if (parseArgument(a)) {
+        println("Unrecognized argument: " + a)
+        printUsage()
+        return Unknown
+      }
+        
     }
       
     val files = args.filterNot(_.startsWith("-")).toList  
