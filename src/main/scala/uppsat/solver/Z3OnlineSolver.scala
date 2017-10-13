@@ -78,7 +78,7 @@ class Z3OnlineSolver(checkSatCmd : String = "(check-sat)\n") extends SMTSolver {
   }
   
   def evaluate(formula : String) : String = {
-    evaluate(formula, List()).head
+    evaluate(formula + "\n" + checkSatCmd, List()).head
   }
   
   // Assumes a check-sat call has already been made
@@ -127,28 +127,28 @@ class Z3OnlineSolver(checkSatCmd : String = "(check-sat)\n") extends SMTSolver {
   }
   
   def getStringModel(formula : String, extractSymbols : List[String]) = {
-    val extendedFormula = formula + (extractSymbols.map("(eval " + _ + ")").mkString("\n", "\n", ""))
+    val extendedFormula = formula + "\n" + checkSatCmd + (extractSymbols.map("(eval " + _ + ")").mkString("\n", "\n", ""))
     val result = evaluate(extendedFormula)
     parseOutput(result, extractSymbols).get    
   }
   
   def checkSat(formula : String) : Boolean = {
-    val result = evaluate(formula)  
+    val result = evaluate(formula + "\n" + checkSatCmd)  
     val retVal = result.split("\n").head.trim()
     retVal match {
       case "sat" => true
       case "unsat" => false
-      case str => throw new Exception("Unexpected sat/unsat result: " + str)
+      case str => throw new Exception("Unexpected result: " + str)
     }
   }
 
   //Not used by the online solver
   def getAnswer(formula : String) : String = {
-    val result = evaluate(formula)  
+    val result = evaluate(formula + "\n" + checkSatCmd)  
     val retVal = result.split("\n")
     retVal.head.trim() match {
       case "sat" => retVal(1).trim()
-      case str => throw new Exception("Unexpected sat/unsat result: " + str)
+      case str => throw new Exception("Unexpected result: " + str)
     }
   }
   
