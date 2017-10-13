@@ -44,3 +44,7 @@ z3
 *.gz
 
 *.smt2
+
+\.ensime_cache/
+
+\.ensime

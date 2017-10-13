@@ -31,14 +31,16 @@ object globalOptions {
   var STARTTIME : Option[Long] = None
   var PARANOID = false
   
-  var chosenBackend = 0
+  
   
   val REG_SOLVERS = List( Z3Solver, MathSatSolver, MathSatACDCLSolver)
   val REG_APPROXS = List(   new PostOrderNodeBasedApproximation(IJCARSmallFloatsApp),
                             new AnalyticalFramework(FxPntSmallFloatsApp),
                             EmptyApproximation,
                             new PostOrderNodeBasedApproximation(FPARealApp))
+  
   var chosenApproximation = 0
+  var chosenBackend = 0
   
   def getApproximation = REG_APPROXS(chosenApproximation)
   
