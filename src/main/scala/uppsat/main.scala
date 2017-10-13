@@ -31,6 +31,7 @@ object globalOptions {
   var STARTTIME : Option[Long] = None
   var PARANOID = false
   var SURRENDER = false
+  var THROW_EXCEPTIONS = false
   
   
   
@@ -127,6 +128,7 @@ object main {
         case "-p" => globalOptions.PARANOID =  true
         case "-h" | "-help" => printUsage()
         case "-surrender" => globalOptions.SURRENDER = true
+        case "-te" => globalOptions.THROW_EXCEPTIONS = true
         
         case backend(solver) => 
             if (globalOptions.REG_SOLVERS.contains(solver))
@@ -214,7 +216,7 @@ object main {
       case e : Exception => {
         println("Unexpected error: " + e)
         println(e.getStackTraceString)
-        if (globalOptions.DEBUG)
+        if (globalOptions.THROW_EXCEPTIONS)
           throw e
       }
     }
