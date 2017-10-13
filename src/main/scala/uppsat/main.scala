@@ -202,11 +202,17 @@ object main {
   def main(args: Array[String]) = {
     
     verbose("Args: " + args.mkString("|"))
-    // TODO: (Aleks) Do we need these system exit codes? Usually non-zero means error I think?
-    main_aux(args) match {
-      case Sat(_) => System.exit(10)
-      case Unsat   => System.exit(20)
-      case Unknown => System.exit(30)        
+    try {
+      main_aux(args) match {
+        case Sat(_) => System.exit(10)
+        case Unsat   => System.exit(20)
+        case Unknown => System.exit(30)        
+      }
+    } catch {
+      case e : Exception => {
+        println("Unexpected error: " + e)
+        println(e.getStackTraceString)
+      }
     }
   }   
 }
