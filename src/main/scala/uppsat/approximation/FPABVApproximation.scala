@@ -156,7 +156,11 @@ trait FPABVCodec extends FPABVCore with ApproximationCodec {
     val (newiBits, newfBits) = 
       if (sign == 1) {
         // Do some 2-complements magic over iBits ++ fBits
-        throw new Exception("negative floating point literal")
+        val newBits = twosComplement(iBits ++ fBits)
+        if (newBits.length > iBits.length + fBits.length) {
+          throw new Exception("twos-complement overflow")  
+        }
+        (newBits.take(iBits.length), newBits.drop(iBits.length))
       } else {
         (iBits, fBits)
       }
