@@ -86,16 +86,19 @@ object main {
     println("\t-m - print model (debug purposes)3")
     println("\t-d - debugging output")
     println("\t-p - run a second check using z3 to verify internal queries")
-    println("\t-b=NUM - use one of the following backends:")
-    println("\t\t 0 : Z3 (default)")
-    println("\t\t 1 : MathSat")
-    println("\t\t 2 : MathSat(ACDCL)")
-    println("\t -a=NUM - use one of the following approximations:")
-    println("\t\t 0 : Smallfloats (node based reconstruction)")
-    println("\t\t 1 : Smallfloats (fixpoint based reconstruction)")
-    println("\t\t 2 : Empty Approximation (for debug purposes)")
-    println("\t\t 4 : BitVector (node based reconstruction)")    
+    println("\t-backend= - use one of the following backends:")
+    println("\t\t z3 (default)")
+    println("\t\t mathsat : MathSat")
+    println("\t\t acdcl : MathSat(ACDCL)")  
+    println("\t\t nlsat : Z3 using qfnrq-nlsat tactic")
+    println("\t -app= - use one of the following approximations:")
+    println("\t\t ijcar : Smallfloats (node based reconstruction)")
+    println("\t\t saturation : Smallfloats (fixpoint based reconstruction)")    
+    println("\t\t fixedpoint : BitVector (node based reconstruction)")
+    println("\t\t reals : Reals (node based reconstruction)")
+    println("\t\t empty : Empty Approximation (for debug purposes)")
     println("\t -t=NUM - set a soft timeout in seconds. Soft means that timeout is checked between iterations only.")
+    
     
   }
   
@@ -105,8 +108,9 @@ object main {
   
   def parseArgument( arg : String) : Unit = {
       val timeoutPattern = "-t=([0-9.]+)".r
-      val appPattern = "-a=([0-9.])".r
-      val backend = "-b=([0-9.]+)".r
+      val appPattern = "-app=(\\S+)".r
+      val backend = "-backend=(\\S+)".r
+      val validator = "-validator=(\\S+)".r
       val dashPattern = "-.*".r
       arg match {
         case "-s" => globalOptions.STATS = true
@@ -116,13 +120,23 @@ object main {
         case "-p" => globalOptions.PARANOID =  true
         case "-h" | "-help" => printUsage()
         
-        case backend(i) => 
-           i.toInt match {
-             case 0 | 1 | 2 => globalOptions.chosenBackend = i.toInt
-             case _ => throw new Exception("Unsupported backend solver")
-           }
+        case backend(solver) => 
+            if (globalOptions.REG_SOLVERS.contains(solver))
+              globalOptions.backend = solver
+            else
+              throw new Exception("Unsupported solver")
+            
+        case validator(solver) => 
+            if (globalOptions.REG_SOLVERS.contains(solver))
+              globalOptions.validator = solver
+            else
+              throw new Exception("Unsupported solver")
         
-        case appPattern(i) => globalOptions.chosenApproximation = i.toInt
+        case appPattern(app) =>
+          if (globalOptions.REG_APPROXS.contains(app))
+              globalOptions.approximation = app
+            else
+              throw new Exception("Unsupported approximation")
         
         case timeoutPattern(t) =>   globalOptions.DEADLINE = Some(t.toInt * 1000)
                
