@@ -9,9 +9,9 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 
 
-class MathSatException(msg : String) extends Exception("MathSat error: " + msg)
+class MathSatException(msg : String) extends Exception("MathSAT error: " + msg)
 
-object MathSatSolver extends SMTSolver {
+class MathSatSolver(name : String = "MathSAT", params : String = "") extends SMTSolver {
   var silent = true
   
   def setSilent(b : Boolean) = {
@@ -20,19 +20,19 @@ object MathSatSolver extends SMTSolver {
   
   def mathsatPrint(str : String) =
     if (!silent)
-      println("[MathSat] " + str)
+      println("[" + name + "] " + str)
     
   def evaluate(formula : String) = Timer.measure("MathSatSolver.runSolver") {
     import sys.process._
   
-    val process = Runtime.getRuntime().exec("./mathsat -model")
+    val process = Runtime.getRuntime().exec("./mathsat -model " + params)
     mathsatPrint("[Started process: " + process)
     val stdin = process.getOutputStream ()
     val stderr = process.getErrorStream ()
     val stdout = process.getInputStream ()
     
     mathsatPrint(formula)
-    stdin.write((formula + "\n(exit)\n").getBytes("UTF-8"));    
+    stdin.write((formula + "\n(check-sat)\n(exit)\n").getBytes("UTF-8"));    
     stdin.close();
     
     val outReader = new BufferedReader(new InputStreamReader (stdout))
@@ -47,7 +47,7 @@ object MathSatSolver extends SMTSolver {
           val pw = new PrintWriter(new File("error.smt2"))
           pw.write(formula)
           pw.close
-          throw new MathSatException("MathSat error : " + line)
+          throw new MathSatException(line)
         }
         case other => result = result ++ List(other)        
       }
@@ -56,7 +56,7 @@ object MathSatSolver extends SMTSolver {
     process.waitFor();
     val exitValue = process.exitValue()
     if (exitValue != 0) 
-      throw new Exception("[MathSat] Exited with a non-zero value")
+      throw new Exception("[" + name + "] Exited with a non-zero value")
     result.mkString("\n")
   }
  
@@ -92,7 +92,7 @@ object MathSatSolver extends SMTSolver {
     retVal match {
       case "sat" => true
       case "unsat" => false
-      case str => throw new Exception("Unexpected sat/unsat result: " + str)
+      case str => throw new Exception("Unexpected result: " + str)
     }
   }
 
@@ -101,7 +101,7 @@ object MathSatSolver extends SMTSolver {
     val retVal = result.split("\n")
     retVal.head.trim() match {
       case "sat" => retVal(1).trim()
-      case str => throw new Exception("Unexpected sat/unsat result: " + str)
+      case str => throw new Exception("Unexpected result: " + str)
     }
   }
 

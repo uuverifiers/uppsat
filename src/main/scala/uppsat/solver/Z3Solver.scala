@@ -11,8 +11,8 @@ import java.io.InputStreamReader;
 
 class Z3Exception(msg : String) extends Exception("Z3 error: " + msg)
 
-object Z3Solver extends SMTSolver {
   var silent = true
+class Z3Solver(name : String = "Z3", val checkSatCmd : String = "(check-sat)") extends SMTSolver {
   
   def setSilent(b : Boolean) = {
     silent = b
@@ -46,7 +46,7 @@ object Z3Solver extends SMTSolver {
           val pw = new PrintWriter(new File("error.smt2"))
           pw.write(formula)
           pw.close
-          throw new Z3Exception("Z3 error : " + line)
+          throw new Z3Exception(line)
         }
         case other => result = result ++ List(other)        
       }
@@ -55,7 +55,7 @@ object Z3Solver extends SMTSolver {
     process.waitFor();
     val exitValue = process.exitValue()
     if (exitValue != 0) 
-      throw new Exception("[Z3] Exited with a non-zero value")
+      throw new Exception("[" + name + "] Exited with a non-zero value")
     result.mkString("\n")
   }
  
@@ -71,27 +71,27 @@ object Z3Solver extends SMTSolver {
   }
   
   def getStringModel(formula : String, extractSymbols : List[String]) = {
-    val extendedFormula = formula + (extractSymbols.map("(eval " + _ + ")").mkString("\n", "\n", ""))
+    val extendedFormula = formula + "\n" + checkSatCmd + (extractSymbols.map("(eval " + _ + ")").mkString("\n", "\n", ""))
     val result = evaluate(extendedFormula)
     parseOutput(result, extractSymbols).get    
   }
   
   def checkSat(formula : String) : Boolean = {
-    val result = evaluate(formula)    
+    val result = evaluate(formula + "\n" + checkSatCmd)  
     val retVal = result.split("\n").head.trim()
     retVal match {
       case "sat" => true
       case "unsat" => false
-      case str => throw new Exception("Unexpected sat/unsat result: " + str)
+      case str => throw new Exception("Unexpected result: " + str)
     }
   }
 
   def getAnswer(formula : String) : String = {
-    val result = evaluate(formula)  
+    val result = evaluate(formula + "\n" + checkSatCmd)  
     val retVal = result.split("\n")
     retVal.head.trim() match {
       case "sat" => retVal(1).trim()
-      case str => throw new Exception("Unexpected sat/unsat result: " + str)
+      case str => throw new Exception("Unexpected result: " + str)
     }
   }
 

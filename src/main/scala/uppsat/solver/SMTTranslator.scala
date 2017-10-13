@@ -131,10 +131,11 @@ class SMTTranslator(theory : Theory) {
     "(eval " + answer.symbol + ")" 
   }
   
-  // TODO: (Aleks) Shuld we ever use header (e.g. (set-logic ...)
+  // TODO: (Aleks) Should we ever use header (e.g. (set-logic ...)
+  // RE:       In principle it makes things easier on the solver. This can be provided by the approximation though
   def header = "" //theory.SMTHeader
   
-  def footer = "(check-sat)"
+  def footer = "" //"(check-sat)"
   
   def getDefinedSymbols = astSymbols.map(_._1)  
 

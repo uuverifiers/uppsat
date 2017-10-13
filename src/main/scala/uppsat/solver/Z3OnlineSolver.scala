@@ -13,7 +13,7 @@ class Z3OnlineException(msg : String) extends Exception("Z3 error: " + msg)
 
 // Starts process at 
 
-class Z3OnlineSolver extends SMTSolver {
+class Z3OnlineSolver(checkSatCmd : String = "(check-sat)\n") extends SMTSolver {
   var silent = true
   
   def toggleSilent = {
