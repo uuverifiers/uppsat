@@ -206,81 +206,11 @@ trait FPARealCodec extends FPARealCore with ApproximationCodec {
 }
 
 
-trait FPARealRefinementStrategy extends FPARealCore with ErrorBasedRefinementStrategy {
-  val topK = 10 // K 
-  val fractionToRefine = 1.0//K_percentage
-  val precisionIncrement = 1 // 20/100 = 1/5
+trait FPARealRefinementStrategy extends FPARealCore with UniformRefinementStrategy {
+  def increasePrecision(p : Precision) = {
+    precisionOrdering.+(p, 1)
 
-  def satRefinePrecision( node : AST, pmap : PrecisionMap[Int]) : Int = {
-    val p =  pmap(node.label)    
-    val newP = (p + precisionIncrement) max p
-    precisionOrdering.min(newP, pmap.precisionOrdering.maximalPrecision) // TODO:  This check should be in the ordering somewhere?
   }
-  
-  def unsatRefinePrecision( p : Int) : Int = {
-    p + 1
-  }
-  
-  def nodeError(decodedModel : Model)(failedModel : Model)(accu : Map[AST, Double], ast : AST) : Map[AST, Double] = {
-    val AST(symbol, label, children) = ast      
-    var err = 0.0
-    
-    symbol match {
-      case literal : FloatingPointLiteral => ()
-      case fpfs : FloatingPointFunctionSymbol =>
-        (decodedModel(ast).symbol, failedModel(ast).symbol)  match {
-        case (approximate : FloatingPointLiteral, exact : FloatingPointLiteral) => {
-          val outErr = relativeError(approximate, exact)
-          
-          var sumDescError = 0.0
-          var numFPArgs = 0
-          
-          for (c <- children) {
-            val a = decodedModel(c)
-            val b = failedModel(c)
-            
-            (a.symbol, b.symbol) match {
-              case (aS : FloatingPointLiteral, bS: FloatingPointLiteral) => {
-                sumDescError +=  relativeError(aS, bS)
-                numFPArgs += 1
-              }                                                                 
-              case  _ => ()
-            }
-          }
-          val inErr = sumDescError / numFPArgs
-          
-          if (numFPArgs == 0) 
-            err = outErr
-          else
-            err = outErr / inErr
-        }
-        case _ => ()
-      }
-      case _ => ()
-    }
-    
-    
-    if (err == 0.0)
-      accu
-    else
-      accu + (ast -> err)
-  }
-  
-  def relativeError(decoded : FloatingPointLiteral, precise : FloatingPointLiteral) : Double = {
-    (decoded.getFactory, precise.getFactory) match {
-      case (x, y) if (x == y) => 0.0 //Values are the same
-      case (FPPlusInfinity, _)    |
-           (_, FPPlusInfinity)    |
-           (FPMinusInfinity, _)   |
-           (_, FPMinusInfinity)   => Double.PositiveInfinity
-      case (x : FPConstantFactory, y : FPConstantFactory) => {
-        val a = bitsToDouble(decoded)
-        val b = bitsToDouble(precise)
-        Math.abs((a - b)/b)
-      }        
-      case _ => 0.0
-    }
-  } 
 }
 
 object FPARealApp extends FPARealCore 
