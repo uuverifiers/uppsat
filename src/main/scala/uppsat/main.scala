@@ -212,6 +212,8 @@ object main {
       case e : Exception => {
         println("Unexpected error: " + e)
         println(e.getStackTraceString)
+        if (globalOptions.DEBUG)
+          throw e
       }
     }
   }   
