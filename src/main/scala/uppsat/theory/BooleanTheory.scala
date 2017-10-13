@@ -100,7 +100,7 @@ object BooleanTheory extends Theory {
   
   val SMTHeader = ""
   
-  def toSMTLib(symbol : ConcreteFunctionSymbol) = {
+  def symbolToSMTLib(symbol : ConcreteFunctionSymbol)(implicit translator : Option[uppsat.solver.SMTTranslator] = None) = {
     symbol match {
       case BoolTrue => "true"
       case BoolFalse => "false"
@@ -117,7 +117,7 @@ object BooleanTheory extends Theory {
     }
   }
   
-  def toSMTLib(sort : ConcreteSort) = {
+  override def sortToSMTLib(sort : ConcreteSort)(implicit translator : Option[uppsat.solver.SMTTranslator] = None) = {
     sort match {
       case BooleanSort => "Bool"
       case _ => throw new BooleanTheoryException("Boolean translation of non-Boolean sort: " + sort)
@@ -126,7 +126,7 @@ object BooleanTheory extends Theory {
   
   def declarationToSMTLib(sym : ConcreteFunctionSymbol) : String = {
     sym match {
-      case BoolVar(name) => "(declare-fun " + name + " () " + toSMTLib(BooleanSort) + ")"
+      case BoolVar(name) => "(declare-fun " + name + " () " + sortToSMTLib(BooleanSort) + ")"
       case _ => throw new BooleanTheoryException("Boolean Declaration of non-Boolean symbol: " + sym)      
     }
   }

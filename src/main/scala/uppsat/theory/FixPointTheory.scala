@@ -2,114 +2,226 @@ package uppsat.theory
 
 import uppsat.theory.BooleanTheory._
 import uppsat.ast._
-import uppsat.theory.BitVectorTheory.BVSortFactory.BVSort
-case class BitVectorTheoryException(msg : String) extends Exception("BitVector Theory Exception: " + msg)
+import uppsat.theory.FixPointTheory.FXSortFactory.FXSort
+case class FixPointTheoryException(msg : String) extends Exception("FixPoint Theory Exception: " + msg)
 
-object BitVectorTheory extends Theory {
-  val name = "BVTheory"
+object FixPointTheory extends Theory {
+  val name = "FixPointTheory"
   
+  //
+  // ARGUMENT STUFF
+  //
+  object FXArgumentSort extends ConcreteSort {
+      val name = "FXArgument"
+      val theory = FixPointTheory
+  }
+     
+  case class FXArgument(val width : Int) extends ConcreteFunctionSymbol {
+      val sort = FXArgumentSort
+      val args = List()
+      val name = "FXArgument(" + width + ")"
+      val theory = FixPointTheory
+  }
   
-  object BVSortFactory extends IndexedSortFactory { 
-    case class BVSort(bitWidth : Int) extends IndexedSort {
-      val name = "BitVector (" + bitWidth + ")"
-      val theory = BitVectorTheory
-      val getFactory = BVSortFactory
+  def fxArg(width : Int) = {
+    Leaf(new FXArgument(width), List())
+  }
       
-      if (bitWidth < 1)
-        throw new BitVectorTheoryException("Negative bit-count: " + bitWidth)        
+  
+  object FXSortFactory extends IndexedSortFactory { 
+    case class FXSort(decimalWidth : Int, fractionalWidth : Int) extends IndexedSort {
+      val name = "FixPoint (" + decimalWidth + " " + fractionalWidth + ")"
+      val theory = FixPointTheory
+      val getFactory = FXSortFactory
+      
+      if (decimalWidth < 0 || fractionalWidth < 0)
+        throw new FixPointTheoryException("Negative bit-width: " + name)        
     }
   
-    val arity = 1 
+    val arity = 1
+    
+    // TODO: (Peter) Do we want repeated arguments here as well?
     def apply(idx : Seq[BigInt]) = {
-      val bits = idx(0).toInt
-      if (bits < 1)
-        throw new BitVectorTheoryException("Negative bit-count: " + bits)
+      val decWidth = idx(0).toInt
+      val fracWidth = idx(1).toInt
       // TODO: Use HashTable to store and re-use
-      BVSort(bits)
+      FXSort(decWidth, fracWidth)
     }
   }
 //  
-  abstract class BitVectorSymbol extends IndexedFunctionSymbol
-  abstract class BitVectorFunctionSymbol(val sort : BVSort) extends BitVectorSymbol
-  abstract class BitVectorPredicateSymbol extends BitVectorSymbol
-  abstract class FloatingPointConstantSymbol(override val sort : BVSort) extends BitVectorFunctionSymbol(sort)
+  abstract class FixPointSymbol extends IndexedFunctionSymbol
+  abstract class FixPointFunctionSymbol(val sort : FXSort) extends FixPointSymbol
+  abstract class FixPointPredicateSymbol extends FixPointSymbol
+  abstract class FloatingPointConstantSymbol(override val sort : FXSort) extends FixPointFunctionSymbol(sort)
   
 
-  abstract class BVGenConstantFactory extends IndexedFunctionSymbolFactory {
-    def getName(sort : BVSort) : String
+  abstract class FXGenConstantFactory extends IndexedFunctionSymbolFactory {
+    def getName(sort : FXSort) : String
   }
+  
+  abstract class FXGenFXToFXFactory extends IndexedFunctionSymbolFactory {
+    def getName(sort : FXSort) : String
+  }  
 
-object BitVectorLiteral {
-    def apply(bits : List[Int], sort : BVSort) : BitVectorLiteral = {
-      val newFactory = new BVConstantFactory(bits)
-      if (sort.bitWidth != bits.length)
-        throw new BitVectorTheoryException("Creating literal with wrong sort? " + sort + ", " + bits)
+  
+  //
+  //  FX To FX 
+  //
+  
+  
+//  def castFX(ast : AST, target: FXSort) = {
+//    (ast.symbol.sort, target) match {
+//      case (FXSort(sourceDecWidth, sourceFracWidth), FXSort(targetDecWidth, targetFracWidth)) => {
+//        val newDecBits = 
+//          if (sourceDecWidth < targetDecWidth) {
+//            // Prepend zeroes
+//            val extraZeroes = targetDecWidth - sourceDecWidth
+//            val newSort = FXSort(extraZeroes, 0)
+//            val zeroes = FixPointLiteral(List.fill(extraZeroes)(0), List(), newSort)
+//            FXPrepend(ast, Leaf(zeroes))
+//          } else if (sourceDecWidth > targetDecWidth) {
+//            
+//            throw new Exception("Downcasting FX")
+//          } else {
+//            ast
+//          }
+//          
+//        val newFracBits = 
+//          if (sourceFracWidth < targetFracWidth) {
+//            // Append zeroes
+//            val extraZeroes = targetFracWidth - sourceFracWidth
+//            val newSort = FXSort(extraZeroes, 0)
+//            val zeroes = FixPointLiteral(List.fill(extraZeroes)(0), List(), newSort)
+//            FXAppend(newDecBits, Leaf(zeroes))
+//          } else if (sourceDecWidth > targetDecWidth) {
+//            throw new Exception("Downcasting FX")
+//          } else {
+//            newDecBits
+//          }        
+//          
+//          println("castFX(" + ast.symbol.sort + ", " + targetPrecision)
+//          println(ast.symbol)
+//          println(newDecBits.symbol.sort)
+//          println(newFracBits.symbol.sort)
+//          newFracBits.prettyPrint("castFX--->")
+//          newFracBits
+//      }
+//      case _ => throw new Exception("Trying to cast non-FX ast")
+//
+//    }
+//  }  
+  
+  object FXToFXSymbol {
+    def apply(sourceSort : FXSort, targetSort : FXSort) : FXToFXSymbol = {
+      val newFactory = new FXToFXFactory(targetSort)
 
-      newFactory(sort).asInstanceOf[BitVectorLiteral]
+      newFactory(sourceSort).asInstanceOf[FXToFXSymbol]
     }
   }
 //
-  case class BitVectorLiteral(_sort : BVSort, getFactory : BVGenConstantFactory)
-             extends FloatingPointConstantSymbol(_sort) {
+  case class FXToFXSymbol(_sort : FXSort, getFactory : FXGenFXToFXFactory)
+             extends FixPointFunctionSymbol(_sort) {
     val name = getFactory getName sort
-    val theory = BitVectorTheory
+    val theory = FixPointTheory
     val args = List()
-    lazy val bits = getFactory.asInstanceOf[BVConstantFactory].bits
+    lazy val sourceSort = getFactory.asInstanceOf[FXToFXFactory].sourceSort
   }
   
-  case class BVFunctionSymbol(val args : Seq[ConcreteSort], _sort : BVSort, val getFactory : BVFunctionSymbolFactory) 
-             extends BitVectorFunctionSymbol(_sort) {   
-    val theory = BitVectorTheory
-    val name = getFactory symbolName
-  }
   
-  case class BVPredicateSymbol( val argSort : ConcreteSort, val getFactory : BVPredicateSymbolFactory) extends BitVectorPredicateSymbol {   
-    val theory = BitVectorTheory    
-    val name = getFactory symbolName
-    val sort = BooleanSort
-    val args = List.fill(getFactory bvArity)(argSort)
-  }
-  
-  case class BVFunctionSymbolFactory(symbolName : String, fpArity : Int) extends IndexedFunctionSymbolFactory {
+// TODO: These horrible names...
+  case class FXToFXFactory(sourceSort : Sort) extends FXGenFXToFXFactory {
     val thisFactory = this
     
-    val arity = 1 // Refers to the sorts
-    def apply(sorts : ConcreteSort*) = {
-      sorts.reverse.head match {
-        case bvsort : BVSort => {      
-          val argSorts = sorts.take(sorts.length - 1).toList
-          val args = argSorts
-          BVFunctionSymbol(args, bvsort, this)
-        }
-        case _ =>  throw new Exception("Non-BV sort : " + sorts.head)
-      }  
-    }
-  }
-
-  case class BVPredicateSymbolFactory(symbolName : String, bvArity : Int) extends IndexedFunctionSymbolFactory {
-    val arity = 1 // Refers to the sorts
-    override def apply(sort : ConcreteSort*) = {      
-      BVPredicateSymbol(sort.head, this)  
-    }
-  }
-//
-//  // TODO: Bitset instead of List[Int]
-  case class BVConstantFactory(bits : List[Int]) extends BVGenConstantFactory {
-    val thisFactory = this
-
-    def getName(sort : BVSort) = {
-      bits.mkString("")
+    def getName(sort : FXSort) = {
+      "fx-to-fx" 
     }
     
     val arity = 1 // Refers to the sorts
     override def apply(sort : ConcreteSort*) = {
       sort.head match {
-        case bvsort : BVSort =>
-          BitVectorLiteral(bvsort, this)
-        case _ =>  throw new BitVectorTheoryException("Non-BV sort : " + sort.head)
+        case fxsort : FXSort =>
+          FXToFXSymbol(fxsort, this)
+        case _ =>  throw new FixPointTheoryException("Non-FX sort : " + sort.head)
+      }  
+    }     
+    
+  }  
+  
+  object FixPointLiteral {
+    def apply(decimalBits : List[Int], fractionalBits : List[Int], sort : FXSort) : FixPointLiteral = {
+      val newFactory = new FXConstantFactory(decimalBits, fractionalBits)
+      if (sort.decimalWidth != decimalBits.length || sort.fractionalWidth != fractionalBits.length)
+        throw new FixPointTheoryException("Creating literal with wrong sort? " + sort + ", " + decimalBits + "." + fractionalBits)
+
+      newFactory(sort).asInstanceOf[FixPointLiteral]
+    }
+  }
+//
+  case class FixPointLiteral(_sort : FXSort, getFactory : FXGenConstantFactory)
+             extends FloatingPointConstantSymbol(_sort) {
+    val name = getFactory getName sort
+    val theory = FixPointTheory
+    val args = List()
+    lazy val decimalBits = getFactory.asInstanceOf[FXConstantFactory].decimalBits
+    lazy val fractionalBits = getFactory.asInstanceOf[FXConstantFactory].fractionalBits
+  }  
+  
+  case class FXFunctionSymbol(val args : Seq[ConcreteSort], _sort : FXSort, val getFactory : FXFunctionSymbolFactory) 
+             extends FixPointFunctionSymbol(_sort) {   
+    val theory = FixPointTheory
+    val name = getFactory symbolName
+  }
+  
+  case class FXPredicateSymbol( val argSort : ConcreteSort, val getFactory : FXPredicateSymbolFactory) extends FixPointPredicateSymbol {   
+    val theory = FixPointTheory    
+    val name = getFactory symbolName
+    val sort = BooleanSort
+    val args = List.fill(getFactory FXArity)(argSort)
+  }
+  
+  case class FXFunctionSymbolFactory(symbolName : String, fpArity : Int) extends IndexedFunctionSymbolFactory {
+    val thisFactory = this
+    
+    val arity = 1 // Refers to the sorts
+    def apply(sorts : ConcreteSort*) = {
+      sorts.reverse.head match {
+        case fxsort : FXSort => {      
+          val argSorts = sorts.take(sorts.length - 1).toList
+          val args = argSorts
+          FXFunctionSymbol(args, fxsort, this)
+        }
+        case _ =>  throw new Exception("Non-FX sort : " + sorts.head)
+      }  
+    }
+  }
+
+  case class FXPredicateSymbolFactory(symbolName : String, FXArity : Int) extends IndexedFunctionSymbolFactory {
+    val arity = 1 // Refers to the sorts
+    override def apply(sort : ConcreteSort*) = {      
+      FXPredicateSymbol(sort.head, this)  
+    }
+  }
+//
+//  // TODO: Bitset instead of List[Int]
+  case class FXConstantFactory(decimalBits : List[Int], fractionalBits : List[Int]) extends FXGenConstantFactory {
+    val thisFactory = this
+
+    def getName(sort : FXSort) = {
+      decimalBits.mkString("") + "." + fractionalBits.mkString("")
+    }
+    
+    val arity = 2 // Refers to the sorts
+    // TODO: Should arity be 1 here?
+    override def apply(sort : ConcreteSort*) = {
+      sort.head match {
+        case fxsort : FXSort =>
+          FixPointLiteral(fxsort, this)
+        case _ =>  throw new FixPointTheoryException("Non-FX sort : " + sort.head)
       }  
     }    
   }
+   
+  
 //
 //case class FPSpecialValuesFactory(symbolName : String) extends FPGenConstantFactory {
 //    val thisFactory = this
@@ -209,7 +321,7 @@ object BitVectorLiteral {
 //  val FPAbsFactory = new FPFunctionSymbolFactory("abs", false, 1)
 //  //   ; negation (no rounding needed) 
 //  //   (fp.neg (_ FloatingPoint eb sb) (_ FloatingPoint eb sb))
-  val BVNotFactory = new BVFunctionSymbolFactory("not", 1)
+  val FXNotFactory = new FXFunctionSymbolFactory("not", 1)
 //  //   ; addition
 //  //   (fp.add RoundingMode (_ FloatingPoint eb sb) (_ FloatingPoint eb sb)
 //  //     (_ FloatingPoint eb sb)) 
@@ -251,16 +363,16 @@ object BitVectorLiteral {
 //  //   ; Note that all comparisons evaluate to false if either argument is NaN
 //  //   (fp.leq (_ FloatingPoint eb sb) (_ FloatingPoint eb sb) Bool :chainable)
 //  val FPLessThanOrEqualFactory = new FPPredicateSymbolFactory("less-than-or-equal-to", 2)
-  val BVLessThanOrEqualFactory = new BVPredicateSymbolFactory("less-than-or-equal", 2)
+  val FXLessThanOrEqualFactory = new FXPredicateSymbolFactory("less-than-or-equal", 2)
 //  //   (fp.lt  (_ FloatingPoint eb sb) (_ FloatingPoint eb sb) Bool :chainable)
-  val BVLessThanFactory = new BVPredicateSymbolFactory("less-than", 2)
+  val FXLessThanFactory = new FXPredicateSymbolFactory("less-than", 2)
   //   (fp.geq (_ FloatingPoint eb sb) (_ FloatingPoint eb sb) Bool :chainable)
 //  val FPGreaterThanOrEqualFactory = new FPPredicateSymbolFactory("greater-or-equal", 2)
 //  //   (fp.gt  (_ FloatingPoint eb sb) (_ FloatingPoint eb sb) Bool :chainable)
 //  val FPGreaterThanFactory = new FPPredicateSymbolFactory("greater-than", 2)
 //  //   ; IEEE 754-2008 equality (as opposed to SMT-LIB =)
 //  //   (fp.eq (_ FloatingPoint eb sb) (_ FloatingPoint eb sb) Bool :chainable) 
-  val BVEqualityFactory = new BVPredicateSymbolFactory("equal", 2)
+  val FXEqualityFactory = new FXPredicateSymbolFactory("equal", 2)
 //  //   ; Classification of numbers
 //  //   (fp.isNormal (_ FloatingPoint eb sb) Bool)
 //  val FPIsNormalFactory = new FPPredicateSymbolFactory("isNormal", 1)
@@ -289,70 +401,72 @@ object BitVectorLiteral {
 //  val IEEEInterchangeToFPFactory = new FPFunctionSymbolFactory("ieee-to-fp", true, 1) // TODO: This requires Bit-Vectors, so it's not a pure FPOperatorSymbol
 //  //   ; from another floating point sort
 //  //   ((_ to_fp eb sb) RoundingMode (_ FloatingPoint mb nb) (_ FloatingPoint eb sb))
-  object BVZeroExtendFactory {
+  object FXZeroExtendFactory {
     def apply(count : Int) = {
-      new BVZeroExtendFactory(count)
+      new FXZeroExtendFactory(count)
     }
   }
   
-  class BVZeroExtendFactory(val count : Int) extends BVFunctionSymbolFactory("zero_extend", 1)
+  class FXZeroExtendFactory(val count : Int) extends FXFunctionSymbolFactory("zero_extend", 1)
   
-  object BVSignExtendFactory {
+  object FXSignExtendFactory {
     def apply(count : Int) = {
-      new BVSignExtendFactory(count)
+      new FXSignExtendFactory(count)
     }
   }
   
-  class BVSignExtendFactory(val count : Int) extends BVFunctionSymbolFactory("sign_extend", 1) {
+  class FXSignExtendFactory(val count : Int) extends FXFunctionSymbolFactory("sign_extend", 1) {
 
   }
   
-  object BVExtractFactory {
+  object FXExtractFactory {
     def apply(startBit : Int, endBit : Int) = {
-      new BVExtractFactory(startBit, endBit)
+      new FXExtractFactory(startBit, endBit)
     }
   }
-  class BVExtractFactory(val startBit : Int, val endBit : Int) extends BVFunctionSymbolFactory("extract", 1) {
+  class FXExtractFactory(val startBit : Int, val endBit : Int) extends FXFunctionSymbolFactory("extract", 1) {
     
   }
-  val BVAndFactory = new BVFunctionSymbolFactory("bvAnd", 2)
+  val FXAndFactory = new FXFunctionSymbolFactory("FXAnd", 2)
   
-  val BVAddFactory = new BVFunctionSymbolFactory("bvAdd", 2)
-  val BVMulFactory = new BVFunctionSymbolFactory("bvMul", 2)
-  val BVDivFactory = new BVFunctionSymbolFactory("bvDiv", 2)
-  val BVAshrFactory = new BVFunctionSymbolFactory("bvAshr", 2)
+  val FXAddFactory = new FXFunctionSymbolFactory("FXAdd", 2)
+  val FXMulFactory = new FXFunctionSymbolFactory("FXMul", 2)
+  val FXDivFactory = new FXFunctionSymbolFactory("FXDiv", 2)
+  val FXAshrFactory = new FXFunctionSymbolFactory("FXAshr", 2)
   
   
-  val BVOrFactory = new BVFunctionSymbolFactory("bvOr", 2)
-  val BVXorFactory = new BVFunctionSymbolFactory("bvXor", 2)  
-  val BVConcatFactory = new BVFunctionSymbolFactory("concat", 2)  
+  val FXOrFactory = new FXFunctionSymbolFactory("FXOr", 2)
+  val FXXorFactory = new FXFunctionSymbolFactory("FXXor", 2)  
+  val FXConcatFactory = new FXFunctionSymbolFactory("concat", 2)
+
+    
 //  //   ; from real
 //  //   ((_ to_fp eb sb) RoundingMode Real (_ FloatingPoint eb sb))
 //  val RealToFPFactory = new FPFunctionSymbolFactory("real-to-fp", true, 1) // TODO: This requires Reals, so it's not a pure FPOperatorSymbol
 //  //   ; from signed machine integer, represented as a 2's complement bit vector
 //  //   ((_ to_fp eb sb) RoundingMode (_ BitVec m) (_ FloatingPoint eb sb))
-//  val SBVToFPFactory = new FPFunctionSymbolFactory("sbv-to-fp", true, 1) // TODO: This requires Bit-Vectors, so it's not a pure FPOperatorSymbol
+//  val SFXToFPFactory = new FPFunctionSymbolFactory("sFX-to-fp", true, 1) // TODO: This requires Bit-Vectors, so it's not a pure FPOperatorSymbol
 //  //   ; from unsigned machine integer, represented as bit vector
 //  //   ((_ to_fp_unsigned eb sb) RoundingMode (_ BitVec m) (_ FloatingPoint eb sb))
 //  // "
-//  val UBVToFPFactory = new FPFunctionSymbolFactory("ubv-to-fp", true, 1) // TODO: This requires Bit-Vectors, so it's not a pure FPOperatorSymbol
+//  val UFXToFPFactory = new FPFunctionSymbolFactory("uFX-to-fp", true, 1) // TODO: This requires Bit-Vectors, so it's not a pure FPOperatorSymbol
 //  
 //  //    :funs_description "All function symbols with declarations of the form below
 //  //   where m is a numeral greater than 0 and  eb and sb are numerals greater than 1.
 //  //
 //  //   ; to unsigned machine integer, represented as a bit vector
-//  //   ((_ fp.to_ubv m) RoundingMode (_ FloatingPoint eb sb) (_ BitVec m))
+//  //   ((_ fp.to_uFX m) RoundingMode (_ FloatingPoint eb sb) (_ BitVec m))
 //  //
 //  //   ; to signed machine integer, represented as a 2's complement bit vector
-//  //   ((_ fp.to_sbv m) RoundingMode (_ FloatingPoint eb sb) (_ BitVec m)) 
+//  //   ((_ fp.to_sFX m) RoundingMode (_ FloatingPoint eb sb) (_ BitVec m)) 
 //  //
 //  //   ; to real
 //  //   (fp.to_real (_ FloatingPoint eb sb) Real)
 //  // "
 //  // :notes
 //  // "All fp.to_* functions are unspecified for NaN and infinity input values.
-//  //  In addition, fp.to_ubv and fp.to_sbv are unspecified for finite number inputs
-//  //  that are out of range (which includes all negative numbers for fp.to_ubv).
+//  //  In addition, fp.to_uFX and fp.to_sFX are unspecified for finite number inputs
+//  //  that are out of range (which includes all negative numbers for fp.to_uFX).
 //  // 
 //  //  This means for instance that the formula
 //  //
@@ -367,8 +481,8 @@ object BitVectorLiteral {
 //  
 //  
   // Interface
-  def bv(bitlist : List[Int])(implicit sort : BVSort) = {
-    val factory = new BVConstantFactory(bitlist)
+  def FX(decimalBits : List[Int], fractionalBits : List[Int])(implicit sort : FXSort) = {
+    val factory = new FXConstantFactory(decimalBits, fractionalBits)
     factory(sort)
   } 
 //  
@@ -422,74 +536,91 @@ object BitVectorLiteral {
 //  implicit def RoundingModeToAST(rm : RoundingMode) = Leaf(rm)
 //
 //  
-  def genericOperation(left : AST, right : AST, factory : BVFunctionSymbolFactory) = {
+  def genericOperation(left : AST, right : AST, factory : FXFunctionSymbolFactory) = {
     (left.symbol.sort, right.symbol.sort) match {
-      case (l : BVSort, r : BVSort) => {
+      case (l : FXSort, r : FXSort) => {
         if (l != r)
-          throw new Exception("BV-Operation of non-equal sorts: " + l + " & " + r)
+          throw new Exception("FX-Operation of non-equal sorts: " + l + " & " + r)
         val children : List[AST] = List(left, right)
         AST(factory(l, l, l), children)
       }
-      case _ => throw new Exception("BV-Operation of non-BitVector-point AST: " + left + " and " + right)
+      case _ => throw new Exception("FX-Operation of non-FixPoint-point AST: " + left + " and " + right)
     }  
   }
 
-  def bvExtract(startBit : Int, endBit : Int, arg : AST) = {
-    arg.symbol.sort match {
-      case sort : BVSort => {
-        val children : List[AST] = List(arg)
-        val newSort = BVSort(endBit - startBit + 1)
-        val newSymbol = BVExtractFactory(startBit, endBit)(newSort)
-        AST(newSymbol, children)
-      }
-      case _ => throw new Exception("BV-Operation of non-BitVector-point AST: " + arg)
-    }
-  }  
+//  def FXExtract(startBit : Int, endBit : Int, arg : AST) = {
+//    arg.symbol.sort match {
+//      case sort : FXSort => {
+//        val children : List[AST] = List(arg)
+//        val newSort = FXSort(endBit - startBit + 1)
+//        val newSymbol = FXExtractFactory(startBit, endBit)(newSort)
+//        AST(newSymbol, children)
+//      }
+//      case _ => throw new Exception("FX-Operation of non-FixPoint-point AST: " + arg)
+//    }
+//  }  
   
-  def bvConcat(left : AST, right : AST) = {
+
+  // NOTE: The second argument is treated as a BitVectors!
+  // I.e: FXPrepend([ab.ba], [cd.dc]) = [cddcab.ba])
+  def FXPrepend(left : AST, right : AST) = {
     (left.symbol.sort, right.symbol.sort) match {
-      case (BVSort(bits), BVSort(bits2)) => {
-        val newSort = BVSort(bits + bits2)
-        val newSymbol = BVConcatFactory(newSort)
+      case (FXSort(decWidth1, fracWidth1), FXSort(decWidth2, fracWidth2)) => {
+        val newSort = FXSort(decWidth1 + decWidth2 + fracWidth2, fracWidth1)
+        val newSymbol = FXConcatFactory(newSort)
+        AST(newSymbol, List(right, left))
+      }
+      case _ => throw new Exception("Concat of non-FixPoint children: " + left.symbol.sort + ", " + right.symbol.sort)
+    }
+  }
+
+  // NOTE: The second argument is treated as a BitVectors!
+  // I.e: FXAppend([ab.ba], [cd.dc]) = [ab.bacddc])
+  def FXAppend(left : AST, right : AST) = {
+    (left.symbol.sort, right.symbol.sort) match {
+      case (FXSort(decWidth1, fracWidth1), FXSort(decWidth2, fracWidth2)) => {
+        val newSort = FXSort(decWidth1 + decWidth2 + fracWidth2, fracWidth1)
+        val newSymbol = FXConcatFactory(newSort)
         AST(newSymbol, List(left, right))
       }
-      case _ => throw new Exception("Concat of non-Bitvector children: " + left.symbol.sort + ", " + right.symbol.sort)
+      case _ => throw new Exception("Concat of non-FixPoint children: " + left.symbol.sort + ", " + right.symbol.sort)
     }
   }
   
-  def bvNot(arg : AST) = {
+  
+  def FXNot(arg : AST) = {
     arg.symbol.sort match {
-      case sort : BVSort => {
+      case sort : FXSort => {
         val children : List[AST] = List(arg)
-        AST(BVNotFactory(sort), children)
+        AST(FXNotFactory(sort), children)
       }
-      case _ => throw new Exception("BV-Operation of non-BitVector-point AST: " + arg)
+      case _ => throw new Exception("FX-Operation of non-FixPoint-point AST: " + arg)
     }
   }
 
-  def bvOr(left : AST, right : AST) = 
-    genericOperation(left, right, BVOrFactory)  
+  def FXOr(left : AST, right : AST) = 
+    genericOperation(left, right, FXOrFactory)  
 
-  def bvXor(left : AST, right : AST) = 
-  genericOperation(left, right, BVXorFactory)  
+  def FXXor(left : AST, right : AST) = 
+  genericOperation(left, right, FXXorFactory)  
   
-  def bvAnd(left : AST, right : AST) = 
-    genericOperation(left, right, BVAndFactory)  
+  def FXAnd(left : AST, right : AST) = 
+    genericOperation(left, right, FXAndFactory)  
 
 
-  def bvAdd(left : AST, right : AST) = 
-    genericOperation(left, right, BVAddFactory)  
+  def FXAdd(left : AST, right : AST) = 
+    genericOperation(left, right, FXAddFactory)  
     
     
-  def bvMul(left : AST, right : AST) = 
-    genericOperation(left, right, BVMulFactory)  
+  def FXMul(left : AST, right : AST) = 
+    genericOperation(left, right, FXMulFactory)  
 
-  def bvDiv(left : AST, right : AST) = 
-    genericOperation(left, right, BVDivFactory)  
+  def FXDiv(left : AST, right : AST) = 
+    genericOperation(left, right, FXDivFactory)  
     
     
-  def bvAshr(left : AST, right : AST) = 
-    genericOperation(left, right, BVAshrFactory)  
+  def FXAshr(left : AST, right : AST) = 
+    genericOperation(left, right, FXAshrFactory)  
     
     
 //  
@@ -516,34 +647,34 @@ object BitVectorLiteral {
 //    
   
   // TODO: Maybe this can be placed somewhere more generic?
-  def genericPredicate(left : AST, right : AST, factory : BVPredicateSymbolFactory) = {
+  def genericPredicate(left : AST, right : AST, factory : FXPredicateSymbolFactory) = {
     (left.symbol.sort, right.symbol.sort) match {
-      case (l : BVSort, r : BVSort) => {
+      case (l : FXSort, r : FXSort) => {
         if (l != r)
-          throw new Exception("BV-Predicate of non-equal sorts: " + l + " & " + r)
+          throw new Exception("FX-Predicate of non-equal sorts: " + l + " & " + r)
         val children : List[AST] = List(left, right)
         val fpeq = factory(l)
         AST(fpeq, children)
       }
-      case _ => throw new Exception("BV-Predicate of non-floating-point AST: " + left + " and " + right)
+      case _ => throw new Exception("FX-Predicate of non-floating-point AST: " + left + " and " + right)
     }  
   }
 //  
 //  def rmEquality(left : AST, right : AST) = 
 //    AST(RoundingModeEquality, List(), List(left, right))  
 //  
-  def bvEquality(left : AST, right : AST) = 
-    genericPredicate(left, right, BVEqualityFactory)
+  def FXEquality(left : AST, right : AST) = 
+    genericPredicate(left, right, FXEqualityFactory)
 //
 //  def floatLessThanOrEqual(left : AST, right : AST) =
 //    genericPredicate(left, right, FPLessThanOrEqualFactory)
 //  
 
-  def bvLessThanOrEqual(left : AST, right : AST) =
-    genericPredicate(left, right, BVLessThanOrEqualFactory)
+  def FXLessThanOrEqual(left : AST, right : AST) =
+    genericPredicate(left, right, FXLessThanOrEqualFactory)
     
-  def bvLessThan(left : AST, right : AST) =
-    genericPredicate(left, right, BVLessThanFactory)
+  def FXLessThan(left : AST, right : AST) =
+    genericPredicate(left, right, FXLessThanFactory)
 //  
 //  def floatGreaterThanOrEqual(left : AST, right : AST) =
 //    genericPredicate(left, right, FPGreaterThanOrEqualFactory)
@@ -655,7 +786,7 @@ object BitVectorLiteral {
         case 'd' => List(1,1,0,1)
         case 'e' => List(1,1,1,0)
         case 'f' => List(1,1,1,1)        
-        case _ => throw new BitVectorTheoryException("Non-hex characterin hex literal")
+        case _ => throw new FixPointTheoryException("Non-hex characterin hex literal")
       }
     }
     list.flatten.toList
@@ -669,15 +800,13 @@ object BitVectorLiteral {
 //    val infPattern = "\\(?_ ([\\+\\-])oo (\\d+) (\\d+)\\)*".r
 //    val nanPattern = "\\(?_ NaN (\\d+) (\\d+)\\)*".r
     lit match {
-      case hexPattern(p) => {
-        val bits = hexToBitList(p)
-        val sort = BVSort(bits.length)
-        Leaf(BitVectorLiteral(bits, sort))
-      }
+//      case hexPattern(p) => {
+//        val bits = hexToBitList(p)
+//        val sort = FXSort(bits.length)
+//        Leaf(FixPointLiteral(bits, sort))
+//      }
       case binPattern(p) => {
-        val bits = p.map(_.toInt - 48).toList
-        val sort = BVSort(bits.length)
-        Leaf(BitVectorLiteral(bits, sort))
+        uppsat.theory.BitVectorTheory.parseLiteral(lit)
       }
 //      case "roundNearestTiesToEven" | "RNE" => RoundToNearestTiesToEven
 //      case "roundNearestTiesToAway" | "RNA"  => RoundToNearestTiesToAway 
@@ -715,14 +844,14 @@ object BitVectorLiteral {
 //        val fpsort = FPSortFactory(List(eBits.toInt, sBits.toInt))
 //        Leaf(FPNaN(List(fpsort)))        
 //      }
-      case _ => throw new BitVectorTheoryException("Unknown BV literal: " + lit)
+      case _ => throw new FixPointTheoryException("Unknown FX literal: " + lit)
     }
   }
  
   // Theory shouldn't be here
-  case class BVVar(val name : String, val sort : BVSort) extends ConcreteFunctionSymbol {
+  case class FXVar(val name : String, val sort : FXSort) extends ConcreteFunctionSymbol {
     val args = List()
-    val theory = BitVectorTheory
+    val theory = FixPointTheory
   }
 //  
 //  object RMVar {
@@ -764,7 +893,7 @@ object BitVectorLiteral {
   
   def isVariable(symbol : ConcreteFunctionSymbol) = {
     symbol match {
-      case BVVar(_, _) => true
+      case FXVar(_, _) => true
 //      case FPVar(_, _) |
 //           RMVar(_) => true
       case _ => false
@@ -779,33 +908,81 @@ object BitVectorLiteral {
 //    fp(0, newExp, newSignificand) (fpValue._sort)   
 //  }
 //  
-  val SMTHeader = {
-    "(set-logic QF_BV)" 
-  }
+  val SMTHeader = ""
 //  
+  
+  
+  def genFxToFxName(sd : Int, sf : Int, td : Int, tf : Int) = {
+    "fx-to-fx-" + sd + "-" + sf + "-to-" + td + "-" + tf
+  }
+  def genFxToFx(sd : Int, sf : Int, td : Int, tf : Int) = {
+    // SMT-lib argument name is "fx"
+    // Start by fixing the decimal bits:
+    val firstStep = 
+      if (sd < td) {
+        // Pad with zeroes
+        val constant = "#b" + ("0"*(td-sd))
+        "(concat " + constant + " fx)"
+      } else if (sd > td) {
+        throw new Exception("Downcasting FX")
+      } else {
+        "fx"
+      }
+    
+    val secondStep = 
+      if (sf < tf) {
+        // Pad with zeroes
+        val constant = "#b" + ("0"*(tf-sf))
+        "(concat 	" + firstStep + " " + constant + ")"
+      } else if (sf > tf) {
+        throw new Exception("Downcasting FX")
+      } else {
+        firstStep
+      }        
+    
+    val funName = genFxToFxName(sd, sf, td, tf)
+    "(define-fun " + funName + " ((fx (_ BitVec " + (sd + sf) + "))) (_ BitVec " + (td + tf) + ") " + secondStep + ")"
+  }   
+  
   def symbolToSMTLib(symbol : ConcreteFunctionSymbol)(implicit translator : Option[uppsat.solver.SMTTranslator] = None) = {
     val retval = 
       symbol match {
-        case bvFunSym : BitVectorFunctionSymbol => {
-          bvFunSym.getFactory match {
-            case BVNotFactory => "bvnot"
-            case bvzef : BVZeroExtendFactory => "(_ zero_extend " + bvzef.count + ")"
-            case bvsef : BVSignExtendFactory => "(_ sign_extend " + bvsef.count + ")"
-            case bvef : BVExtractFactory => "(_ extract " + bvef.startBit + " "  + bvef.endBit + ")"
-            case BVAndFactory => "bvand"
-            case BVAddFactory => "bvadd"
-            case BVMulFactory => "bvmul"
-            case BVDivFactory => "bvdiv"              
-            case BVAshrFactory => "bvashr"  
-            case BVOrFactory => "bvor"
-            case BVXorFactory => "bvxor"  
-            case BVConcatFactory => "concat"
-            case BVConstantFactory(bits) => {
-              bvFunSym.sort match {
-                case BVSort(bitCount) => {
-                  val bitString = bits.mkString("")
-                  val extraZeroes = bitCount - bitString.length
-                  "#b" + ("0"*extraZeroes) + bits.mkString("")   
+        case fxFunSym : FixPointFunctionSymbol => {
+          fxFunSym.getFactory match {
+            case FXNotFactory => "FXnot"
+            case fxzef : FXZeroExtendFactory => "(_ zero_extend " + fxzef.count + ")"
+            case fxsef : FXSignExtendFactory => "(_ sign_extend " + fxsef.count + ")"
+            case fxef : FXExtractFactory => "(_ extract " + fxef.startBit + " "  + fxef.endBit + ")"
+            case FXAndFactory => "bvand"
+            case FXAddFactory => "bvadd"
+            case FXMulFactory => "bvmul"
+            case FXDivFactory => "bvdiv"              
+            case FXAshrFactory => "bvashr"  
+            case FXOrFactory => "bvor"
+            case FXXorFactory => "bvxor"  
+            case FXConcatFactory => "concat"
+            case FXToFXFactory(sourceSort) => {
+              if (translator.isDefined) {
+                val FXSort(sd, sf) = sourceSort
+                val FXSort(td, tf) = fxFunSym.sort
+                
+                if (!translator.get.smtDefs.contains(genFxToFx(sd, sf, td, tf)))
+                  translator.get.smtDefs += genFxToFx(sd, sf, td, tf) 
+                genFxToFxName(sd, sf, td, tf)                
+              } else {
+                "fx-to-fx"
+              }
+            }
+            case FXConstantFactory(decimalBits, fractionalBits) => {
+              fxFunSym.sort match {
+                case FXSort(decimalWidth, fractionalWidth) => {
+                  val bitString = decimalBits.mkString("") + fractionalBits.mkString("")
+                  if (bitString.length != decimalWidth + fractionalWidth) {
+                    println("bitString: " + bitString)
+                    println("(" + decimalWidth + ", " + fractionalWidth + ")")
+                    throw new Exception("FX constant with wrong sort")
+                  }
+                  "#b" + bitString   
                 }
               }
             }
@@ -813,15 +990,16 @@ object BitVectorLiteral {
         }
         
         // TODO: Signed or unsigned arithmetic!
-        case bvPredSym : BitVectorPredicateSymbol => {
-          bvPredSym.getFactory match {
-            case BVEqualityFactory => "="
-            case BVLessThanOrEqualFactory => "bvsle"
-            case BVLessThanFactory => "bvslt"
+        case fxPredSym : FixPointPredicateSymbol => {
+          fxPredSym.getFactory match {
+            case FXEqualityFactory => "="
+            case FXLessThanOrEqualFactory => "bvsle"
+            case FXLessThanFactory => "bvslt"
           }
         }
-        case BVVar(name, _) => name
-        case _ => throw new BitVectorTheoryException("Not handled: " + symbol)
+        case FXVar(name, _) => name
+        case FXArgument(width) => width.toString
+        case _ => throw new FixPointTheoryException("Not handled: " + symbol)
       }
     //println(symbol + " ----> " + retval)
     retval
@@ -844,8 +1022,7 @@ object BitVectorLiteral {
 //          case FPSubstractionFactory => "fp.sub"
 //          case FPMultiplicationFactory => "fp.mul"
 //          case FPDivisionFactory => "fp.div"
-//          case FPNegateFactory => "fp.neg"
-//          case FPToFPFactory => "(_ to_fp " + fpFunSym.sort.eBitWidth + " " + fpFunSym.sort.sBitWidth + ")"         
+//          case FPNegateFactory => "fp.neg"         
 //          case FPConstantFactory(sign, eBits, sBits) => {
 //            val eDiff = eBits.length - fpFunSym.sort.eBitWidth
 //            val ebits = if (eDiff >= 0)
@@ -883,17 +1060,18 @@ object BitVectorLiteral {
 //  
   def sortToSMTLib(sort : ConcreteSort)(implicit translator : Option[uppsat.solver.SMTTranslator] = None) = {
     sort match {
-      case BVSort(b) => "(_ BitVec " + b + ")"
+      case FXSort(decimalWidth, fractionalWidth) => "(_ BitVec " + (decimalWidth + fractionalWidth) + ")"
+      case FXArgumentSort => "Int"
 //      case FPSort(e, s) => "(_ FloatingPoint " + e + " " + s + ")"
 //      case RoundingModeSort => "RoundingMode"
-      case _ => throw new BitVectorTheoryException("Not handled: " + sort)
+      case _ => throw new FixPointTheoryException("Not handled: " + sort)
     }
   }
 //  
   def declarationToSMTLib(sym : ConcreteFunctionSymbol) : String = {
     sym match {
 //      case FPVar(name, _) => "(declare-fun " + name + " () " + toSMTLib(sym.sort) + ")"
-      case _ => throw new BitVectorTheoryException("Not handled: " + sym)
+      case _ => throw new FixPointTheoryException("Not handled: " + sym)
     }
  }
 }

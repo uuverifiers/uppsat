@@ -40,7 +40,7 @@ object ModelReconstructor {
     def variableAssignments(ast : AST, incomplete : Boolean = false) = {
       for ( n <- ast.iterator if n.symbol.theory.isVariable(n.symbol) && (!incomplete || contains(n))) yield {
         val value = this(n)
-        (n.symbol.toString(), value.symbol.theory.toSMTLib(value.symbol) )
+        (n.symbol.toString(), value.symbol.theory.symbolToSMTLib(value.symbol) )
       }
     }
     

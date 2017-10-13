@@ -126,7 +126,7 @@ case class AST(val symbol : ConcreteFunctionSymbol, val label : Label, val child
     prettyPrint("")
   
   def getSMT() = {
-      symbol.theory.toSMTLib(symbol)
+      symbol.theory.symbolToSMTLib(symbol)
   }
   
   def simpleString() : String = {

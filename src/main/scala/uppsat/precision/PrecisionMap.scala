@@ -108,7 +108,11 @@ class PrecisionMap[T] private (val map : Map[Path, T])(implicit val pathToPath :
   
   // Takes the maximum precision of the two
   def merge(that : PrecisionMap[T]) = {
-    val newMappings = for ((k, v) <- that.map if (!(this.map contains k) || (this.map(k).asInstanceOf[Int] < v.asInstanceOf[Int]))) yield (k -> v)
+    val newMappings = 
+      for ((k, v) <- that.map 
+          if (!(this.map contains k) 
+              || (this.precisionOrdering.lt(this.map(k), v)))) 
+        yield (k -> v)
     new PrecisionMap[T](map ++ newMappings)
   }
   

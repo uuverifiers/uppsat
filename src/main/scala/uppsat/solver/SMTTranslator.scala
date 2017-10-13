@@ -13,14 +13,16 @@ class SMTTranslator(theory : Theory) {
   val astSymbols = Set() : Set[(String, String)]
   val symbolAssertions = MutableList() : MutableList[String]
 
+  implicit val translator = Some(this)
+  
   case class SMTTranslatorException(msg : String) extends Exception("SMTTranslatorException: " + msg) 
 
    
   def translateASTaux(ast : AST) : String = {
      ast match {
        case Leaf(symbol, label) => {
-         val smtSort  = symbol.sort.theory.toSMTLib(symbol.sort) 
-         val smtSymbol = symbol.theory.toSMTLib(symbol)         
+         val smtSort  = symbol.sort.theory.sortToSMTLib(symbol.sort) 
+         val smtSymbol = symbol.theory.symbolToSMTLib(symbol)         
          if (ast.isVariable) { //(!BooleanTheory.isDefinedLiteral(symbol) || !theory.isDefinedLiteral(symbol)) {
            IdToPaths += smtSymbol -> (label :: (IdToPaths.getOrElse(smtSymbol, List())))
            astSymbols += ((smtSymbol, smtSort))
@@ -29,8 +31,8 @@ class SMTTranslator(theory : Theory) {
        }
        
        case AST(symbol, label, children) => {
-           val smtSymbol = symbol.theory.toSMTLib(symbol)
-           val smtSort  = symbol.sort.theory.toSMTLib(symbol.sort)           
+           val smtSymbol = symbol.theory.symbolToSMTLib(symbol)
+           val smtSort  = symbol.sort.theory.sortToSMTLib(symbol.sort)           
            val smtChildren = for ((c, i) <- children zip children.indices) yield translateASTaux(c)
            val smtAST = "(" + smtSymbol + " " + smtChildren.mkString(" ") + ")"
            
@@ -63,6 +65,7 @@ class SMTTranslator(theory : Theory) {
     IdToPaths.clear()
     astSymbols.clear()
     symbolAssertions.clear()    
+    smtDefs.clear()    
     translateASTaux(ast)
   }
   
@@ -70,6 +73,9 @@ class SMTTranslator(theory : Theory) {
     (for (s <- symbols) yield
       s.theory.declarationToSMTLib(s)).filter(_ != "").mkString("\n")
   }
+
+  var smtDefs : scala.collection.mutable.MutableList[String] = scala.collection.mutable.MutableList()
+  
   
   def symDecs =
     astSymbols.toList.map(x => x match { case (sym, sort) => "(declare-fun " + sym + " () " + sort + ")"}).mkString("\n")
@@ -77,7 +83,7 @@ class SMTTranslator(theory : Theory) {
   def symAsserts =
     symbolAssertions.map("(assert " + _ + ")").mkString("\n")
   
-  def translate(ast : AST, noAssert : Boolean = false, assignments : List[(String, String)] = List(), noHeader : Boolean = false) : String = {
+  def translate(ast : AST, noAssert : Boolean = false, assignments : List[(String, String)] = List(), noHeader : Boolean = false) : String = {    
     val astFormula = translateAST(ast)
     val assertions = if (!noAssert) "(assert " + astFormula + ")" else ""
     
@@ -88,6 +94,7 @@ class SMTTranslator(theory : Theory) {
     
     head + 
     symDecs + "\n" +
+    smtDefs.mkString("\n") + "\n" + 
     symAsserts + "\n" + 
     assertions + "\n" +
     assig.mkString("\n") + "\n" +
@@ -98,7 +105,7 @@ class SMTTranslator(theory : Theory) {
   //Used by Fixpoint approximation
   def evaluateSubformula(ast : AST, answer : ConcreteFunctionSymbol, assignments : List[(ConcreteFunctionSymbol, AST)]) : String = {
     val strAssignments = for ((sym, value) <- assignments) yield {
-      (sym.toString(), value.symbol.theory.toSMTLib(value.symbol))
+      (sym.toString(), value.symbol.theory.symbolToSMTLib(value.symbol))
     }
     translate(ast, false, strAssignments, true)     
   }
@@ -108,7 +115,7 @@ class SMTTranslator(theory : Theory) {
     val eval = "(assert " + astFormula + ")"
     //header + "\n" +
     //symDecs + "\n" + 
-    "(declare-fun " + answer.symbol + " () " + answer.symbol.sort.theory.toSMTLib(answer.symbol.sort) +" )\n" +
+    "(declare-fun " + answer.symbol + " () " + answer.symbol.sort.theory.sortToSMTLib(answer.symbol.sort) +" )\n" +
     eval + "\n" +
     footer +  "\n" +
     "(eval " + answer.symbol + ")"
@@ -124,7 +131,8 @@ class SMTTranslator(theory : Theory) {
     "(eval " + answer.symbol + ")" 
   }
   
-  def header = theory.SMTHeader
+  // TODO: (Aleks) Shuld we ever use header (e.g. (set-logic ...)
+  def header = "" //theory.SMTHeader
   
   def footer = "(check-sat)"
   

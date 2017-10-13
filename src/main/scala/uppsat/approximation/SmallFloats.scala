@@ -91,7 +91,7 @@ trait SmallFloatsCodec extends SmallFloatsCore with ApproximationCodec {
     //if (ast.symbol.sort != RoundingModeSort && source != target ) {
     ast.symbol.sort match {
       case FPSort(_, _) if ast.symbol.sort != target => {
-        val cast = FPToFPFactory(List(ast.symbol.sort, target))
+        val cast = FPToFPFactory(ast.symbol.sort, target)
         val rtzNode = AST(RoundToZero, List(), List())
         AST(cast, List(), List(rtzNode, ast))        
       }
@@ -122,7 +122,7 @@ trait SmallFloatsCodec extends SmallFloatsCore with ApproximationCodec {
               }
             }
           val argSorts = newChildren.map( _.symbol.sort)
-          AST(fpSym.getFactory(argSorts ++ List(newSort)), ast.label, newChildren) 
+          AST(fpSym.getFactory(argSorts ++ List(newSort) : _*), ast.label, newChildren) 
       }
       
       case fpPred : FloatingPointPredicateSymbol => {
@@ -132,7 +132,7 @@ trait SmallFloatsCodec extends SmallFloatsCore with ApproximationCodec {
             cast(c, newSort)          
           }
         val argSorts = newChildren.map( _.symbol.sort)
-        AST(fpPred.getFactory(argSorts ++ List(fpPred.sort)), ast.label, newChildren)
+        AST(fpPred.getFactory(argSorts ++ List(fpPred.sort) : _*), ast.label, newChildren)
       }
       
       case fpVar : FPVar => {
@@ -157,11 +157,11 @@ trait SmallFloatsCodec extends SmallFloatsCore with ApproximationCodec {
     (symbol.sort, value.symbol) match {
       case (FPSort(e, s), fp : FloatingPointTheory.FloatingPointLiteral) => {
         fp.getFactory match {
-          case FPPlusInfinity => Leaf(FPPlusInfinity(List(FPSort(e, s))))
-          case FPMinusInfinity => Leaf(FPMinusInfinity(List(FPSort(e, s))))
-          case FPNaN => Leaf(FPNaN(List(FPSort(e, s))))
-          case FPPositiveZero => Leaf(FPPositiveZero(List(FPSort(e, s))))
-          case FPNegativeZero => Leaf(FPNegativeZero(List(FPSort(e, s))))
+          case FPPlusInfinity => Leaf(FPPlusInfinity(FPSort(e, s)))
+          case FPMinusInfinity => Leaf(FPMinusInfinity(FPSort(e, s)))
+          case FPNaN => Leaf(FPNaN(FPSort(e, s)))
+          case FPPositiveZero => Leaf(FPPositiveZero(FPSort(e, s)))
+          case FPNegativeZero => Leaf(FPNegativeZero(FPSort(e, s)))
           case _ => {
             // When padding exponent, we retain the bias bit in the first position,
             // pad with zeroes and retain the value of the small exponent.
@@ -205,32 +205,6 @@ trait SmallFloatsCodec extends SmallFloatsCore with ApproximationCodec {
   }
 }
 
-trait SmallFloatsReconstructor extends EqualityAsAssignmentReconstructor {
-  def evaluateNode( decodedModel  : Model, candidateModel : Model, ast : AST) : Model = {
-    val AST(symbol, label, children) = ast
-    
-    if (children.length > 0 && !equalityAsAssignment(ast, decodedModel, candidateModel)) {
-      val newChildren = for ( c <- children) yield {        
-        getCurrentValue(c, decodedModel, candidateModel)
-      }
-   
-      //Evaluation
-      val newAST = AST(symbol, label, newChildren.toList)
-      val newValue = ModelReconstructor.evalAST(newAST, inputTheory)
-      if ( globalOptions.PARANOID && symbol.sort == BooleanTheory.BooleanSort) { // TODO: Talk to Philipp about an elegant way to do flags
-        val assignments = candidateModel.variableAssignments(ast).toList
-        val backupAnswer = ModelReconstructor.valAST(ast, assignments.toList, this.inputTheory, Z3Solver)
-        
-        val answer = newValue.symbol.asInstanceOf[BooleanConstant] == BoolTrue
-        if ( backupAnswer != answer )
-          throw new Exception("Backup validation failed : \nEval: " + answer + "\nvalAst: " + backupAnswer)
-
-      }        
-      candidateModel.set(ast, newValue)
-    }
-    candidateModel
-  }
-}
 
 trait SmallFloatsRefinementStrategy extends SmallFloatsCore with ErrorBasedRefinementStrategy {
   val topK = 10 // K 
@@ -311,7 +285,7 @@ trait SmallFloatsRefinementStrategy extends SmallFloatsCore with ErrorBasedRefin
 
 object IJCARSmallFloatsApp extends SmallFloatsCore 
                               with SmallFloatsCodec
-                              with SmallFloatsReconstructor
+                              with EqualityAsAssignmentReconstructor
                               with SmallFloatsRefinementStrategy {
 }
 
