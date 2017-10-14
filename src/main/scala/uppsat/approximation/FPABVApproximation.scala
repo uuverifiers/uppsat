@@ -1,12 +1,6 @@
-
-
-// TODO: We have to make sure precision is kept upwards, i.e. if a symbol has children with precision (d, f)_{i=0->n} then precision must be (max(d_i), max(f_i))
-
 // TODO: Remember down casting and up casting loses precision
 
 package uppsat.approximation
-
-
 
 import uppsat.theory.BitVectorTheory._
 import uppsat.theory.RealTheory._
@@ -34,16 +28,27 @@ import uppsat.theory.RealTheory.RealSort
 
 
 
+/**
+ * FPABVCore - FloatingPoint Arithmetic by BitVector approximations
+ * 
+ * The approximation works by replacing FloatingPoint numbers by fixed point numbers (represented by BitVectors).
+ * 
+ * The precision is a Integer tuple (i, j), where i corresponds to the number of integral bits and j the number of 
+ * fractional bits in the fixed point numbers. 
+ * 
+ * An important invariant is that the precision must be upwards closed, i.e., if a node has precision (i, j), 
+ * all ancestor nodes must have precisions which are greater or equal to (i, j).
+ * 
+ */
 trait FPABVCore extends ApproximationCore {
    type Precision = (Int, Int) // (DecimalBits, FractionalBits)
    val precisionOrdering = new IntTuplePrecisionOrdering((4,3), (11,53))
    val inputTheory = FloatingPointTheory
    val outputTheory = FixPointTheory
 }
+
 //
 trait FPABVCodec extends FPABVCore with ApproximationCodec {
-//  // Encodes a node by scaling its sort based on precision and calling
-//  // cast to ensure sortedness.
   var fpToFXMap = Map[ConcreteFunctionSymbol, ConcreteFunctionSymbol]()
 //  
   
@@ -120,9 +125,9 @@ trait FPABVCodec extends FPABVCore with ApproximationCodec {
       }
     }
   }
-//  
-//  
-//  
+
+  
+  
   
   def floatToFixPoint(sign : Int, eBits : List[Int], sBits : List[Int], fxsort : FXSort) = {
     val exp = ebitsToInt(eBits)
@@ -172,19 +177,16 @@ trait FPABVCodec extends FPABVCore with ApproximationCodec {
     FixPointLiteral(newiBits, newfBits, fxsort)    
     
   }
+   
   
   def encodeNode(ast : AST, children : List[AST], precision : (Int, Int)) : AST = {
     val newSort = FXSortFactory(List(precision._1, precision._2))
       ast.symbol match {
       
       case fpVar : FPVar => {        
-        if (!fpToFXMap.contains(fpVar) || fpToFXMap(fpVar).sort != newSort) {
-          fpToFXMap += (fpVar ->  new FXVar(fpVar.name, newSort))
-        }
-        
+        fpToFXMap += (fpVar ->  new FXVar(fpVar.name, newSort))
         Leaf(fpToFXMap(fpVar), ast.label)
       }
-      
       
       case fpLit : FloatingPointLiteral => {
         fpLit.getFactory match {
@@ -391,7 +393,7 @@ trait FPABVCodec extends FPABVCore with ApproximationCodec {
   def retrieveFromAppModel(ast : AST, appModel : Model) = {
     if (appModel.contains(ast)) {
       appModel(ast)
-    } else if (ast.isVariable && fpToFXMap.contains(ast.symbol)) {
+    } else if (ast.isVariable && fpToFXMap.contains(ast.symbol)) {      
       appModel(Leaf(fpToFXMap(ast.symbol), List()))
     }
     else if ( ast.symbol.isInstanceOf[FPFunctionSymbol] && 
@@ -420,17 +422,7 @@ trait FPABVCodec extends FPABVCore with ApproximationCodec {
         val float = fp(sign, eBits, sBits)
         Leaf(float)
       }
-      case (fxl : FixPointLiteral, fps : FPSort) => {
-        throw new Exception("...")
-//        println("---")
-//        // TODO: Assuming integers right now
-//        val iValue = FXl.bits.foldRight((0,1))((a,b) => (b._1 + a*b._2, b._2*2))._1
-//        println(iValue)
-//        val float = FloatingPointTheory.floatToAST(iValue, fps)
-//        float
-      }
-      
-      // TODO: We assume it is a fix point literal?
+
       case (bvl : BitVectorLiteral, fpsort : FPSort) => {
         val (decWidth, fracWidth) = p
         FixPointToFloatAST(bvl.bits.take(decWidth), bvl.bits.drop(decWidth), fpsort)        
