@@ -47,26 +47,11 @@ trait FPABVCore extends ApproximationCore {
    val outputTheory = FixPointTheory
 }
 
-//
 trait FPABVCodec extends FPABVCore with ApproximationCodec {
   var fpToFXMap = Map[ConcreteFunctionSymbol, ConcreteFunctionSymbol]()
-//  
-  
 
-//  
   def cast(ast : AST, target : ConcreteSort) : AST = {
     (ast.symbol.sort, target) match {
-//      case (FXLit : FixPointLiteral, fpsort : FPSort) => {
-//        // TODO: (Peter) Assuming positive integers
-//        val iValue = FXLit.bits.foldRight((0,1))((a,b) => (b._1 + a*b._2, b._2*2))._1
-//        floatToAST(iValue.toFloat, fpsort)
-//      }
-//      case (FXVar : FXVar, fpsort : FPSort) => {
-//        throw new Exception("This is hard...")
-//      }
-//      case (f : FloatingPointLiteral, _) =>
-//        AST(f.getFactory(target), ast.label, List())
-      
       case (RealSort, FXSort(decW, fracW)) => {
         ast.symbol match {
           case realValue : RealNumeral => {
@@ -106,19 +91,6 @@ trait FPABVCodec extends FPABVCore with ApproximationCodec {
           ast
         }
       }
-//        if (sourceBits < targetBits) {
-//          val extraZeroes = targetBits - sourceBits
-//          val newSort = FXSort(extraZeroes)
-//          val zeroes = FixPointLiteral(List.fill(extraZeroes)(0), newSort)
-//          val newAst = FXConcat(Leaf(zeroes), ast)
-//          newAst.prettyPrint("....")
-//          newAst
-//        } else if (sourceBits > targetBits) {
-//          FXExtract(sourceBits - targetBits, targetBits - 1, ast)
-//        } else {
-//          ast
-//        }
-//      }
       case sym => {
         println("cast(" + ast + ", " + target + ")")
         throw new Exception("don't cast me: " + ast.symbol.sort.getClass + ", " + target)
@@ -351,7 +323,6 @@ trait FPABVCodec extends FPABVCore with ApproximationCodec {
     
   }
   
-  // Describes translation of smallfloat values into values of the original formula.  
   def decodeSymbolValue(symbol : ConcreteFunctionSymbol, value : AST, p : (Int, Int)) = {
     (symbol.sort, value.symbol) match {      
       case (FPSort(e, s), bvl : BitVectorLiteral) => {
@@ -368,7 +339,7 @@ trait FPABVCodec extends FPABVCore with ApproximationCodec {
       }
       
       case (FPSort(e, s), fxl : FixPointLiteral) => {
-//        // TODO: (Aleks) How do we know that the float value here is correctly representing something of sort FPSort(e,s)
+        // TODO: (Aleks) How do we know that the float value here is correctly representing something of sort FPSort(e,s)
         FixPointToFloatAST(fxl.decimalBits, fxl.fractionalBits, FPSort(e, s))      
       }
       
@@ -377,7 +348,7 @@ trait FPABVCodec extends FPABVCore with ApproximationCodec {
       
       // TODO: Maybe we might have to cast floating points?
       case (FPSort(_, _), _) => value
-      // TODO: (Peter) How can we be confident we haven#t
+
       case (RealSort, rv : RealDecimal) => value
       case (RealSort, rv : RealNumeral) => value
       
