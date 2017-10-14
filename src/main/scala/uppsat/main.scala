@@ -216,8 +216,12 @@ object main {
       case e : Exception => {
         println("Unexpected error: " + e)
         println(e.getStackTraceString)
-        if (globalOptions.THROW_EXCEPTIONS)
+        if (globalOptions.THROW_EXCEPTIONS) {
+          println("throwing exception")
           throw e
+        } else {
+          println("terminating")
+        }
       }
     }
   }   
