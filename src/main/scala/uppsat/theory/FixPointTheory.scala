@@ -21,12 +21,12 @@ object FixPointTheory extends Theory {
   //  Sorts
   //
   object FXSortFactory extends IndexedSortFactory { 
-    case class FXSort(decimalWidth : Int, fractionalWidth : Int) extends IndexedSort {
-      val name = "FixPoint (" + decimalWidth + " " + fractionalWidth + ")"
+    case class FXSort(integralWidth : Int, fractionalWidth : Int) extends IndexedSort {
+      val name = "FixPoint (" + integralWidth + " " + fractionalWidth + ")"
       val theory = FixPointTheory
       val getFactory = FXSortFactory
       
-      if (decimalWidth < 0 || fractionalWidth < 0)
+      if (integralWidth < 0 || fractionalWidth < 0)
         throw new FixPointTheoryException("Negative bit-width: " + name)        
     }
   
@@ -134,10 +134,10 @@ object FixPointTheory extends Theory {
   //
   
   object FixPointLiteral {
-    def apply(decimalBits : List[Int], fractionalBits : List[Int], sort : FXSort) : FixPointLiteral = {
-      val newFactory = new FXConstantFactory(decimalBits, fractionalBits)
-      if (sort.decimalWidth != decimalBits.length || sort.fractionalWidth != fractionalBits.length)
-        throw new FixPointTheoryException("Creating literal with wrong sort? " + sort + ", " + decimalBits + "." + fractionalBits)
+    def apply(integralBits : List[Int], fractionalBits : List[Int], sort : FXSort) : FixPointLiteral = {
+      val newFactory = new FXConstantFactory(integralBits, fractionalBits)
+      if (sort.integralWidth != integralBits.length || sort.fractionalWidth != fractionalBits.length)
+        throw new FixPointTheoryException("Creating literal with wrong sort? " + sort + ", " + integralBits + "." + fractionalBits)
 
       newFactory(sort).asInstanceOf[FixPointLiteral]
     }
@@ -148,7 +148,7 @@ object FixPointTheory extends Theory {
     val name = getFactory getName sort
     val theory = FixPointTheory
     val args = List()
-    lazy val decimalBits = getFactory.asInstanceOf[FXConstantFactory].decimalBits
+    lazy val integralBits = getFactory.asInstanceOf[FXConstantFactory].integralBits
     lazy val fractionalBits = getFactory.asInstanceOf[FXConstantFactory].fractionalBits
   }  
   
@@ -158,11 +158,11 @@ object FixPointTheory extends Theory {
   //
   
   // TODO: Integers instead of List[Int]
-  case class FXConstantFactory(decimalBits : List[Int], fractionalBits : List[Int]) extends FXGenConstantFactory {
+  case class FXConstantFactory(integralBits : List[Int], fractionalBits : List[Int]) extends FXGenConstantFactory {
     val thisFactory = this
 
     def getName(sort : FXSort) = {
-      decimalBits.mkString("") + "." + fractionalBits.mkString("")
+      integralBits.mkString("") + "." + fractionalBits.mkString("")
     }
     
     val arity = 2 // Refers to the sorts
@@ -211,6 +211,7 @@ object FixPointTheory extends Theory {
   }
   val FXAndFactory = new FXFunctionSymbolFactory("FXAnd", 2)
   val FXAddFactory = new FXFunctionSymbolFactory("FXAdd", 2)
+  val FXSubFactory = new FXFunctionSymbolFactory("FXSub", 2)
   val FXMulFactory = new FXFunctionSymbolFactory("FXMul", 2)
   val FXDivFactory = new FXFunctionSymbolFactory("FXDiv", 2)
   val FXOrFactory = new FXFunctionSymbolFactory("FXOr", 2)
@@ -219,8 +220,8 @@ object FixPointTheory extends Theory {
   //
   // Interface
   // 
-  def FX(decimalBits : List[Int], fractionalBits : List[Int])(implicit sort : FXSort) = {
-    val factory = new FXConstantFactory(decimalBits, fractionalBits)
+  def FX(integralBits : List[Int], fractionalBits : List[Int])(implicit sort : FXSort) = {
+    val factory = new FXConstantFactory(integralBits, fractionalBits)
     factory(sort)
   } 
 
@@ -259,7 +260,10 @@ object FixPointTheory extends Theory {
 
   def FXAdd(left : AST, right : AST) = 
     genericOperation(left, right, FXAddFactory)  
-    
+
+  def FXSub(left : AST, right : AST) = 
+    genericOperation(left, right, FXSubFactory)  
+      
     
   def FXMul(left : AST, right : AST) = 
     genericOperation(left, right, FXMulFactory)  
@@ -332,7 +336,7 @@ object FixPointTheory extends Theory {
   }
   def genFxToFx(sd : Int, sf : Int, td : Int, tf : Int) = {
     // SMT-lib argument name is "fx"
-    // Start by fixing the decimal bits:
+    // Start by fixing the integral bits:
     val firstStep = 
       if (sd < td) {
         // Pad with zeroes
@@ -395,6 +399,7 @@ def symbolToSMTLib(symbol : ConcreteFunctionSymbol)(implicit translator : Option
           case fxef : FXExtractFactory => "(_ extract " + fxef.startBit + " "  + fxef.endBit + ")"
           case FXAndFactory => "bvand"
           case FXAddFactory => "bvadd"
+          case FXSubFactory => "bvsub"
           case FXMulFactory => {
             if (translator.isDefined) {
               val FXSort(d, f) = fxFunSym.sort
@@ -435,13 +440,13 @@ def symbolToSMTLib(symbol : ConcreteFunctionSymbol)(implicit translator : Option
               "fx-to-fx"
             }
           }
-          case FXConstantFactory(decimalBits, fractionalBits) => {
+          case FXConstantFactory(integralBits, fractionalBits) => {
             fxFunSym.sort match {
-              case FXSort(decimalWidth, fractionalWidth) => {
-                val bitString = decimalBits.mkString("") + fractionalBits.mkString("")
-                if (bitString.length != decimalWidth + fractionalWidth) {
+              case FXSort(integralWidth, fractionalWidth) => {
+                val bitString = integralBits.mkString("") + fractionalBits.mkString("")
+                if (bitString.length != integralWidth + fractionalWidth) {
                   println("bitString: " + bitString)
-                  println("(" + decimalWidth + ", " + fractionalWidth + ")")
+                  println("(" + integralWidth + ", " + fractionalWidth + ")")
                   throw new Exception("FX constant with wrong sort")
                 }
                 "#b" + bitString   
@@ -466,7 +471,7 @@ def symbolToSMTLib(symbol : ConcreteFunctionSymbol)(implicit translator : Option
 
   def sortToSMTLib(sort : ConcreteSort)(implicit translator : Option[uppsat.solver.SMTTranslator] = None) = {
     sort match {
-      case FXSort(decimalWidth, fractionalWidth) => "(_ BitVec " + (decimalWidth + fractionalWidth) + ")"
+      case FXSort(integralWidth, fractionalWidth) => "(_ BitVec " + (integralWidth + fractionalWidth) + ")"
       case _ => throw new FixPointTheoryException("Not handled: " + sort)
     }
   }
