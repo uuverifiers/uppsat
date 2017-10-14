@@ -66,12 +66,14 @@ class Z3OnlineSolver(checkSatCmd : String = "(check-sat)\n") extends SMTSolver {
     var line = None : Option[String]
     while (result.isEmpty) {
       line = Option(outReader.readLine())
-      line.get match {
-        case errorPattern() => 
+      line match {
+        case Some(errorPattern()) => 
           println(formula)
           throw new Exception("Z3 error: " + line.get)
-        case other => z3print("Collected : " + other)
-                      result = Some(other)
+        case Some(other) => z3print("Collected : " + other)
+                            result = Some(other)
+        // If Z3 crashes (e.g., by timeout) without output:
+        case None => result = Option("unknown")
       }    
     }
     result
