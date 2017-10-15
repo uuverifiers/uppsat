@@ -12,7 +12,7 @@ import java.io.InputStreamReader;
 class Z3Exception(msg : String) extends Exception("Z3 error: " + msg)
 
 class Z3Solver(name : String = "Z3", val checkSatCmd : String = "(check-sat)") extends SMTSolver {
-  var silent = false
+  var silent = true
   
   def setSilent(b : Boolean) = {
     silent = b
