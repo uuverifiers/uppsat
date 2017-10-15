@@ -73,17 +73,12 @@ object ApproximationSolver {
       val appModel = translator.getModel(encodedFormula, stringModel)
       
       verbose("Decoding model ... ")
-      println("(ApproximationSolver) appModel:")
-      println(appModel)
       val decodedModel = approximation.decodeModel(formula, appModel, pmap)
 
-      println(decodedModel)
       verbose("Reconstructing model ...")
 
       val reconstructedModel = approximation.reconstruct(formula, decodedModel)
-      
-      println(reconstructedModel)
-      
+            
       val assignments = reconstructedModel.variableAssignments(formula)
 
       
@@ -125,8 +120,6 @@ object ApproximationSolver {
                               approximation.encodeFormula(formula, pmap)
                            else
                               formula
-                              
-      encodedFormula.prettyPrint("---")
                               
       val encodedSMT = translator.translate(encodedFormula)
       
