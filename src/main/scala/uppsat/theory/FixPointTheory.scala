@@ -406,7 +406,6 @@ def symbolToSMTLib(symbol : ConcreteFunctionSymbol)(implicit translator : Option
               
               if (!translator.get.smtDefs.contains(genFxMul(d, f)))
                 translator.get.smtDefs += genFxMul(d, f)
-              println(">>>" + genFxMul(d, f))
               genFxMulName(d, f)                
             } else {
               "fxmul"
@@ -419,7 +418,6 @@ def symbolToSMTLib(symbol : ConcreteFunctionSymbol)(implicit translator : Option
               
               if (!translator.get.smtDefs.contains(genFxDiv(d, f)))
                 translator.get.smtDefs += genFxDiv(d, f)
-              println(">>>" + genFxDiv(d, f))
               genFxDivName(d, f)                
             } else {
               "fxdiv"
@@ -456,7 +454,6 @@ def symbolToSMTLib(symbol : ConcreteFunctionSymbol)(implicit translator : Option
         }
       }
       
-      // TODO: Signed or unsigned arithmetic!
       case fxPredSym : FixPointPredicateSymbol => {
         fxPredSym.getFactory match {
           case FXEqualityFactory => "="

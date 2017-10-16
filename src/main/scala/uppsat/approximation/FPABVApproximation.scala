@@ -396,21 +396,6 @@ trait FPABVCodec extends FPABVCore with ApproximationCodec {
   // In contrast to cast, this is working on scala-level, not in SMT
   def decodeValue(ast : AST, target : ConcreteSort, p : Precision) = {
     (ast.symbol, target) match {
-      case (fpl : FloatingPointLiteral, fps : FPSort) => {
-//        val castValue = cast(retrieveFromAppModel(ast.children(1), appModel), ast.symbol.sort)
-//        val dv = decodeSymbolValue(ast.symbol, castValue, pmap(ast.label)) 
-//        dv
-        val float = fp(fpl.sign, fpl.eBits, fpl.sBits)(fps)
-        Leaf(float)
-      }
-      
-      case (rv : RealDecimal, fps : FPSort) => {
-        implicit val sort = fps
-        val (sign, eBits, sBits) = floatToBits((rv.num / rv.denom).toFloat)
-        val float = fp(sign, eBits, sBits)
-        Leaf(float)
-      }
-
       case (bvl : BitVectorLiteral, fpsort : FPSort) => {
         val (decWidth, fracWidth) = p
         Leaf(fixPointToFloat(bvl.bits.take(decWidth), bvl.bits.drop(decWidth), fpsort))        
@@ -430,21 +415,10 @@ trait FPABVCodec extends FPABVCore with ApproximationCodec {
   
   // decodes values associated with nodes in the formula.
   def decodeNode( args : (Model, PrecisionMap[Precision]), decodedModel : Model, ast : AST) : Model = {
-    val appModel = args._1
-    val pmap = args._2
+    val (appModel, pmap) = args
     
     val appValue = retrieveFromAppModel(ast, appModel) 
-    
-    val decodedValue : AST = ast.symbol match {
-// TODO: (Aleks) What does this code do?
-//      case f : FPFunctionSymbol if f.getFactory == FPToFPFactory =>
-//        val castValue = decodeValue(retrieveFromAppModel(ast.children(1), appModel), ast.symbol.sort, pmap(ast.label))
-//        println("\tcastValue: " + castValue)
-//        val dv = decodeSymbolValue(ast.symbol, castValue, pmap(ast.label)) 
-//        dv
-      case _ => 
-        decodeSymbolValue(ast.symbol, appValue, pmap(ast.label)) 
-    }
+    val decodedValue = decodeSymbolValue(ast.symbol, appValue, pmap(ast.label)) 
     
     if (decodedModel.contains(ast)){
       val existingValue = decodedModel(ast).symbol 
