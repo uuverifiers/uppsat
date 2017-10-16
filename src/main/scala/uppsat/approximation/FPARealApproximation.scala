@@ -74,6 +74,20 @@ trait FPARealCodec extends FPARealCore with ApproximationCodec {
 
             case fpLit : FloatingPointLiteral => {
               fpLit.getFactory match {
+                case FPNegativeZero => {
+                  (Leaf(RealNumeral(0), ast.label), children)
+                }
+                case FPPositiveZero => {
+                  (Leaf(RealNumeral(0), ast.label), children)
+                }              
+                case FPPlusInfinity => {
+                  throw new Exception("Real Approximation can not handle infitiary values.")
+                }
+                   
+                case FPMinusInfinity => {
+                  throw new Exception("Real Approximation can not handle infitiary values.")
+                }                
+                
                 case FPConstantFactory(sign, ebits,  sbits) => {
                   val exp = (sbits.length + 1 - (ebitsToInt(ebits)))
 
