@@ -360,12 +360,27 @@ case class FPSpecialValuesFactory(symbolName : String) extends FPGenConstantFact
     }).reverse.toList
   }
   
+  def longToBits(int : Long, bitWidth : Int) = {
+    (for ( i <- 0 until bitWidth) yield {
+      if ((int & (1 << i )) > 0) 1 else 0
+    }).reverse.toList
+  }
+  
   def floatToBits(f : Float) = {
     val bits = java.lang.Float.floatToIntBits(f)
     val bitList = intToBits(bits,32)
     val sign  = bitList.head //intToBits(bits & 0x80000000, 1)
     val ebits = bitList.tail.take(8)//intToBits(bits & 0x7f800000, 8)
     val sbits = bitList.drop(9)//intToBits(bits & 0x007fffff, 23)
+    (sign, ebits, sbits)
+  }
+  
+  def doubleToBits(d : Double) = {
+    val bits = java.lang.Double.doubleToLongBits(d)
+    val bitList = longToBits(bits,64)
+    val sign  = bitList.head
+    val ebits = bitList.tail.take(11)
+    val sbits = bitList.drop(12)
     (sign, ebits, sbits)
   }
   
@@ -389,15 +404,18 @@ case class FPSpecialValuesFactory(symbolName : String) extends FPGenConstantFact
     }
   }
   
-  implicit def floatToAST(float : Float) = {
-    val sort = FPSortFactory(List(8,24))
-    val (sign, ebits, sbits) = floatToBits(float)
-    Leaf(fp(sign, ebits, sbits)(sort))    
-  }
-  
-  def floatToAST(float : Float, sort : FPSort) = {
-    val (sign, ebits, sbits) = floatToBits(float)
-    Leaf(fp(sign, ebits, sbits)(sort))    
+  implicit def fpToAST(double : Double, sort : FPSort = FPSort(8,24)) = {
+    sort match {
+      case FPSort(11,53) => {
+        val (sign, ebits, sbits) = doubleToBits(double)
+        Leaf(fp(sign, ebits, sbits)(sort))
+      }
+      case FPSort(8,24) => {
+        val (sign, ebits, sbits) = floatToBits(double.toFloat)
+        Leaf(fp(sign, ebits, sbits)(sort))  
+      }
+    }
+        
   }
   
   implicit def FPVarToAST(floatVar : FPVar) = Leaf(floatVar)

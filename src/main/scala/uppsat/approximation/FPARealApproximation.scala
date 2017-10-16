@@ -174,7 +174,7 @@ trait FPARealCodec extends FPARealCore with ApproximationCodec {
           else
             (Leaf(FPMinusInfinity(fpsort)))
           else
-            floatToAST(value.toFloat, fpsort)
+            fpToAST(value.toDouble, fpsort)
       }
 
       case ( fpsort : FPSort, realValue : RealNumeral) => {
@@ -185,7 +185,7 @@ trait FPARealCodec extends FPARealCore with ApproximationCodec {
           else
             (Leaf(FPMinusInfinity(fpsort)))
           else
-            floatToAST(value.toFloat, fpsort)
+            fpToAST(value.toDouble, fpsort)
       }
       
       case _ => value
