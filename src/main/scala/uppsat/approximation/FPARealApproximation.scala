@@ -34,7 +34,7 @@ trait FPARealCore extends ApproximationCore {
    val outputTheory = RealTheory
 }
 
-trait FPARealCodec extends FPARealCore with ApproximationCodec {
+trait FPARealCodec extends FPARealCore with NodeByNodeCodec {
   // Encodes a node by scaling its sort based on precision and calling
   // cast to ensure sortedness.
   var fpToRealMap = Map[ConcreteFunctionSymbol, ConcreteFunctionSymbol]()

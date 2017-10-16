@@ -32,43 +32,42 @@ object globalOptions {
   var PARANOID = false
   var SURRENDER = false
   var THROW_EXCEPTIONS = false
-  
-  
-  
-  val REG_SOLVERS = Map( "z3" -> new Z3Solver(),                           
+
+
+
+  val REG_SOLVERS = Map( "z3" -> new Z3Solver(),
                          "mathsat" -> new MathSatSolver(),
                          "acdcl" -> new MathSatSolver(" -theory.fp.mode=2 "),
                          "nlsat" -> new Z3Solver("NLSAT","(check-sat-using qfnra-nlsat)\n"))
-                          
-  val REG_APPROXS = Map( "ijcar" ->  new PostOrderNodeBasedApproximation(IJCARSmallFloatsApp),
-                          "saturation" ->  new AnalyticalFramework(FxPntSmallFloatsApp),                            
-                          "reals" ->  new PostOrderNodeBasedApproximation(FPARealApp),
-                          "fixedpoint" ->  new PostOrderNodeBasedApproximation(FPABVApp),
-                          "empty" -> EmptyApproximation)
-                                            
+
+  val REG_APPROXS = Map( "ijcar" ->  new Approximation(IJCARSmallFloatsApp),
+                          "saturation" ->  new Approximation(FxPntSmallFloatsApp),
+                          "reals" ->  new Approximation(FPARealApp),
+                          "fixedpoint" ->  new Approximation(FPABVApp)
+                         ) //"empty" -> EmptyApproximation)
+
   var approximation = "ijcar"
   var backend = "z3"
   var validator = "z3"
-  
+
   def getApproximation = REG_APPROXS(approximation.toLowerCase())
-  
+
   def getBackendSolver = REG_SOLVERS(backend.toLowerCase())
-  
+
   def getValidator = REG_SOLVERS(validator.toLowerCase())
-  
-  
+
   def verbose(str : String) = {
     if (globalOptions.VERBOSE) {
       println(str)
     }
   }
-  
+
   def debug(str : String) = {
     if (globalOptions.DEBUG) {
       println(str)
     }
   }
-  
+
   def checkTimeout : Boolean = {
     DEADLINE match {
       case None => true

@@ -38,7 +38,7 @@ trait SmallFloatsCore extends ApproximationCore {
    * change the sorts of the formula itself.
 	 */
 
-trait SmallFloatsCodec extends SmallFloatsCore with ApproximationCodec {
+trait SmallFloatsCodec extends SmallFloatsCore with NodeByNodeCodec {
 
   class SmallFloatsException(msg : String) extends Exception("SmallFloats: " + msg)
   

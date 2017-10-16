@@ -11,7 +11,8 @@ import uppsat.theory.IntegerTheory
 import uppsat.precision._
 import uppsat.ast.Leaf
 
-object IntApproximation extends Approximation {
+// TODO: partition into the new approximation architecture
+object IntApproximation  {
   type P = Int
   val inputTheory = IntegerTheory
   val outputTheory = IntegerTheory

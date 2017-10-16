@@ -8,7 +8,8 @@ import uppsat.theory.FloatingPointTheory
 import uppsat.precision.PrecisionMap.Path
 import uppsat.theory.BitVectorTheory
 
-object EmptyApproximation extends Approximation {
+// TODO:  partition into the new approximation design
+object EmptyApproximation {
   type P = Int
   // TODO: How do we make this dynamic
   val inputTheory = BitVectorTheory
