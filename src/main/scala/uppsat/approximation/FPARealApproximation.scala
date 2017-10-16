@@ -57,6 +57,8 @@ trait FPARealCodec extends FPARealCore with ApproximationCodec {
   // 0 - Replace FP constraints with corresponding Real constraints
   // 1 - Introduce \epsilon > 0  as buffer in constraints to avoid rounding disrupting model reconstruction
   // 3 - No encoding, retain FP constraints
+  import BigInt._;
+
   def encodeNode(ast : AST, children : List[AST], precision : Int) : AST = {
     val (newAst, newChildren) =
       precision match {
@@ -79,15 +81,15 @@ trait FPARealCodec extends FPARealCore with ApproximationCodec {
                 }
                 case FPPositiveZero => {
                   (Leaf(RealNumeral(0), ast.label), children)
-                }              
-                case FPPlusInfinity => {
-                  throw new Exception("Real Approximation can not handle infitiary values.")
                 }
-                   
+                case FPPlusInfinity => {
+                  (Leaf(RealNumeral(2.pow(53) + 1), ast.label), children) // TODO: fix magic constants
+                }
+
                 case FPMinusInfinity => {
-                  throw new Exception("Real Approximation can not handle infitiary values.")
-                }                
-                
+                  (Leaf(RealNumeral(-(2.pow(53) + 1)), ast.label), children) // TODO: fix magic constants
+                }
+
                 case FPConstantFactory(sign, ebits,  sbits) => {
                   val exp = (sbits.length + 1 - (ebitsToInt(ebits)))
 
@@ -155,22 +157,37 @@ trait FPARealCodec extends FPARealCore with ApproximationCodec {
 
     AST(newAst.symbol, newAst.label, sortedChildren.toList)
   }
+
   // Describes translation of smallfloat values into values of the original formula.  
   def decodeSymbolValue(symbol : ConcreteFunctionSymbol, value : AST, p : Int) = {
     (symbol.sort, value.symbol) match {
       case (FPSort(e, s), RealZero) => {
           Leaf(FPPositiveZero(FPSort(e, s)))       
-      }   
-      case (FPSort(e, s), realValue : RealDecimal) => {
-          //TODO: Refine this to be more sens
-          val value = (BigDecimal(realValue.num) / BigDecimal(realValue.denom)).toDouble
-          floatToAST(value.toFloat, FPSort(e,s))
       }
-      case (FPSort(e, s), realValue : RealNumeral) => {
-          //TODO: Refine this to be more sens
-          val value = (BigDecimal(realValue.num)).toDouble
-          floatToAST(value.toFloat, FPSort(e,s))
+
+      // TODO:  unify these two cases 
+      case ( fpsort : FPSort, realValue : RealDecimal) => {
+        val value = (BigDecimal(realValue.num) / BigDecimal(realValue.denom))
+        if (value.abs >= BigDecimal(2.pow(53) + 1))
+          if (value > 0)
+            (Leaf(FPPlusInfinity(fpsort)))
+          else
+            (Leaf(FPMinusInfinity(fpsort)))
+          else
+            floatToAST(value.toFloat, fpsort)
       }
+
+      case ( fpsort : FPSort, realValue : RealNumeral) => {
+        val value = (BigDecimal(realValue.num) / BigDecimal(realValue.denom))
+        if (value.abs >= BigDecimal(2.pow(53) + 1))
+          if (value > 0)
+            (Leaf(FPPlusInfinity(fpsort)))
+          else
+            (Leaf(FPMinusInfinity(fpsort)))
+          else
+            floatToAST(value.toFloat, fpsort)
+      }
+      
       case _ => value
     }
   }
@@ -195,14 +212,7 @@ trait FPARealCodec extends FPARealCore with ApproximationCodec {
 
     val appValue = retrieveFromAppModel(ast, appModel)
 
-    val decodedValue = ast.symbol match {
-      case f : FPFunctionSymbol if f.getFactory == FPToFPFactory =>
-        val castValue = cast(retrieveFromAppModel(ast.children(1), appModel), ast.symbol.sort)
-        val dv = decodeSymbolValue(ast.symbol, castValue, pmap(ast.label))
-        dv
-      case _ =>
-        decodeSymbolValue(ast.symbol, appValue, pmap(ast.label))
-    }
+    val decodedValue = decodeSymbolValue(ast.symbol, appValue, pmap(ast.label))
 
     if (decodedModel.contains(ast)){
       val existingValue = decodedModel(ast).symbol
