@@ -664,6 +664,7 @@ object BitVectorLiteral {
   def parseLiteral(lit : String) = {
     val hexPattern = """#x([0-9A-Fa-f]+)""".r
     val binPattern = """#b([0-1]+)""".r
+    val decPattern = """_ bv(\d+) (\d+)""".r
 //    val bitPattern = """\(?fp (\S+) (\S+) ([^\s)]+)[)]*""".r    
 //    val zeroPattern = "\\(?_ ([\\+\\-])zero (\\d+) (\\d+)\\)*".r
 //    val infPattern = "\\(?_ ([\\+\\-])oo (\\d+) (\\d+)\\)*".r
@@ -678,6 +679,26 @@ object BitVectorLiteral {
         val bits = p.map(_.toInt - 48).toList
         val sort = BVSort(bits.length)
         Leaf(BitVectorLiteral(bits, sort))
+      }
+      
+      case decPattern(const, sort) => {
+        def toBinary(n:BigInt, bin: List[Int] = List.empty[Int]): List[Int] = {
+          if(n/2 == 1) (1:: (n.toInt % 2) :: bin)
+          else {
+            val r = n % 2
+            val q = n / 2
+            toBinary(q, r.toInt::bin)
+          }
+        }        
+        
+        val constBits = if (const == "0") List(0) else toBinary(BigInt(const))
+        println(const + " => " + constBits.mkString(""))
+        val bvsort = BVSort(sort.toInt)
+        val finalBits = if (constBits.length < sort.toInt)
+          List.fill(sort.toInt - constBits.length)(0) ++ constBits
+        else
+          constBits
+        Leaf(BitVectorLiteral(finalBits, bvsort))
       }
 //      case "roundNearestTiesToEven" | "RNE" => RoundToNearestTiesToEven
 //      case "roundNearestTiesToAway" | "RNA"  => RoundToNearestTiesToAway 
