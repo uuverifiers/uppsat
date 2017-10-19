@@ -35,18 +35,17 @@ object globalOptions {
 
 
 
-  val REG_SOLVERS = Map( "z3" -> new Z3Solver(),
-                         "mathsat" -> new MathSatSolver(),
-                         "acdcl" -> new MathSatSolver(" -theory.fp.mode=2 "),
-                         "nlsat" -> new Z3Solver("NLSAT","(check-sat-using qfnra-nlsat)\n"))
-                          "saturation" ->  new AnalyticalFramework(FxPntSmallFloatsApp),                            
-  val REG_APPROXS = Map( "ijcar" ->  new PostOrderNodeBasedApproximation(IJCARSmallFloatsApp),
+   val REG_SOLVERS = Map( "z3" -> new Z3Solver(), 
+                         "mathsat" -> new MathSatSolver(), 
+                         "acdcl" -> new MathSatSolver(" -theory.fp.mode=2 "), 
+                         "nlsat" -> new Z3Solver("NLSAT","(check-sat-using qfnra-nlsat)\n")) 
                          
-                                                         
-                          "reals" ->  new PostOrderNodeBasedApproximation(FPARealApp),
-                          "fixedpoint" ->  new PostOrderNodeBasedApproximation(FPABVApp),
-                          "empty" -> EmptyApproximation)
-                                            
+  val REG_APPROXS = Map( "ijcar" ->  new Approximation(IJCARSmallFloatsApp), 
+                          "saturation" ->  new Approximation(FxPntSmallFloatsApp), 
+                          "reals" ->  new Approximation(FPARealApp), 
+                          "fixedpoint" ->  new Approximation(FPABVApp) 
+                         ) //"empty" -> EmptyApproximation) 
+                         
   var approximation = "ijcar"
   var backend = "z3"
   var validator = "z3"
