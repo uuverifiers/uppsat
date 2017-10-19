@@ -242,3 +242,9 @@ object FPARealApp extends FPARealCore
                   with EqualityAsAssignmentReconstructor
                   with FPARealRefinementStrategy {
 }
+
+object FxPntFPARealApp extends FPARealCore 
+                  with FPARealCodec
+                  with FixpointReconstruction
+                  with FPARealRefinementStrategy {
+}

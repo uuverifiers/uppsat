@@ -43,6 +43,7 @@ object globalOptions {
   val REG_APPROXS = Map( "ijcar" ->  new Approximation(IJCARSmallFloatsApp), 
                           "saturation" ->  new Approximation(FxPntSmallFloatsApp), 
                           "reals" ->  new Approximation(FPARealApp), 
+                          "saturation_reals" -> new Approximation(FxPntFPARealApp),
                           "fixedpoint" ->  new Approximation(FPABVApp) 
                          ) //"empty" -> EmptyApproximation) 
                          
