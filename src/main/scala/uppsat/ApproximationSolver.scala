@@ -154,7 +154,7 @@ object ApproximationSolver {
         val validator = globalOptions.getValidator  
         val smtFormula = translator.translate(formula)
         if (validator.checkSat(smtFormula)) {
-          val stringModel = smtSolver.getStringModel(smtFormula, translator.getDefinedSymbols.toList)
+          val stringModel = validator.getStringModel(smtFormula, translator.getDefinedSymbols.toList)
           val model = translator.getModel(formula, stringModel) 
           val extModel =
               for ((symbol, value) <- model.getModel) yield {
