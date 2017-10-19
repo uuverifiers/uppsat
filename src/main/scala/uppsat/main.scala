@@ -39,7 +39,8 @@ object globalOptions {
                          "mathsat" -> new MathSatSolver(),
                          "acdcl" -> new MathSatSolver(" -theory.fp.mode=2 "),
                          "nlsat" -> new Z3Solver("NLSAT","(check-sat-using qfnra-nlsat)\n"))
-                          
+                                                         
+                         
   val REG_APPROXS = Map( "ijcar" ->  new PostOrderNodeBasedApproximation(IJCARSmallFloatsApp),
                           "saturation" ->  new AnalyticalFramework(FxPntSmallFloatsApp),                            
                           "reals" ->  new PostOrderNodeBasedApproximation(FPARealApp),

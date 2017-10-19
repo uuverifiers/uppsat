@@ -40,7 +40,7 @@ import uppsat.globalOptions
  */
 trait FPABVCore extends ApproximationCore {
    type Precision = (Int, Int) // (integralBits, FractionalBits)
-   val precisionOrdering = new IntTuplePrecisionOrdering((4,3), (11,53))
+   val precisionOrdering = new IntTuplePrecisionOrdering((5,5), (25,25))
    val inputTheory = FloatingPointTheory
    val outputTheory = FixPointTheory
 }
@@ -435,7 +435,7 @@ trait FPABVCodec extends FPABVCore with ApproximationCodec {
 //
 trait FPABVRefinementStrategy extends FPABVCore with UniformRefinementStrategy {
   def increasePrecision(p : Precision) = {
-    precisionOrdering.+(p, (1,1))
+    precisionOrdering.+(p, (4,4))
 
   }
 } 
