@@ -100,7 +100,7 @@ class Z3OnlineSolver(checkSatCmd : String = "(check-sat)\n") extends SMTSolver {
     
   def evaluate(formula : String, answers : List[ConcreteFunctionSymbol] = List()) : List[String] = Timer.measure("Z3OnlineSolver.runSolver") {
     reset      
-    feedInput(formula)
+    feedInput(formula + "\n" + checkSatCmd)
     catchOutput(formula) match {
       case Some("sat") => answers.map(evalSymbol(_)).collect { case Some(x) => x }
       case Some("unsat") => List()
