@@ -22,7 +22,6 @@ import uppsat.theory.FloatingPointTheory.RoundingMode
 import uppsat.theory.FloatingPointTheory.FPConstantFactory
 import uppsat.theory.FloatingPointTheory.FPSortFactory
 import uppsat.solver.SMTSolver
-import uppsat.approximation.PostOrderNodeBasedApproximation
 import uppsat.approximation.IJCARSmallFloatsApp
 import uppsat.ApproximationSolver
 import uppsat.theory.RealTheory

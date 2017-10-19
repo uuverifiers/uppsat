@@ -45,7 +45,7 @@ trait FPABVCore extends ApproximationCore {
    val outputTheory = FixPointTheory
 }
 
-trait FPABVCodec extends FPABVCore with ApproximationCodec {
+trait FPABVCodec extends FPABVCore with NodeByNodeCodec {
   var fpToFXMap = Map[ConcreteFunctionSymbol, ConcreteFunctionSymbol]()
 
   
