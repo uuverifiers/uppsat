@@ -182,6 +182,8 @@ object FixPointTheory extends Theory {
   val FXNotFactory = new FXFunctionSymbolFactory("not", 1)
   val FXLessThanOrEqualFactory = new FXPredicateSymbolFactory("less-than-or-equal", 2)
   val FXLessThanFactory = new FXPredicateSymbolFactory("less-than", 2)
+  val FXGreaterThanFactory = new FXPredicateSymbolFactory("greater-than", 2)
+  val FXGreaterThanOrEqualFactory = new FXPredicateSymbolFactory("greater-than-or-equal", 2)
   val FXEqualityFactory = new FXPredicateSymbolFactory("equal", 2)
   object FXZeroExtendFactory {
     def apply(count : Int) = {
@@ -293,6 +295,12 @@ object FixPointTheory extends Theory {
     
   def FXLessThan(left : AST, right : AST) =
     genericPredicate(left, right, FXLessThanFactory)
+    
+  def FXGreaterThan(left : AST, right : AST) =
+    genericPredicate(left, right, FXGreaterThanFactory)    
+    
+  def FXGreaterThanOrEqual(left : AST, right : AST) =
+    genericPredicate(left, right, FXGreaterThanOrEqualFactory)    
     
     
   // Since there are no FixPoint symbols in SMT,
@@ -459,6 +467,8 @@ def symbolToSMTLib(symbol : ConcreteFunctionSymbol)(implicit translator : Option
           case FXEqualityFactory => "="
           case FXLessThanOrEqualFactory => "bvsle"
           case FXLessThanFactory => "bvslt"
+          case FXGreaterThanFactory => "bvsgt"
+          case FXGreaterThanOrEqualFactory => "bvsge"
         }
       }
       case FXVar(name, _) => name

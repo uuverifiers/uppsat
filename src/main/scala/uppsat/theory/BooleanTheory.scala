@@ -30,6 +30,9 @@ object BooleanTheory extends Theory {
 
   case class NaryConjunction(argCount : Int) extends BooleanFunctionSymbol("nary-conjunction", List.fill(argCount)(BooleanSort), BooleanSort)
   def naryConjunction(i : Int) = new NaryConjunction(i)
+  
+  case class NaryDisjunction(argCount : Int) extends BooleanFunctionSymbol("nary-disjunction", List.fill(argCount)(BooleanSort), BooleanSort)
+  def naryDisjunction(i : Int) = new NaryDisjunction(i)  
  
  
   // Constants   
@@ -54,6 +57,10 @@ object BooleanTheory extends Theory {
   
   def boolNaryAnd(asts : List[AST]) = {
     AST(naryConjunction(asts.length), asts)
+  }
+  
+  def boolNaryOr(asts : List[AST]) = {
+    AST(naryDisjunction(asts.length), asts)
   }
   
   def boolNot(ast: AST) = {
@@ -106,6 +113,7 @@ object BooleanTheory extends Theory {
       case BoolFalse => "false"
       case BoolConjunction => "and"
       case nc : NaryConjunction => "and"
+      case nd : NaryDisjunction => "or"
       case BoolDisjunction => "or"
       case BoolExclusiveDisjunction=> "xor"
       case BoolEquality => "="

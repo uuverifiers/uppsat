@@ -297,8 +297,8 @@ trait FPABVCodec extends FPABVCore with NodeByNodeCodec {
           case FPEqualityFactory => FXEqualityFactory(newSort)
           case FPLessThanFactory => FXLessThanFactory(newSort)
           case FPLessThanOrEqualFactory => FXLessThanOrEqualFactory(newSort)
-          case FPGreaterThanFactory => throw new Exception("Not handled: FP GreaterThan")
-          case FPGreaterThanOrEqualFactory => throw new Exception("Not handled: FP GreaterThanOrEqual")
+          case FPGreaterThanFactory => FXGreaterThanFactory(newSort)
+          case FPGreaterThanOrEqualFactory => FXGreaterThanOrEqualFactory(newSort)
           case _ => throw new Exception(fpPred + " unsupported")
         }
 

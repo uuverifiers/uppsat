@@ -12,8 +12,9 @@ import uppsat.theory.BitVectorTheory._
 import uppsat.theory.BooleanTheory._
 import uppsat.theory.RealTheory._
 
-import smtlib._
-import smtlib.Absyn._
+import ap.parser.smtlib
+import ap.parser.smtlib._
+import ap.parser.smtlib.Absyn._
 import java.io._
 import scala.collection.JavaConversions._
 import uppsat.theory.FloatingPointTheory.RoundingModeSort
@@ -191,10 +192,12 @@ object Interpreter {
   private def parse(cmd : Command) : Unit = cmd match {
     
     case cmd : SetLogicCommand => {
+      verbose("Ignoring set-logic command")
       asString(cmd.symbol_) match {
         case "QF_FP" => myEnv.setTheory(FloatingPointTheory)
         case "QF_FPBV" => myEnv.setTheory(FloatingPointTheory)
         case "QF_BV" => myEnv.setTheory(BitVectorTheory)
+        case "QF_BVFP" => myEnv.setTheory(FloatingPointTheory)
         case _ => throw new Exception("unknown set-logic command : \n"  + asString(cmd.symbol_))
       }
     }
@@ -455,7 +458,21 @@ object Interpreter {
       if (args.length > 2)
         throw new SMTParserException("and with more than 2 arguments...")
       uppsat.ast.AST(BoolConjunction, List(translateTerm(args(0)), translateTerm(args(1))))
+    }
+    
+    // TODO: This could be more than 2 arguments!
+    case PlainSymbol("or") => {
+      val argCount = args.length
+      val transArgs = args.map(translateTerm)
+      val symbol = naryDisjunction(argCount)
+      uppsat.ast.AST(symbol, transArgs.toList)
     }    
+    
+    case PlainSymbol("=>") => {
+      if (args.length > 2)
+        throw new SMTParserException("=> with more than 2 arguments...")
+      uppsat.ast.AST(BoolImplication, List(translateTerm(args(0)), translateTerm(args(1))))
+    }        
 
     // TODO: This could be more than 2 arguments!
     case PlainSymbol("xor") => {
@@ -590,10 +607,43 @@ object Interpreter {
     case PlainSymbol("RNE") => FloatingPointTheory.RoundToNearestTiesToEven
      
     case PlainSymbol("fp") => {
+      
+      def hexToBitList(hex : String) = {
+        val list = hex.map { x =>
+          x match {
+            case '0' => List(0,0,0,0)
+            case '1' => List(0,0,0,1)
+            case '2' => List(0,0,1,0)
+            case '3' => List(0,0,1,1)
+            
+            case '4' => List(0,1,0,0)
+            case '5' => List(0,1,0,1)
+            case '6' => List(0,1,1,0)
+            case '7' => List(0,1,1,1)        
+    
+            case '8' => List(1,0,0,0)
+            case '9' => List(1,0,0,1)
+            case 'a' | 'A' => List(1,0,1,0)
+            case 'b' | 'B' => List(1,0,1,1)
+            
+            case 'c' | 'C' => List(1,1,0,0)
+            case 'd' | 'D' => List(1,1,0,1)
+            case 'e' | 'E' => List(1,1,1,0)
+            case 'f' | 'F' => List(1,1,1,1)        
+          }
+        }
+        list.flatten.toList
+      }      
       def bitTermToBitList(term : Term) : List[Int] = {
         term match {
           case t : smtlib.Absyn.ConstantTerm =>
             t.specconstant_ match {
+              case h : HexConstant => {
+                val hexPattern = "\\#x([a-fA-F0-9]+)".r
+                val hexPattern(hex) = h.hexadecimal_
+                hexToBitList(hex).map(_.toString.toInt).toList
+                
+              }
               case c : BinConstant => { 
                 val binPattern = "\\#b(\\d+)".r
                 val binPattern(bits) = c.binary_
