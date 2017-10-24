@@ -29,7 +29,10 @@ import scala.util.Sorting
  * The object, in particular, supports nested operations that call each other
  * and correctly measures the time spent in each of the operations.
  */
+
 object Timer {
+  
+  case class TimeoutException(msg : String) extends Exception("Timeout: " + msg)  
 
   private var startTime : Long = _
   private val runningOps = new Stack[String]

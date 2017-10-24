@@ -1,6 +1,8 @@
 package uppsat;
 
+
 import uppsat.precision.PrecisionMap
+import uppsat.Timer.TimeoutException
 import uppsat.theory.BooleanTheory._
 import uppsat.theory.RealTheory._
 import uppsat.theory._
@@ -20,12 +22,14 @@ import uppsat.ApproximationSolver.Unknown
 import uppsat.ApproximationSolver.Unsat
 import uppsat.ApproximationSolver.Sat
 import uppsat.ApproximationSolver.Answer
+import ap.parser.smtlib
 
 object globalOptions {
   // FLAGS
   var VERBOSE = false
   var STATS = false
   var MODEL = false
+  var FORMULAS = false
   var DEBUG = false
   var DEADLINE : Option[Long] = None
   var STARTTIME : Option[Long] = None
@@ -69,10 +73,17 @@ object globalOptions {
     }
   }
 
-  def checkTimeout : Boolean = {
+  def remainingTime : Option[Long] = {
     DEADLINE match {
-      case None => true
-      case Some(t) => System.currentTimeMillis() - STARTTIME.get < t
+      case None => None
+      case Some(t) => Some(DEADLINE.get - (System.currentTimeMillis() - STARTTIME.get))
+    }
+  }
+
+  def checkTimeout(msg : String = "") = {
+    DEADLINE match {
+      case None => ()
+      case Some(t) => if (System.currentTimeMillis() - STARTTIME.get >= t) throw new TimeoutException(msg)
     }
   }
 }
@@ -127,6 +138,7 @@ object main {
         case "-d" => globalOptions.DEBUG = true
         case "-p" => globalOptions.PARANOID =  true
         case "-h" | "-help" => printUsage()
+        case "f" => globalOptions.FORMULAS = true
         case "-surrender" => globalOptions.SURRENDER = true
         case "-te" => globalOptions.THROW_EXCEPTIONS = true
         
@@ -148,7 +160,9 @@ object main {
             else
               throw new Exception("Unsupported approximation")
         
-        case timeoutPattern(t) =>   globalOptions.DEADLINE = Some(t.toInt * 1000)
+        case timeoutPattern(t) => {
+          globalOptions.DEADLINE = Some(t.toInt * 1000)
+        }
                
         case dashPattern() => printUsage()
         case _ => true
@@ -213,14 +227,18 @@ object main {
         case Unknown => System.exit(30)        
       }
     } catch {
+      case to : TimeoutException => {
+        println("timeout")
+      }
       case e : Exception => {
-        println("Unexpected error: " + e)
+        println("Exception thrown: " + e)
         println(e.getStackTraceString)
         if (globalOptions.THROW_EXCEPTIONS) {
-          println("throwing exception")
+          println("Propagating exception")
           throw e
         } else {
           println("terminating")
+          
         }
       }
     }

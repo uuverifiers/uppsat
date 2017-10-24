@@ -35,8 +35,10 @@ object ApproximationSolver {
   def solve(formula : AST, translator : SMTTranslator, approximation : Approximation) : Answer = {
     verbose("-----------------------------------------------")
     verbose("Starting Approximation Framework")
-    verbose("-----------------------------------------------")   
-    verbose(translator.translate(formula))
+    verbose("-----------------------------------------------")  
+    checkTimeout("solve")
+    if (globalOptions.FORMULAS)
+      println(translator.translate(formula))
     
     val startTime = System.currentTimeMillis
     val retVal = loop(formula : AST, translator : SMTTranslator, approximation : Approximation) 
@@ -109,21 +111,22 @@ object ApproximationSolver {
     }    
        
    
-    while (checkTimeout) {
+    while (true) {
       Timer.newIteration
       iterations += 1
       verbose("-----------------------------------------------")
       verbose("Starting iteration " + iterations)
       verbose("-----------------------------------------------")
-      
+      checkTimeout("iteration " + iterations)
       val encodedFormula = if (!pmap.isMaximal) 
                               approximation.encodeFormula(formula, pmap)
                            else
                               formula
                               
       val encodedSMT = translator.translate(encodedFormula)
-      
-      verbose(encodedSMT)
+
+      if (globalOptions.FORMULAS)
+        println(encodedSMT)
       
       if (smtSolver.checkSat(encodedSMT)) {
         val (extModel, newPMap) = tryReconstruct(encodedFormula, encodedSMT)

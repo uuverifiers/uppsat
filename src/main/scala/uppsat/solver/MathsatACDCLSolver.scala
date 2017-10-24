@@ -7,6 +7,7 @@ import uppsat.Timer
 import sys.process._
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import uppsat.globalOptions
 
 
 class MathSatACDCLException(msg : String) extends Exception("MathSatACDCLACDCL error: " + msg)
@@ -24,7 +25,7 @@ object MathSatACDCLSolver extends SMTSolver {
     
   def evaluate(formula : String) = Timer.measure("MathSatACDCLSolver.runSolver") {
     import sys.process._
-  
+     
     val process = Runtime.getRuntime().exec("./mathsat -theory.fp.mode=2 -model")
     mathsatPrint("[Started process: " + process)
     val stdin = process.getOutputStream ()

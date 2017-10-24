@@ -1,5 +1,9 @@
 package uppsat.solver;
 
+
+
+import uppsat.globalOptions
+import uppsat.Timer.TimeoutException
 import java.io.ByteArrayInputStream;
 import scala.sys.process.stringToProcess
 import uppsat.solver._
@@ -25,7 +29,17 @@ class MathSatSolver(name : String = "MathSAT", params : String = "") extends SMT
   def evaluate(formula : String) = Timer.measure("MathSatSolver.runSolver") {
     import sys.process._
   
-    val process = Runtime.getRuntime().exec("./mathsat -model " + params)
+    val cmd = 
+      if (globalOptions.DEADLINE.isDefined) {
+        val dlf = (globalOptions.remainingTime.get) / 1000.0
+        println("Remaining time: " + dlf)
+        "timeout " + dlf + "s " +  "./mathsat -model " + params
+      } else {
+        "./mathsat -model " + params
+      }
+      
+    val process = Runtime.getRuntime().exec(cmd)
+    
     mathsatPrint("[Started process: " + process)
     val stdin = process.getOutputStream ()
     val stderr = process.getErrorStream ()
@@ -55,9 +69,14 @@ class MathSatSolver(name : String = "MathSAT", params : String = "") extends SMT
     }
     process.waitFor();
     val exitValue = process.exitValue()
-    if (exitValue != 0) 
-      throw new Exception("[" + name + "] Exited with a non-zero value")
-    result.mkString("\n")
+    exitValue match {
+      case 0 => result.mkString("\n")
+      case 124 => {
+        // Timeout
+        throw new TimeoutException("MathsatSolver.evaluate")
+      }
+      case ev => throw new Exception("[" + name + "] Exited with a non-zero value (" + exitValue + ")") 
+    }
   }
  
   def valueExtractor(lit : String) : (String, String) = {

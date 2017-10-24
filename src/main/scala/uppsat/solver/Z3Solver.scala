@@ -1,9 +1,11 @@
 package uppsat.solver;
 
 import java.io.ByteArrayInputStream;
+import uppsat.globalOptions
 import scala.sys.process.stringToProcess
 import uppsat.solver._
 import uppsat.Timer
+import uppsat.Timer.TimeoutException
 import sys.process._
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -25,7 +27,18 @@ class Z3Solver(name : String = "Z3", val checkSatCmd : String = "(check-sat)") e
   def evaluate(formula : String) = Timer.measure("Z3Solver.runSolver") {
     import sys.process._
     
-    val process = Runtime.getRuntime().exec("./z3 -in -smt2")
+    val cmd = 
+      if (globalOptions.DEADLINE.isDefined) {
+        val dlf = ((globalOptions.remainingTime.get) / 1000.0).ceil.toInt
+        println("Remaining time: " + dlf)
+        "./z3 -T:" + dlf + " -in -smt2"
+      } else {
+        "./z3 -in -smt2"
+      }    
+    println(cmd)
+    
+          
+    val process = Runtime.getRuntime().exec(cmd)
     z3print("[Started process: " + process)
     val stdin = process.getOutputStream ()
     val stderr = process.getErrorStream ()
@@ -62,12 +75,11 @@ class Z3Solver(name : String = "Z3", val checkSatCmd : String = "(check-sat)") e
   
   def parseOutput(output : String, extractSymbols : List[String]) : Option[Map[String, String]] = {
     val lines = output.split("\n")
-    val result = lines.head.trim()
-    if (result != "sat")
-      throw new Exception("Trying to get model from non-sat result (" + result + ")")
-    
-    val model = (extractSymbols zip lines.tail).toMap
-    Some(model)
+    lines.head.trim() match {
+      case "timeout" => throw new TimeoutException("Z3solver")
+      case "sat" => Some((extractSymbols zip lines.tail).toMap)
+      case result => throw new Exception("Trying to get model from non-sat result (" + result + ")") 
+    }
   }
   
   def getStringModel(formula : String, extractSymbols : List[String]) = {
