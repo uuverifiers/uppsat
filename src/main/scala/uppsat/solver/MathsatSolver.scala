@@ -15,7 +15,7 @@ import java.io.InputStreamReader;
 
 class MathSatException(msg : String) extends Exception("MathSAT error: " + msg)
 
-class MathSatSolver(name : String = "MathSAT", params : String = "") extends SMTSolver {
+class MathSatSolver(name : String = "MathSAT", params : String = "", newVersion : Boolean = true) extends SMTSolver {
   var silent = true
   
   def setSilent(b : Boolean) = {
@@ -29,13 +29,19 @@ class MathSatSolver(name : String = "MathSAT", params : String = "") extends SMT
   def evaluate(formula : String) = Timer.measure("MathSatSolver.runSolver") {
     import sys.process._
   
+    val mathsatBinary = 
+      if (newVersion)
+        "mathsat-5.3.14"
+      else
+        "mathsat-5.3.7"
+    
     val cmd = 
       if (globalOptions.DEADLINE.isDefined) {
-        val dlf = (globalOptions.remainingTime.get) / 1000.0
+        val dlf = ((globalOptions.remainingTime.get) / 1000.0).ceil.toInt
         println("Remaining time: " + dlf)
-        "timeout " + dlf + "s " +  "./mathsat -model " + params
+        "timeout " + dlf + "s " +  "./" + mathsatBinary + " -model " + params
       } else {
-        "./mathsat -model " + params
+        "./" + mathsatBinary + " -model " + params
       }
       
     val process = Runtime.getRuntime().exec(cmd)
@@ -75,7 +81,7 @@ class MathSatSolver(name : String = "MathSAT", params : String = "") extends SMT
         // Timeout
         throw new TimeoutException("MathsatSolver.evaluate")
       }
-      case ev => throw new Exception("[" + name + "] Exited with a non-zero value (" + exitValue + ")") 
+      case ev => throw new Exception("[" + name + "] Exited with a non-zero value (" + exitValue + ") running: " + cmd) 
     }
   }
  
