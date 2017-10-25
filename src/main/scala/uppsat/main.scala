@@ -40,9 +40,9 @@ object globalOptions {
 
 
    val REG_SOLVERS = Map( "z3" -> new Z3Solver(), 
-                         "mathsat" -> new MathSatSolver("Mathsat (5.3.14)", "", true),
+                         "mathsat" -> new MathSatSolver("Mathsat (5.4.1)", "", true),
                          "mathsat-old" -> new MathSatSolver("Mathsat (5.3.7)", "", false),                         
-                         "acdcl" -> new MathSatSolver("ACDCL (5.3.14)", "-theory.fp.mode=2 ", true),
+                         "acdcl" -> new MathSatSolver("ACDCL (5.4.1)", "-theory.fp.mode=2 ", true),
                          "acdcl-old" -> new MathSatSolver("ACDCL (5.3.7)", "-theory.fp.mode=2 ", true), 
                          "nlsat" -> new Z3Solver("NLSAT","(check-sat-using qfnra-nlsat)\n")) 
                          

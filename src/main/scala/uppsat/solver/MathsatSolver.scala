@@ -31,7 +31,7 @@ class MathSatSolver(name : String = "MathSAT", params : String = "", newVersion 
   
     val mathsatBinary = 
       if (newVersion)
-        "mathsat-5.3.14"
+        "mathsat-5.4.1"
       else
         "mathsat-5.3.7"
     
