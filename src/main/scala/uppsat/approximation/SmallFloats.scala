@@ -1,6 +1,7 @@
 package uppsat.approximation
 
 import uppsat.theory.FloatingPointTheory._
+import uppsat.theory.BooleanTheory.BooleanSort
 import uppsat.Timer
 import uppsat.ModelReconstructor.Model
 import uppsat.precision.PrecisionMap.Path
@@ -43,17 +44,27 @@ trait SmallFloatsCodec extends SmallFloatsCore with NodeByNodeCodec {
   class SmallFloatsException(msg : String) extends Exception("SmallFloats: " + msg)
   
   /**
-   * Scales sort according to the precision p
+   * Scales sort of the AST node according to the precision p
 	 *  
-   * @param sort is the full precision sort which will be scaled down.
+   * @param ast is the node whose sort will be scaled down.
    * @param p is the precision used to calculate the new sort.
    * 
    * @return sort scaled down according to p 
 	 */
-  def scaleSort(sort : FPSort, p : Int) = {
-    val eBits = 3 + ((sort.eBitWidth - 3) * p)/precisionOrdering.maximalPrecision
-    val sBits = 3 + ((sort.sBitWidth - 3) * p)/precisionOrdering.maximalPrecision
-    sort.getFactory(List(eBits, sBits))
+  def scaleSort(ast : AST, p : Int) = {
+    val AST(symbol, label, children) = ast
+    val sort = symbol.sort
+    (symbol, sort) match {
+      case (_, fpsort : FPSort) =>
+        val eBits = 3 + ((fpsort.eBitWidth - 3) * p)/precisionOrdering.maximalPrecision
+        val sBits = 3 + ((fpsort.sBitWidth - 3) * p)/precisionOrdering.maximalPrecision
+        fpsort.getFactory(List(eBits, sBits))
+      case (_ : FloatingPointPredicateSymbol, _) =>
+        val acc = children.head.symbol.sort
+        children.tail.foldLeft(acc)( (x, y) => if (sortGreaterThan(x, y.symbol.sort)) x
+                                              else  y.symbol.sort)
+      case _ => sort 
+    }
   }
 
   /**
@@ -87,18 +98,30 @@ trait SmallFloatsCodec extends SmallFloatsCore with NodeByNodeCodec {
 	 */
   def cast(ast : AST, target : ConcreteSort) : AST = {
     val source = ast.symbol.sort
-    // TODO: (Aleks) Can we change these conditions. Why checking that it is not a RMSort instead of checking it is a FPSort?
-    //if (ast.symbol.sort != RoundingModeSort && source != target ) {
     ast.symbol.sort match {
       case FPSort(_, _) if ast.symbol.sort != target => {
         val cast = FPToFPFactory(ast.symbol.sort, target)
         val rtzNode = AST(RoundToZero, List(), List())
-        AST(cast, List(), List(rtzNode, ast))        
+        AST(cast, List(), List(rtzNode, ast))
       }
       case _ => ast
-    } 
-  }  
-   
+    }
+  }
+
+  def encodeSymbol(sym : ConcreteFunctionSymbol, sort : ConcreteSort, encodedChildren : List[AST]) : ConcreteFunctionSymbol = {
+    (sym, sort) match {
+      case (_ : FloatingPointConstantSymbol, _) => sym
+      case (fpSym : FloatingPointFunctionSymbol, fpsort : FPSort) =>
+        val sorts = encodedChildren.map(_.symbol.sort) ++ List(fpsort) 
+        fpSym.getFactory (sorts : _*)
+      case (fpSym : FloatingPointPredicateSymbol, _) =>
+        val sorts = encodedChildren.map(_.symbol.sort) ++ List(BooleanSort) 
+        fpSym.getFactory (sorts : _*)
+      case (fpVar : FPVar, fpsort : FPSort) => FPVar(fpVar.name, fpsort)  
+      case _ => sym
+    }
+  }
+
   /** Encodes a node by scaling its sort based on precision and calling cast to ensure sortedness.
    *  
    *  @param ast Node of ast to encode.
@@ -106,43 +129,11 @@ trait SmallFloatsCodec extends SmallFloatsCore with NodeByNodeCodec {
    *  
    *  @return ast encoded according to precision.
    */
-  def encodeNode(ast : AST, children : List[AST], precision : Int) : AST = {
-      ast.symbol match {
-      case _ : FloatingPointConstantSymbol => ast 
-      
-      // TODO: (Aleks) For fpSym we are just scaling the sort to get newSort, while in fpPred we are checking the children?
-      case fpSym : FloatingPointFunctionSymbol => {
-          val newSort = scaleSort(fpSym.sort, precision)          
-          val newChildren = 
-            if (fpSym.getFactory == FPToFPFactory) {// No need to cast, this symbol does this!
-              children
-            } else {
-              for ( c <- children) yield {
-                 cast(c, newSort)                   
-              }
-            }
-          val argSorts = newChildren.map( _.symbol.sort)
-          AST(fpSym.getFactory(argSorts ++ List(newSort) : _*), ast.label, newChildren) 
-      }
-      
-      case fpPred : FloatingPointPredicateSymbol => {
-        val newSort = children.tail.foldLeft(children.head.symbol.sort)((x,y) => if (sortGreaterThan(x, y.symbol.sort)) x else  y.symbol.sort)
-        val newChildren = 
-          for ( c <- children) yield {
-            cast(c, newSort)          
-          }
-        val argSorts = newChildren.map( _.symbol.sort)
-        AST(fpPred.getFactory(argSorts ++ List(fpPred.sort) : _*), ast.label, newChildren)
-      }
-      
-      case fpVar : FPVar => {
-        val newSort = scaleSort(fpVar.sort, precision)
-        val newVar = FPVar(fpVar.name, newSort)
-        uppsat.ast.Leaf(newVar, ast.label)
-      }
-      
-      case _ => AST(ast.symbol, ast.label, children) 
-    }
+  def encodeNode(ast : AST, encodedChildren : List[AST], precision : Int) : AST = {
+    val sort = scaleSort(ast, precision)
+    val children = encodedChildren.map(cast(_, sort))
+    val symbol = encodeSymbol(ast.symbol, sort, children)
+    AST(symbol, ast.label, children)
   }
   
   /** Decodes an approximative model value back to full precision.
