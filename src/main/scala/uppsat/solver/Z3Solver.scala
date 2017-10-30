@@ -27,7 +27,7 @@ class Z3Solver(name : String = "Z3", val checkSatCmd : String = "(check-sat)") e
   def evaluate(formula : String) = Timer.measure("Z3Solver.runSolver") {
     import sys.process._
     
-    val z3Binary = "z3-4.5.1"
+    val z3Binary = "z3-4.5.0"
     
     val cmd = 
       if (globalOptions.DEADLINE.isDefined) {
