@@ -107,11 +107,11 @@ class MathSatSolver(name : String = "MathSAT", params : String = "", newVersion 
     val statPattern3 = "\\)".r    
     
     lit.trim match {
+      case valuePattern(variable, value) => (variable, value)
       case statPattern0() => ("", "")
       case statPattern1() => ("", "")
       case statPattern2() => ("", "")
-      case statPattern3() => ("", "")
-      case valuePattern(variable, value) => (variable, value)
+      case statPattern3() => ("", "")      
       case _ => throw new MathSatException("Error matching value " + lit)
                 
     }
