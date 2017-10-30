@@ -39,9 +39,9 @@ class MathSatSolver(name : String = "MathSAT", params : String = "", newVersion 
       if (globalOptions.DEADLINE.isDefined) {
         val dlf = ((globalOptions.remainingTime.get) / 1000.0).ceil.toInt
         println("Remaining time: " + dlf)
-        "timeout " + dlf + "s " +  "./" + mathsatBinary + " -model " + params
+        "timeout -s 2 " + dlf + "s " +  "./" + mathsatBinary + " -model -stats " + params
       } else {
-        "./" + mathsatBinary + " -model " + params
+        "./" + mathsatBinary + " -model -stats " + params
       }
       
     val process = Runtime.getRuntime().exec(cmd)
@@ -56,12 +56,22 @@ class MathSatSolver(name : String = "MathSAT", params : String = "", newVersion 
     stdin.close();
     
     val outReader = new BufferedReader(new InputStreamReader (stdout))
+    val errReader = new BufferedReader(new InputStreamReader (stdout))
+    
     var result = List() : List[String] 
     val errorPattern = ".*error.*".r
+    val toPattern = ".*Interrupted by signal.*".r
     
     var line = outReader.readLine()
     while (line != null) {
-      line match { 
+      line match {
+        case toPattern() => {
+          while (line != null) {
+            println(line)
+            line = outReader.readLine()
+          }
+          throw new TimeoutException("MathsatSolver.evaluate") 
+        }        
         case errorPattern() =>  {
           import java.io._
           val pw = new PrintWriter(new File("error.smt2"))
@@ -79,16 +89,28 @@ class MathSatSolver(name : String = "MathSAT", params : String = "", newVersion 
       case 0 => result.mkString("\n")
       case 124 => {
         // Timeout
+        println(result.mkString("\n"))
         throw new TimeoutException("MathsatSolver.evaluate")
       }
-      case ev => throw new Exception("[" + name + "] Exited with a non-zero value (" + exitValue + ") running: " + cmd) 
+      case ev => {
+        println(result.mkString("\n"))
+        throw new Exception("[" + name + "] Exited with a non-zero value (" + exitValue + ") running: " + cmd) 
+      }
     }
   }
  
   def valueExtractor(lit : String) : (String, String) = {
     val valuePattern = """[(][\s(]*([\S]+)[\s(]+([^)]+)[)\s]+""".r
+    val statPattern0 = ";; statistics".r
+    val statPattern1 = "\\(".r
+    val statPattern2 = ":.*".r
+    val statPattern3 = "\\)".r    
     
     lit.trim match {
+      case statPattern0() => ("", "")
+      case statPattern1() => ("", "")
+      case statPattern2() => ("", "")
+      case statPattern3() => ("", "")
       case valuePattern(variable, value) => (variable, value)
       case _ => throw new MathSatException("Error matching value " + lit)
                 
@@ -101,7 +123,7 @@ class MathSatSolver(name : String = "MathSAT", params : String = "", newVersion 
       throw new Exception("Trying to get model from non-sat result (" + result + ")")
     
     mathsatPrint("Model:\n\t" + lines.mkString("\n\t"))
-    val model = lines.tail.map(valueExtractor(_)).toMap //.head is "sat"
+    val model = lines.tail.map(valueExtractor(_)).filter(_._1 != "").toMap //.head is "sat"
     Some(model)
   }
   

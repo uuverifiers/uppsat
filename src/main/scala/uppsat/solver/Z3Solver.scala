@@ -52,6 +52,7 @@ class Z3Solver(name : String = "Z3", val checkSatCmd : String = "(check-sat)") e
     val outReader = new BufferedReader(new InputStreamReader (stdout))
     var result = List() : List[String] 
     val errorPattern = ".*error.*".r
+    val toPattern = ".*timeout.*".r
     
     var line = outReader.readLine()
     while (line != null) {
@@ -63,6 +64,7 @@ class Z3Solver(name : String = "Z3", val checkSatCmd : String = "(check-sat)") e
           pw.close
           throw new Z3Exception(line)
         }
+        case toPattern() => throw new TimeoutException("Z3Solver.evaluate")
         case other => result = result ++ List(other)        
       }
       line = outReader.readLine()
