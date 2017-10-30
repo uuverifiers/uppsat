@@ -134,6 +134,14 @@ object main {
       val validator = "-validator=(\\S+)".r
       val dashPattern = "-.*".r
       arg match {
+        case "-test" => {
+          globalOptions.STATS = true
+          globalOptions.MODEL = true
+          globalOptions.VERBOSE = true
+          globalOptions.DEBUG = true
+          globalOptions.FORMULAS = true
+          globalOptions.SURRENDER = true
+        }
         case "-s" => globalOptions.STATS = true
         case "-m" => globalOptions.MODEL = true
         case "-v" => globalOptions.VERBOSE = true

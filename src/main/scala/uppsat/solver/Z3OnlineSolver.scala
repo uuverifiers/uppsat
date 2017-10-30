@@ -29,7 +29,7 @@ class Z3OnlineSolver(checkSatCmd : String = "(check-sat)\n") extends SMTSolver {
       println("[Z3] " + str)
   
   // Starting solver...
-  val process = Runtime.getRuntime().exec("./z3-4.5.1 -in")
+  val process = Runtime.getRuntime().exec("./z3-4.5.0 -in")
   z3print("[Started process: " + process)
   val stdin = process.getOutputStream ()
   val stderr = process.getErrorStream ()
