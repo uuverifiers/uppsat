@@ -7,9 +7,8 @@ import uppsat.ast._
 import uppsat.theory.FloatingPointTheory._
 import uppsat.theory.RealTheory._
 import uppsat.solver._
-import uppsat.approximation._
+import uppsat.approximation.components._
 import uppsat.precision.PrecisionMap.Path
-import uppsat.Encoder.PathMap
 import uppsat.ModelReconstructor.Model
 import uppsat.globalOptions._
 
