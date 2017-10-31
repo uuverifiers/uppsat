@@ -155,8 +155,8 @@ trait SmallFloatsCodec extends SmallFloatsCore with NodeByNodeCodec {
           case FPNegativeZero => Leaf(FPNegativeZero(FPSort(e, s)))
           case _ => {
             // When padding exponent, we retain the bias bit in the first position,
-            // pad with zeroes and retain the value of the small exponent.
-            val fullEBits = fp.eBits.head :: List.fill(e - fp.eBits.length)(0) ++ fp.eBits.tail
+            // pad with negation of the bias bit and retain the value of the small exponent.
+            val fullEBits = fp.eBits.head :: List.fill(e - fp.eBits.length)(1 - fp.eBits.head) ++ fp.eBits.tail
             // Padding significant is trivial, just adding the zero bits in lowest positions 
             val fullSBits = fp.sBits ++ List.fill((s - 1) - fp.sBits.length)(0)
             Leaf(FloatingPointLiteral(fp.sign, fullEBits, fullSBits, FPSort(e, s)))
