@@ -32,13 +32,10 @@ class Z3Solver(name : String = "Z3", val checkSatCmd : String = "(check-sat)") e
     val cmd = 
       if (globalOptions.DEADLINE.isDefined) {
         val dlf = ((globalOptions.remainingTime.get) / 1000.0).ceil.toInt
-        println("Remaining time: " + dlf)
         "./" + z3Binary + " -T:" + dlf + " -in -smt2"
       } else {
         "./" + z3Binary + " -in -smt2"
-      }    
-    println(cmd)
-    
+      }       
           
     val process = Runtime.getRuntime().exec(cmd)
     z3print("[Started process: " + process)
