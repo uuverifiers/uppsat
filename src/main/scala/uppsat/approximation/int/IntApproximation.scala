@@ -1,4 +1,4 @@
-package uppsat.approximation
+package uppsat.approximation.int
 
 import uppsat.theory.IntegerTheory._
 import uppsat.ModelReconstructor.Model

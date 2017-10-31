@@ -1,7 +1,8 @@
 // TODO: Remember down casting and up casting loses precision
 
-package uppsat.approximation
+package uppsat.approximation.fpa.fixpoint
 
+import uppsat.approximation.components._
 import uppsat.theory.BitVectorTheory._
 import uppsat.theory.RealTheory._
 import uppsat.theory.RealTheory.RealConstant

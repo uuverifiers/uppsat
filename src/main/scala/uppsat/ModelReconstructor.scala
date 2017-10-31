@@ -1,10 +1,9 @@
 package uppsat
 
 import uppsat.precision.PrecisionMap.Path
-import uppsat.Encoder.PathMap
 import uppsat.ModelReconstructor.Model
 import uppsat.theory.Theory
-import uppsat.approximation.Approximation
+import uppsat.approximation.components.Approximation
 import ast.AST
 import uppsat.solver.SMTSolver
 import uppsat.solver.SMTTranslator

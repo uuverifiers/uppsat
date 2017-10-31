@@ -1,11 +1,12 @@
-package uppsat.approximation
+package uppsat.approximation.fpa.smallfloats
 
+import uppsat.approximation.components._
 import uppsat.theory.FloatingPointTheory._
 import uppsat.theory.BooleanTheory.BooleanSort
 import uppsat.Timer
 import uppsat.ModelReconstructor.Model
 import uppsat.precision.PrecisionMap.Path
-import uppsat.Encoder.PathMap
+//import uppsat.Encoder.PathMap
 import uppsat.theory.FloatingPointTheory.FPSortFactory.FPSort
 import uppsat.precision.IntPrecisionOrdering
 import uppsat.precision.PrecisionMap
@@ -98,11 +99,11 @@ trait SmallFloatsCodec extends SmallFloatsCore with NodeByNodeCodec {
 	 */
   def cast(ast : AST, target : ConcreteSort) : AST = {
     val source = ast.symbol.sort
-    ast.symbol.sort match {
-      case FPSort(_, _) if ast.symbol.sort != target => {
-        val cast = FPToFPFactory(ast.symbol.sort, target)
-        val rtzNode = AST(RoundToZero, List(), List())
-        AST(cast, List(), List(rtzNode, ast))
+    source match {
+      case FPSort(_, _) if source != target => {
+        val cast = FPToFPFactory(source, target)
+        val rtz = AST(RoundToZero, List(), List())
+        AST(cast, List(), List(rtz, ast))
       }
       case _ => ast
     }
@@ -174,7 +175,7 @@ trait SmallFloatsCodec extends SmallFloatsCore with NodeByNodeCodec {
     
     // TEMPORARY TODO: (Aleks) FIX!
     val newAST = 
-      if (FloatingPointTheory.isVariable(ast.symbol))    
+      if (ast.isVariable)    
         encodeNode(ast, List(), pmap(ast.label))
       else
         ast

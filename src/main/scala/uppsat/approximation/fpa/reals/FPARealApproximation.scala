@@ -1,10 +1,11 @@
-package uppsat.approximation
+package uppsat.approximation.fpa.reals
 
+import uppsat.approximation.components._
 import uppsat.theory.FloatingPointTheory._
 import uppsat.Timer
 import uppsat.ModelReconstructor.Model
 import uppsat.precision.PrecisionMap.Path
-import uppsat.Encoder.PathMap
+//import uppsat.Encoder.PathMap
 import uppsat.theory.FloatingPointTheory.FPSortFactory.FPSort
 import uppsat.precision.IntPrecisionOrdering
 import uppsat.precision.PrecisionMap

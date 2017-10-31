@@ -1,4 +1,4 @@
-package uppsat.approximation
+package uppsat.approximation.components
 
 import uppsat.theory.Theory
 import uppsat.precision.PrecisionOrdering

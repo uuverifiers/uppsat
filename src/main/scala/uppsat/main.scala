@@ -11,9 +11,9 @@ import uppsat.parser._
 import uppsat.theory.FloatingPointTheory._
 import uppsat.theory.IntegerTheory._
 import uppsat.solver._
-import uppsat.approximation._
+import uppsat.approximation.components._
 import uppsat.precision.PrecisionMap.Path
-import uppsat.Encoder.PathMap
+//import uppsat.Encoder.PathMap
 import uppsat.ModelReconstructor.Model
 import uppsat.globalOptions._
 
@@ -22,6 +22,10 @@ import uppsat.ApproximationSolver.Unknown
 import uppsat.ApproximationSolver.Unsat
 import uppsat.ApproximationSolver.Sat
 import uppsat.ApproximationSolver.Answer
+import uppsat.approximation.fpa.smallfloats._
+import uppsat.approximation.fpa.reals._
+import uppsat.approximation.fpa.fixpoint._
+import uppsat.approximation.components._
 import ap.parser.smtlib
 
 object globalOptions {

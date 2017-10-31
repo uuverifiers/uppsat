@@ -23,7 +23,7 @@ import uppsat.theory.FloatingPointTheory.RoundingMode
 import uppsat.theory.FloatingPointTheory.FPConstantFactory
 import uppsat.theory.FloatingPointTheory.FPSortFactory
 import uppsat.solver.SMTSolver
-import uppsat.approximation.IJCARSmallFloatsApp
+import uppsat.approximation.fpa.smallfloats.IJCARSmallFloatsApp
 import uppsat.ApproximationSolver
 import uppsat.theory.RealTheory
 import uppsat.theory.BitVectorTheory
