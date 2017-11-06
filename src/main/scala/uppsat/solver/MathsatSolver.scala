@@ -38,7 +38,6 @@ class MathSatSolver(name : String = "MathSAT", params : String = "", newVersion 
     val cmd = 
       if (globalOptions.DEADLINE.isDefined) {
         val dlf = ((globalOptions.remainingTime.get) / 1000.0).ceil.toInt
-        println("Remaining time: " + dlf)
         "timeout -s 2 " + dlf + "s " +  "./" + mathsatBinary + " -model -stats " + params
       } else {
         "./" + mathsatBinary + " -model -stats " + params

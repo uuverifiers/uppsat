@@ -115,7 +115,12 @@ object ApproximationSolver {
       Timer.newIteration
       iterations += 1
       verbose("-----------------------------------------------")
-      verbose("Starting iteration " + iterations)
+      val tString = 
+        if (globalOptions.DEADLINE.isDefined)
+          " (" + ((globalOptions.remainingTime.get) / 1000.0).ceil.toInt + " seconds left)"
+        else
+          ""
+      verbose("Starting iteration " + iterations + tString)
       verbose("-----------------------------------------------")
       checkTimeout("iteration " + iterations)
       val encodedFormula = if (!pmap.isMaximal) 
