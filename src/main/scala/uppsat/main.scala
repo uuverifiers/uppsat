@@ -14,7 +14,7 @@ import uppsat.solver._
 import uppsat.approximation.components._
 import uppsat.precision.PrecisionMap.Path
 //import uppsat.Encoder.PathMap
-import uppsat.ModelReconstructor.Model
+import uppsat.ModelEvaluator.Model
 import uppsat.globalOptions._
 
 import uppsat.ApproximationSolver.Answer
@@ -27,6 +27,7 @@ import uppsat.approximation.fpa.reals._
 import uppsat.approximation.fpa.fixpoint._
 import uppsat.approximation.components._
 import ap.parser.smtlib
+import uppsat.approximation.Approximation
 
 object globalOptions {
   // FLAGS

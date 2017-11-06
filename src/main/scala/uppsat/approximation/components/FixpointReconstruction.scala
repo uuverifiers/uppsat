@@ -1,11 +1,12 @@
 package uppsat.approximation.components
 
 import uppsat.theory.Theory
+import uppsat.approximation.toolbox.Toolbox
 
 import uppsat.precision.PrecisionOrdering
 import uppsat.ast.AST
 import uppsat.ast.Leaf
-import uppsat.ModelReconstructor.Model
+import uppsat.ModelEvaluator.Model
 import uppsat.precision.PrecisionMap
 
 import uppsat.Timer
@@ -16,8 +17,8 @@ import uppsat.precision.PrecisionMap.Path
 
 import uppsat.theory.BooleanTheory.BoolTrue
 import uppsat.theory.FloatingPointTheory
-import uppsat.ModelReconstructor.Model
-import uppsat.ModelReconstructor
+import uppsat.ModelEvaluator.Model
+import uppsat.ModelEvaluator
 import uppsat.theory.BooleanTheory
 import uppsat.theory.BooleanTheory.BooleanSort
 import uppsat.theory.BooleanTheory.BoolConjunction
@@ -48,9 +49,10 @@ import uppsat.theory.FloatingPointTheory.FPFunctionSymbol
 import uppsat.theory.FloatingPointTheory.FPSpecialValuesFactory
 import uppsat.theory.FloatingPointTheory.FloatingPointLiteral
 import uppsat.solver.Z3OnlineSolver
+import uppsat.approximation._
 
 
-trait FixpointReconstruction extends ModelReconstructor {
+trait FixpointReconstruction extends ModelReconstruction {
 
 class FixpointException(msg : String) extends Exception("FixpointException: " + msg)
 
@@ -81,7 +83,7 @@ class FixpointException(msg : String) extends Exception("FixpointException: " + 
           for ( v <- vars if(candidateModel.contains(v))) yield 
             (v.symbol, candidateModel(v))
 
-        ModelReconstructor.evalAST(ast, unknownSymbol, assertions, inputTheory) match {
+        ModelEvaluator.evalAST(ast, unknownSymbol, assertions, inputTheory) match {
           case Some(res) => Some ((unknownAST, res)) 
           case None => None
         }
@@ -199,7 +201,7 @@ class FixpointException(msg : String) extends Exception("FixpointException: " + 
     while (!todo.isEmpty) {
 
       for (c <- todo) {
-        critical ++= ModelReconstruction.retrieveCriticalAtoms(decodedModel)(c)
+        critical ++= Toolbox.retrieveCriticalAtoms(decodedModel)(c)
       }
       todo.clear()
 
@@ -473,7 +475,7 @@ class FixpointException(msg : String) extends Exception("FixpointException: " + 
     //      }
         
     val assertions = List()
-    ModelReconstructor.evalAST(combinedConstraint, node.symbol, assertions, inputTheory)
+    ModelEvaluator.evalAST(combinedConstraint, node.symbol, assertions, inputTheory)
   }
     
    
@@ -484,7 +486,7 @@ class FixpointException(msg : String) extends Exception("FixpointException: " + 
       case AST(symbol, label, children) if !candidateModel.contains(ast) => {
         val newChildren = children.map(getCurrentValue(_, decodedModel, candidateModel))
         val newAST = AST(symbol, label, newChildren.toList)
-        val newValue = ModelReconstructor.evalAST(newAST, inputTheory)
+        val newValue = ModelEvaluator.evalAST(newAST, inputTheory)
         candidateModel.set(ast, newValue)
       }
     }

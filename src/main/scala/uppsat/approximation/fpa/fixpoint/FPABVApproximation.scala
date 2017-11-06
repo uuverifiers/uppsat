@@ -2,7 +2,9 @@
 
 package uppsat.approximation.fpa.fixpoint
 
+import uppsat.approximation._
 import uppsat.approximation.components._
+import uppsat.approximation.codec._
 import uppsat.theory.BitVectorTheory._
 import uppsat.theory.RealTheory._
 import uppsat.theory.RealTheory.RealConstant
@@ -12,8 +14,8 @@ import uppsat.theory.BooleanTheory._
 import uppsat.theory.FixPointTheory
 import uppsat.theory.FixPointTheory._
 import uppsat.theory.FixPointTheory.FXSortFactory.FXSort
-import uppsat.ModelReconstructor
-import uppsat.ModelReconstructor.Model
+import uppsat.ModelEvaluator
+import uppsat.ModelEvaluator.Model
 import uppsat.theory.FloatingPointTheory
 import uppsat.theory.FloatingPointTheory._
 import uppsat.theory.FloatingPointTheory.FPSortFactory.FPSort
@@ -24,6 +26,8 @@ import uppsat.ast._
 import uppsat.ast.AST
 import uppsat.solver.Z3Solver
 import uppsat.globalOptions
+import uppsat.approximation.reconstruction.EqualityAsAssignmentReconstruction
+import uppsat.approximation.refinement.UniformRefinementStrategy
 
 
 
@@ -46,7 +50,7 @@ trait FPABVCore extends ApproximationCore {
    val outputTheory = FixPointTheory
 }
 
-trait FPABVCodec extends FPABVCore with NodeByNodeCodec {
+trait FPABVCodec extends FPABVCore with PostOrderCodec {
   var fpToFXMap = Map[ConcreteFunctionSymbol, ConcreteFunctionSymbol]()
 
   
@@ -437,12 +441,11 @@ trait FPABVCodec extends FPABVCore with NodeByNodeCodec {
 trait FPABVRefinementStrategy extends FPABVCore with UniformRefinementStrategy {
   def increasePrecision(p : Precision) = {
     precisionOrdering.+(p, (4,4))
-
   }
 } 
 
 object FPABVApp extends FPABVCore 
                   with FPABVCodec
-                  with EqualityAsAssignmentReconstructor
+                  with EqualityAsAssignmentReconstruction
                   with FPABVRefinementStrategy {
 }

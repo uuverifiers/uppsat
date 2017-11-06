@@ -1,7 +1,7 @@
 package uppsat.approximation.int
 
 import uppsat.theory.IntegerTheory._
-import uppsat.ModelReconstructor.Model
+import uppsat.ModelEvaluator.Model
 import uppsat.precision.PrecisionMap.Path
 import uppsat.precision.PrecisionMap
 import uppsat.ast.AST._

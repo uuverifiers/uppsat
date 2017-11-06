@@ -1,17 +1,19 @@
 package uppsat.approximation.fpa.smallfloats
 
+import uppsat.approximation._
 import uppsat.approximation.components._
+import uppsat.approximation.codec._
 import uppsat.theory.FloatingPointTheory._
 import uppsat.theory.BooleanTheory.BooleanSort
 import uppsat.Timer
-import uppsat.ModelReconstructor.Model
+import uppsat.ModelEvaluator.Model
 import uppsat.precision.PrecisionMap.Path
 //import uppsat.Encoder.PathMap
 import uppsat.theory.FloatingPointTheory.FPSortFactory.FPSort
 import uppsat.precision.IntPrecisionOrdering
 import uppsat.precision.PrecisionMap
 import uppsat.theory.FloatingPointTheory
-import uppsat.ModelReconstructor
+import uppsat.ModelEvaluator
 import uppsat.ast.AST
 import uppsat.ast._
 import uppsat.solver.Z3Solver
@@ -22,10 +24,13 @@ import uppsat.theory.BooleanTheory
 import uppsat.theory.BooleanTheory.BooleanFunctionSymbol
 import uppsat.theory.BooleanTheory.BooleanConstant
 import uppsat.theory.BooleanTheory.BoolVar
-import uppsat.ModelReconstructor.Model
+import uppsat.ModelEvaluator.Model
 import uppsat.solver.Z3OnlineException
 import uppsat.solver.Z3OnlineSolver
 import uppsat.globalOptions
+import uppsat.approximation.reconstruction.EqualityAsAssignmentReconstruction
+import uppsat.approximation.refinement.ErrorBasedRefinementStrategy
+import uppsat.approximation.refinement.UniformPGRefinementStrategy
 
 trait SmallFloatsCore extends ApproximationCore {
    type Precision = Int
@@ -40,7 +45,7 @@ trait SmallFloatsCore extends ApproximationCore {
    * change the sorts of the formula itself.
 	 */
 
-trait SmallFloatsCodec extends SmallFloatsCore with NodeByNodeCodec {
+trait SmallFloatsCodec extends SmallFloatsCore with PostOrderCodec {
 
   class SmallFloatsException(msg : String) extends Exception("SmallFloats: " + msg)
   
@@ -198,7 +203,9 @@ trait SmallFloatsCodec extends SmallFloatsCore with NodeByNodeCodec {
 }
 
 
-trait SmallFloatsRefinementStrategy extends SmallFloatsCore with ErrorBasedRefinementStrategy {
+trait SmallFloatsRefinementStrategy extends SmallFloatsCore 
+                                       with ErrorBasedRefinementStrategy
+                                       with UniformPGRefinementStrategy{
   val topK = 10 // K 
   val fractionToRefine = 1.0//K_percentage
   val precisionIncrement = 1 // 20/100 = 1/5
@@ -277,7 +284,7 @@ trait SmallFloatsRefinementStrategy extends SmallFloatsCore with ErrorBasedRefin
 
 object IJCARSmallFloatsApp extends SmallFloatsCore 
                               with SmallFloatsCodec
-                              with EqualityAsAssignmentReconstructor
+                              with EqualityAsAssignmentReconstruction
                               with SmallFloatsRefinementStrategy {
 }
 

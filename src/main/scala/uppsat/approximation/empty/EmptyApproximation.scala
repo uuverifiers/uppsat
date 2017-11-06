@@ -1,7 +1,7 @@
 package uppsat.approximation
 
 import uppsat.theory.IntegerTheory._
-import uppsat.ModelReconstructor.Model
+import uppsat.ModelEvaluator.Model
 import uppsat.precision._
 import uppsat.ast._
 import uppsat.theory.FloatingPointTheory

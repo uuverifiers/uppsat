@@ -2,7 +2,7 @@ package uppsat.solver
 
 import scala.collection.mutable.{Set, Map => MMap, MutableList}
 import uppsat.precision.PrecisionMap.Path
-import uppsat.ModelReconstructor.Model
+import uppsat.ModelEvaluator.Model
 import scala.collection.mutable.{Map => MMap}
 import uppsat.ast._
 import uppsat.theory._

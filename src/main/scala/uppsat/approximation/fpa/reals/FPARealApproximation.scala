@@ -1,16 +1,18 @@
 package uppsat.approximation.fpa.reals
 
+import uppsat.approximation._
 import uppsat.approximation.components._
+import uppsat.approximation.codec._
 import uppsat.theory.FloatingPointTheory._
 import uppsat.Timer
-import uppsat.ModelReconstructor.Model
+import uppsat.ModelEvaluator.Model
 import uppsat.precision.PrecisionMap.Path
 //import uppsat.Encoder.PathMap
 import uppsat.theory.FloatingPointTheory.FPSortFactory.FPSort
 import uppsat.precision.IntPrecisionOrdering
 import uppsat.precision.PrecisionMap
 import uppsat.theory.FloatingPointTheory
-import uppsat.ModelReconstructor
+import uppsat.ModelEvaluator
 import uppsat.ast.AST
 import uppsat.ast._
 import uppsat.solver.Z3Solver
@@ -21,12 +23,14 @@ import uppsat.theory.BooleanTheory
 import uppsat.theory.BooleanTheory.BooleanFunctionSymbol
 import uppsat.theory.BooleanTheory.BooleanConstant
 import uppsat.theory.BooleanTheory.BoolVar
-import uppsat.ModelReconstructor.Model
+import uppsat.ModelEvaluator.Model
 import uppsat.solver.Z3OnlineException
 import uppsat.solver.Z3OnlineSolver
 import uppsat.globalOptions
 import uppsat.theory.RealTheory._
 import uppsat.theory.RealTheory
+import uppsat.approximation.reconstruction.EqualityAsAssignmentReconstruction
+import uppsat.approximation.refinement.UniformRefinementStrategy
 
 trait FPARealCore extends ApproximationCore {
    type Precision = Int
@@ -35,7 +39,7 @@ trait FPARealCore extends ApproximationCore {
    val outputTheory = RealTheory
 }
 
-trait FPARealCodec extends FPARealCore with NodeByNodeCodec {
+trait FPARealCodec extends FPARealCore with PostOrderCodec {
   // Encodes a node by scaling its sort based on precision and calling
   // cast to ensure sortedness.
   var fpToRealMap = Map[ConcreteFunctionSymbol, ConcreteFunctionSymbol]()
@@ -240,7 +244,7 @@ trait FPARealRefinementStrategy extends FPARealCore with UniformRefinementStrate
 
 object FPARealApp extends FPARealCore 
                   with FPARealCodec
-                  with EqualityAsAssignmentReconstructor
+                  with EqualityAsAssignmentReconstruction
                   with FPARealRefinementStrategy {
 }
 

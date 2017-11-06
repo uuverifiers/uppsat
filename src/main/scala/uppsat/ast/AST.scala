@@ -1,7 +1,7 @@
 package uppsat.ast
 
 import uppsat.theory.BooleanTheory._
-import uppsat.ModelReconstructor.Model
+import uppsat.ModelEvaluator.Model
 import scala.collection.mutable.ArrayStack
 import uppsat.precision.PrecisionMap.Path
 import uppsat.theory.IntegerTheory._

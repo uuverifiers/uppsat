@@ -1,9 +1,9 @@
 package uppsat
 
 import uppsat.precision.PrecisionMap.Path
-import uppsat.ModelReconstructor.Model
+import uppsat.ModelEvaluator.Model
 import uppsat.theory.Theory
-import uppsat.approximation.components.Approximation
+import uppsat.approximation.Approximation
 import ast.AST
 import uppsat.solver.SMTSolver
 import uppsat.solver.SMTTranslator
@@ -16,7 +16,7 @@ import uppsat.globalOptions._
  *
  *  
  */
-object ModelReconstructor {
+object ModelEvaluator {
  
   case class ModelReconstructorException(msg : String) extends Exception("ModelReconstrutor Exception: " + msg)
   

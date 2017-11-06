@@ -9,8 +9,9 @@ import uppsat.theory.RealTheory._
 import uppsat.solver._
 import uppsat.approximation.components._
 import uppsat.precision.PrecisionMap.Path
-import uppsat.ModelReconstructor.Model
+import uppsat.ModelEvaluator.Model
 import uppsat.globalOptions._
+import uppsat.approximation.Approximation
 
 /** Static object which is the main control structure for the approximation framework.
  *
@@ -90,7 +91,7 @@ object ApproximationSolver {
 //      if (globalOptions.VERBOSE)
 //        encodedFormula.ppWithModels("", appModel, reconstructedModel)
  
-      if (ModelReconstructor.valAST(formula, assignments.toList, approximation.inputTheory, smtSolver)) {
+      if (ModelEvaluator.valAST(formula, assignments.toList, approximation.inputTheory, smtSolver)) {
         val extModel =
           for ((symbol, value) <- reconstructedModel.getModel) yield {
           (symbol, value.symbol.theory.symbolToSMTLib(value.symbol) )
