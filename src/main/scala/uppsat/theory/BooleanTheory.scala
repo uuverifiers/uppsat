@@ -117,7 +117,7 @@ object BooleanTheory extends Theory {
       case BoolDisjunction => "or"
       case BoolExclusiveDisjunction=> "xor"
       case BoolEquality => "="
-      case BoolImplication => "implies"
+      case BoolImplication => "=>"
       case BoolNegation => "not"
       case BoolVar(name) => name
       case bc : BooleanConstant => bc.name 
