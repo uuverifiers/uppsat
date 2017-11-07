@@ -90,7 +90,20 @@ object FloatingPointTheory extends Theory {
       }  
     }
   }
-
+  
+  case class FPVarFactory(varName : String) extends IndexedFunctionSymbolFactory {
+    val thisFactory = this
+    val arity = 0
+    
+    def apply(sort : ConcreteSort*) = {
+      sort match {
+        case List(fpsort : FPSort) => 
+          FPVar(varName, fpsort)        
+        case _ =>  throw new Exception("Non-FP sort : " + sorts.head)
+      }  
+    }
+  }
+  
   case class FPPredicateSymbolFactory(symbolName : String, fpArity : Int) extends IndexedFunctionSymbolFactory {
     val arity = 1 // Refers to the sorts
     override def apply(sort : ConcreteSort*) = {      
@@ -621,9 +634,11 @@ case class FPSpecialValuesFactory(symbolName : String) extends FPGenConstantFact
 //  }
   
   // Theory shouldn't be here
-  case class FPVar(val name : String, val sort : FPSort) extends ConcreteFunctionSymbol {
+  case class FPVar(val name : String, val _sort : FPSort) extends FloatingPointFunctionSymbol(_sort) {
     val args = List()
     val theory = FloatingPointTheory
+    
+    val getFactory = FPVarFactory(name)
   }
   
   object RMVar {
@@ -697,7 +712,8 @@ case class FPSpecialValuesFactory(symbolName : String) extends FPGenConstantFact
   
   //TODO: Change to SMTLIB names
   def symbolToSMTLib(symbol : ConcreteFunctionSymbol)(implicit translator : Option[uppsat.solver.SMTTranslator] = None) = { 
-    symbol match {
+    symbol match {      
+      case FPVar(name, _) => name       
       case RoundToZero => "RTZ"
       case RoundToPositive => "RTP"
       case RoundToNegative => "RTN"
@@ -745,7 +761,7 @@ case class FPSpecialValuesFactory(symbolName : String) extends FPGenConstantFact
         }
       }
       case uppsat.theory.FloatingPointTheory.RMVar(name) => name
-      case FPVar(name, _) => name
+     
       case other =>
         throw new FloatingPointTheoryException("Unknown symbol: " + symbol.sort)     
     }

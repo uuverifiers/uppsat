@@ -60,15 +60,17 @@ trait SmallFloatsCodec extends SmallFloatsCore with PostOrderCodec {
   def scaleSort(ast : AST, p : Int) = {
     val AST(symbol, label, children) = ast
     val sort = symbol.sort
-    (symbol, sort) match {
-      case (_, fpsort : FPSort) =>
-        val eBits = 3 + ((fpsort.eBitWidth - 3) * p)/precisionOrdering.maximalPrecision
-        val sBits = 3 + ((fpsort.sBitWidth - 3) * p)/precisionOrdering.maximalPrecision
-        fpsort.getFactory(List(eBits, sBits))
-      case (_ : FloatingPointPredicateSymbol, _) =>
-        val acc = children.head.symbol.sort
-        children.tail.foldLeft(acc)( (x, y) => if (sortGreaterThan(x, y.symbol.sort)) x
-                                              else  y.symbol.sort)
+    symbol match {
+      case _ : FloatingPointPredicateSymbol =>
+        val childrenSorts = children.map(_.symbol.sort) 
+        childrenSorts.foldLeft(childrenSorts.head)(fpsortMaximum)
+   
+      case _ : FloatingPointFunctionSymbol =>
+        val FPSort(eBitWidth, sBitWidth) = sort
+        val eBits = 3 + ((eBitWidth - 3) * p)/precisionOrdering.maximalPrecision
+        val sBits = 3 + ((sBitWidth - 3) * p)/precisionOrdering.maximalPrecision
+        FPSort(eBits, sBits)
+      
       case _ => sort 
     }
   }
@@ -77,16 +79,16 @@ trait SmallFloatsCodec extends SmallFloatsCore with PostOrderCodec {
    * Checks whether s1 greater than s2 (i.e. has more number of bits).
 	 *  
    * @param s1 first sort.
-   * @param s2 second sort.
+   * @param ast second sort.
    * 
    * @return true if s1 has more bits than s2.
 	 */  
-  def sortGreaterThan(s1 : Sort, s2 : Sort) = {
+  def fpsortMaximum(s1 : ConcreteSort, s2 : ConcreteSort) : ConcreteSort = {
     (s1, s2) match {
-      case (FPSort(eb1, sb1), FPSort(eb2, sb2)) => eb1 + sb1 > eb2 + sb2
+      case (FPSort(eb1, sb1), FPSort(eb2, sb2)) => 
+        if (eb1 + sb1 > eb2 + sb2) s1 else s2
       case (FPSort(_, _), _) | (_, FPSort(_, _)) =>
-        // TODO: (Aleks) I do not understand what this case is? This case used to return true
-        throw new SmallFloatsException("Comparing FPSort with non-FPSort (" + s1 + ") & (" + s2 + ")")
+        s1 // Othewise just keep the accumulator        
     }
   }
   
@@ -123,7 +125,6 @@ trait SmallFloatsCodec extends SmallFloatsCore with PostOrderCodec {
       case (fpSym : FloatingPointPredicateSymbol, _) =>
         val sorts = encodedChildren.map(_.symbol.sort) ++ List(BooleanSort) 
         fpSym.getFactory (sorts : _*)
-      case (fpVar : FPVar, fpsort : FPSort) => FPVar(fpVar.name, fpsort)  
       case _ => sym
     }
   }
