@@ -46,7 +46,7 @@ object globalOptions {
 
    val REG_SOLVERS = Map( "z3" -> new Z3Solver(), 
                          "mathsat" -> new MathSatSolver("Mathsat", ""),                         
-                         "acdcl" -> new MathSatSolver("ACDCL (5.4.1)", "-theory.fp.mode=2 "), 
+                         "acdcl" -> new MathSatSolver("ACDCL (Mathsat)", "-theory.fp.mode=2 "), 
                          "nlsat" -> new Z3Solver("NLSAT","(check-sat-using qfnra-nlsat)\n")) 
                          
   val REG_APPROXS = Map( "ijcar" ->  new Approximation(IJCARSmallFloatsApp), 
