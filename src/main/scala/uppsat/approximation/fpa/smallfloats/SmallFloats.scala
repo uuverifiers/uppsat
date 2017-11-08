@@ -151,15 +151,15 @@ trait SmallFloatsCodec extends SmallFloatsCore with PostOrderCodec {
    *  
    *  @return value decoded to the sort of symbol if it was encoded by precision p.
    */  
-  def decodeSymbolValue(symbol : ConcreteFunctionSymbol, value : AST, p : Int) = {
+  def decodeFPValue(symbol : ConcreteFunctionSymbol, value : AST, p : Int) : ConcreteFunctionSymbol = {
     (symbol.sort, value.symbol) match {
       case (FPSort(e, s), fp : FloatingPointTheory.FloatingPointLiteral) => {
         fp.getFactory match {
-          case FPPlusInfinity => Leaf(FPPlusInfinity(FPSort(e, s)))
-          case FPMinusInfinity => Leaf(FPMinusInfinity(FPSort(e, s)))
-          case FPNaN => Leaf(FPNaN(FPSort(e, s)))
-          case FPPositiveZero => Leaf(FPPositiveZero(FPSort(e, s)))
-          case FPNegativeZero => Leaf(FPNegativeZero(FPSort(e, s)))
+          case FPPlusInfinity => FPPlusInfinity(FPSort(e, s))
+          case FPMinusInfinity =>FPMinusInfinity(FPSort(e, s))
+          case FPNaN => FPNaN(FPSort(e, s))
+          case FPPositiveZero => FPPositiveZero(FPSort(e, s))
+          case FPNegativeZero => FPNegativeZero(FPSort(e, s))
           case _ => {
             // When padding exponent, we retain the bias bit in the first position,
             // pad with negation of the bias bit and retain the value of the small exponent.
@@ -169,18 +169,17 @@ trait SmallFloatsCodec extends SmallFloatsCore with PostOrderCodec {
             // Padding significant is trivial, just adding the zero bits in lowest positions 
             val missingSBits = (s - 1) - fp.sBits.length
             val paddedSBits = fp.sBits ++ List.fill(missingSBits)(0)
-            Leaf(FloatingPointLiteral(fp.sign, paddedEBits, paddedSBits, FPSort(e, s)))
+            FloatingPointLiteral(fp.sign, paddedEBits, paddedSBits, FPSort(e, s))
           }
         }
       }      
-      case _ => value
+      case _ => value.symbol
     }
   }
   
   // decodes values associated with nodes in the formula.
   def decodeNode( args : (Model, PrecisionMap[Precision]), decodedModel : Model, ast : AST) : Model = {
-    val appModel = args._1
-    val pmap = args._2
+    val (appModel, pmap) = args
     
     // TEMPORARY TODO: (Aleks) FIX!
     val newAST = 
@@ -191,17 +190,19 @@ trait SmallFloatsCodec extends SmallFloatsCore with PostOrderCodec {
     
     if (!appModel.contains(newAST))
       throw new Exception("Node " + ast + " does not have a value in \n" + appModel.subexprValuation + "\n" + appModel.variableValuation )
-    val decodedValue = decodeSymbolValue(ast.symbol, appModel(newAST), pmap(ast.label))
     
-    if (decodedModel.contains(ast)){
+    val decodedValue = decodeFPValue(ast.symbol, appModel(newAST), pmap(ast.label))
+    
+    if (!decodedModel.contains(ast))
+      decodedModel.set(ast, Leaf(decodedValue))
+    else {
       val existingValue = decodedModel(ast).symbol 
-      if ( existingValue != decodedValue.symbol) {
+      if ( existingValue != decodedValue) {
         ast.prettyPrint("\t") 
-        throw new Exception("Decoding the model results in different values for the same entry : \n" + existingValue + " \n" + decodedValue.symbol)
+        throw new Exception("Decoding the model results in different values for the same entry : \n" + existingValue + " \n" + decodedValue)
       }
-    } else {
-      decodedModel.set(ast, decodedValue)
-    }
+    } 
+      
     decodedModel
   }
 }
