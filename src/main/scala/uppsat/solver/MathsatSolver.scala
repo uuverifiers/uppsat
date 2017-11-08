@@ -15,7 +15,7 @@ import java.io.InputStreamReader;
 
 class MathSatException(msg : String) extends Exception("MathSAT error: " + msg)
 
-class MathSatSolver(name : String = "MathSAT", params : String = "", newVersion : Boolean = true) extends SMTSolver {
+class MathSatSolver(name : String = "MathSAT", params : String = "") extends SMTSolver {
   var silent = true
   
   def setSilent(b : Boolean) = {
@@ -29,11 +29,7 @@ class MathSatSolver(name : String = "MathSAT", params : String = "", newVersion 
   def evaluate(formula : String) = Timer.measure("MathSatSolver.runSolver") {
     import sys.process._
   
-    val mathsatBinary = 
-      if (newVersion)
-        "mathsat-5.4.1"
-      else
-        "mathsat-5.3.7"
+    val mathsatBinary = "mathsat.master"
     
     val cmd = 
       if (globalOptions.DEADLINE.isDefined) {

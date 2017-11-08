@@ -45,10 +45,8 @@ object globalOptions {
 
 
    val REG_SOLVERS = Map( "z3" -> new Z3Solver(), 
-                         "mathsat" -> new MathSatSolver("Mathsat (5.4.1)", "", true),
-                         "mathsat-old" -> new MathSatSolver("Mathsat (5.3.7)", "", false),                         
-                         "acdcl" -> new MathSatSolver("ACDCL (5.4.1)", "-theory.fp.mode=2 ", true),
-                         "acdcl-old" -> new MathSatSolver("ACDCL (5.3.7)", "-theory.fp.mode=2 ", true), 
+                         "mathsat" -> new MathSatSolver("Mathsat", ""),                         
+                         "acdcl" -> new MathSatSolver("ACDCL (Mathsat)", "-theory.fp.mode=2 "), 
                          "nlsat" -> new Z3Solver("NLSAT","(check-sat-using qfnra-nlsat)\n")) 
                          
   val REG_APPROXS = Map( "ijcar" ->  new Approximation(IJCARSmallFloatsApp), 
@@ -145,7 +143,6 @@ object main {
           globalOptions.VERBOSE = true
           globalOptions.DEBUG = true
           globalOptions.FORMULAS = true
-          globalOptions.SURRENDER = true
         }
         case "-s" => globalOptions.STATS = true
         case "-m" => globalOptions.MODEL = true
@@ -188,6 +185,7 @@ object main {
   def main_aux(args : Array[String]) : Answer = {
     import java.io._
     import scala.collection.JavaConversions._
+    
     
     globalOptions.STARTTIME = Some(System.currentTimeMillis())
     
