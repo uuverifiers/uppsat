@@ -73,6 +73,8 @@ object FloatingPointTheory extends Theory {
   case class FPToNonFPFunctionSymbol( val args : Seq[ConcreteSort], _sort : ConcreteSort, val getFactory : FPToNonFPFunctionSymbolFactory) extends FloatingPointNonFPSymbol(_sort) {
     val theory = FloatingPointTheory
     val name = getFactory symbolName
+    
+    
   }
   
   case class FPFunctionSymbolFactory(symbolName : String, isRounding : Boolean, fpArity : Int) extends IndexedFunctionSymbolFactory {
