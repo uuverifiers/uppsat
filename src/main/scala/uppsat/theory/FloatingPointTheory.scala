@@ -289,7 +289,11 @@ case class FPSpecialValuesFactory(symbolName : String) extends FPGenConstantFact
   //   (fp.gt  (_ FloatingPoint eb sb) (_ FloatingPoint eb sb) Bool :chainable)
   val FPGreaterThanFactory = new FPPredicateSymbolFactory("greater-than", 2)
   //   ; IEEE 754-2008 equality (as opposed to SMT-LIB =)
-  //   (fp.eq (_ FloatingPoint eb sb) (_ FloatingPoint eb sb) Bool :chainable) 
+  //   (fp.eq (_ FloatingPoint eb sb) (_ FloatingPoint eb sb) Bool :chainable)
+  val FPFPEqualityFactory = new FPPredicateSymbolFactory("fp-equal", 2)
+  //   ; Classification of numbers
+
+  
   val FPEqualityFactory = new FPPredicateSymbolFactory("equal", 2)
   //   ; Classification of numbers
   //   (fp.isNormal (_ FloatingPoint eb sb) Bool)
@@ -487,6 +491,10 @@ case class FPSpecialValuesFactory(symbolName : String) extends FPGenConstantFact
   def floatEquality(left : AST, right : AST) = 
     genericPredicate(left, right, FPEqualityFactory)
 
+def floatFPEquality(left : AST, right : AST) = 
+    genericPredicate(left, right, FPFPEqualityFactory)
+    
+    
   def floatLessThanOrEqual(left : AST, right : AST) =
     genericPredicate(left, right, FPLessThanOrEqualFactory)
   
@@ -661,7 +669,7 @@ case class FPSpecialValuesFactory(symbolName : String) extends FPGenConstantFact
   val sorts : List[Sort] = List()
 
   // TODO: How do we do this?
-  val symbols = List() //: List[IndexedFunctionSymbol] = List(FPAdditionFactory.FPFunctionSymbol, FPSubtractionFactory.FPFunctionSymbol, FPEqualityFactory.FPPredicateSymbol)
+  val symbols = List() //: List[IndexedFunctionSymbol] = List(FPAdditionFactory.FPFunctionSymbol, FPSubtractionFactory.FPFunctionSymbol, FPEqualityFactory.FPPredicateSymbol, FPFPEqualityFactory.FPPredicateSymbol)
   
   def isLiteral(symbol : ConcreteFunctionSymbol) = {
     symbol match {
@@ -752,7 +760,8 @@ case class FPSpecialValuesFactory(symbolName : String) extends FPGenConstantFact
       }
       case fpPredSym : FloatingPointPredicateSymbol => {
         fpPredSym.getFactory match {
-          case FPEqualityFactory => "fp.eq"
+          case FPEqualityFactory => "="
+          case FPFPEqualityFactory => "fp.eq"            
           case FPLessThanOrEqualFactory => "fp.leq"
           case FPLessThanFactory => "fp.lt"
           case FPGreaterThanOrEqualFactory => "fp.geq"

@@ -564,7 +564,9 @@ object Interpreter {
     
     case PlainSymbol("fp.eq") => {
       checkArgs("fp.eq", 2, args)
-       translateTerm(args(0)) === translateTerm(args(1))
+      val ta1 = translateTerm(args(0))
+      val ta2 = translateTerm(args(1)) 
+      uppsat.ast.AST(FloatingPointTheory.FPFPEqualityFactory(ta1.symbol.sort, ta2.symbol.sort), List(ta1, ta2))
     }
     
     // We can't use syntactic sugar since first leaf might not be a rounding-mode but rather a defined function
