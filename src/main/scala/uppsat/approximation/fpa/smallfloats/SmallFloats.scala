@@ -155,7 +155,7 @@ trait SmallFloatsCodec extends SmallFloatsCore with PostOrderCodec {
       case (FPSort(e, s), fp : FloatingPointTheory.FloatingPointLiteral) => {
         fp.getFactory match {
           case FPPlusInfinity => FPPlusInfinity(FPSort(e, s))
-          case FPMinusInfinity =>FPMinusInfinity(FPSort(e, s))
+          case FPMinusInfinity => FPMinusInfinity(FPSort(e, s))
           case FPNaN => FPNaN(FPSort(e, s))
           case FPPositiveZero => FPPositiveZero(FPSort(e, s))
           case FPNegativeZero => FPNegativeZero(FPSort(e, s))
@@ -224,49 +224,28 @@ trait SmallFloatsRefinementStrategy extends SmallFloatsCore
     p + 1
   }
   
+  def computeRelativeError ( ast : AST, decodedModel : Model, failedModel : Model) : Option[Double] = {
+    (decodedModel(ast).symbol, failedModel(ast).symbol) match {
+      case (aValue : FloatingPointLiteral, bValue : FloatingPointLiteral) => 
+          Some(relativeError(aValue, bValue))
+      case _ => None
+    }
+  }
+  
   def nodeError(decodedModel : Model)(failedModel : Model)(accu : Map[AST, Double], ast : AST) : Map[AST, Double] = {
     val AST(symbol, label, children) = ast      
-    var err = 0.0
-    
     symbol match {
-      case literal : FloatingPointLiteral => ()
-      case fpfs : FloatingPointFunctionSymbol =>
-        (decodedModel(ast).symbol, failedModel(ast).symbol)  match {
-        case (approximate : FloatingPointLiteral, exact : FloatingPointLiteral) => {
-          val outErr = relativeError(approximate, exact)
-          
-          var sumDescError = 0.0
-          var numFPArgs = 0
-          
-          for (c <- children) {
-            val a = decodedModel(c)
-            val b = failedModel(c)
-            
-            (a.symbol, b.symbol) match {
-              case (aS : FloatingPointLiteral, bS: FloatingPointLiteral) => {
-                sumDescError +=  relativeError(aS, bS)
-                numFPArgs += 1
-              }                                                                 
-              case  _ => ()
-            }
-          }
-          val inErr = sumDescError / numFPArgs
-          
-          if (numFPArgs == 0) 
-            err = outErr
-          else
-            err = outErr / inErr
-        }
-        case _ => ()
+      case literal : FloatingPointLiteral => accu      
+      case fpfs : FloatingPointFunctionSymbol => {
+        val Some(outErr) = computeRelativeError(ast, decodedModel, failedModel)
+        val inErrors = children.map(computeRelativeError(_, decodedModel, failedModel)) 
+        val sumInErrors = inErrors.collect { case Some(x) => x }.fold(0.0){(x,y) => x + y}
+        var numArgs = inErrors.length
+        val inErr = sumInErrors / numArgs
+        accu + (ast -> outErr / (1 + inErr))        
       }
-      case _ => ()
+      case _ => accu
     }
-    
-    
-    if (err == 0.0)
-      accu
-    else
-      accu + (ast -> err)
   }
   
   def relativeError(decoded : FloatingPointLiteral, precise : FloatingPointLiteral) : Double = {
