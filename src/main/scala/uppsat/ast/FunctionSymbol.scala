@@ -26,6 +26,10 @@ trait ConstructedFunctionSymbolFactory {
 
 trait IndexedFunctionSymbol extends ConcreteFunctionSymbol {
   val getFactory : IndexedFunctionSymbolFactory
+  
+  def apply(sorts : ConcreteSort *) = {
+      getFactory(sorts:_*)
+    }
 }
 
 trait IndexedFunctionSymbolFactory {
