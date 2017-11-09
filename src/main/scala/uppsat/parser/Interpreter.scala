@@ -675,7 +675,7 @@ object Interpreter {
     
 
     // Floating point functions
-    case _ if ("to".r.findFirstIn(asString(sym)).isDefined) => {
+    case _ if ("to_fp_\\d+_\\d+".r.findFirstIn(asString(sym)).isDefined) => {
       val p = "to_fp_(\\d+)_(\\d+)".r
       asString(sym) match {
         case p(eBits, sBits) => {
