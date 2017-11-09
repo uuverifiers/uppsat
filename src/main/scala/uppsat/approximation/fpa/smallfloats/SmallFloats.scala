@@ -152,13 +152,9 @@ trait SmallFloatsCodec extends SmallFloatsCore with PostOrderCodec {
    */  
   def decodeFPValue(symbol : ConcreteFunctionSymbol, value : AST, p : Int) : ConcreteFunctionSymbol = {
     (symbol.sort, value.symbol) match {
-      case (FPSort(e, s), fp : FloatingPointTheory.FloatingPointLiteral) => {
+      case (FPSort(e, s), fp : FloatingPointLiteral) => {
         fp.getFactory match {
-          case FPPlusInfinity => FPPlusInfinity(FPSort(e, s))
-          case FPMinusInfinity => FPMinusInfinity(FPSort(e, s))
-          case FPNaN => FPNaN(FPSort(e, s))
-          case FPPositiveZero => FPPositiveZero(FPSort(e, s))
-          case FPNegativeZero => FPNegativeZero(FPSort(e, s))
+          case _ : FPSpecialValuesFactory => fp(FPSort(e, s))          
           case _ => {
             // When padding exponent, we retain the bias bit in the first position,
             // pad with negation of the bias bit and retain the value of the small exponent.
