@@ -711,6 +711,29 @@ object Interpreter {
     }    
     
 
+    case _ if ("\\+zero_\\d+_\\d+".r.findFirstIn(asString(sym)).isDefined) => {
+      val p = "\\+zero_(\\d+)_(\\d+)".r
+      asString(sym) match {
+        case p(eBits, sBits) => {
+          val sort = FloatingPointTheory.FPSortFactory(List(eBits.toInt, sBits.toInt))
+          val value = FloatingPointTheory.FPPositiveZero(sort)
+          uppsat.ast.AST(value, List())
+        }
+      }
+    }        
+
+    case _ if ("\\-zero_\\d+_\\d+".r.findFirstIn(asString(sym)).isDefined) => {
+      val p = "\\-zero_(\\d+)_(\\d+)".r
+      asString(sym) match {
+        case p(eBits, sBits) => {
+          val sort = FloatingPointTheory.FPSortFactory(List(eBits.toInt, sBits.toInt))
+          val value = FloatingPointTheory.FPNegativeZero(sort)
+          uppsat.ast.AST(value, List())
+        }
+      }
+    }        
+    
+    
     // 
     //  BITVECTOR SYMBOLS
     //
