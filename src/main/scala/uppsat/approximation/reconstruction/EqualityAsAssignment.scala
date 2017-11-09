@@ -1,6 +1,7 @@
 package uppsat.approximation.reconstruction
 
 import uppsat.ast.AST
+
 import uppsat.ModelEvaluator
 import uppsat.ModelEvaluator.Model
 
@@ -11,6 +12,7 @@ import uppsat.theory.IntegerTheory.IntEquality
 import uppsat.theory.FloatingPointTheory.RoundingModeEquality
 import uppsat.theory.FloatingPointTheory.FPPredicateSymbol
 import uppsat.theory.FloatingPointTheory.FPEqualityFactory
+import uppsat.theory.FloatingPointTheory.FPFPEqualityFactory
 import uppsat.theory.FloatingPointTheory.FPSortFactory.FPSort
 import uppsat.ast.IndexedFunctionSymbol
 
@@ -23,7 +25,8 @@ trait EqualityAsAssignmentReconstruction extends PostOrderReconstruction {
           AST(_: FPPredicateSymbol, _, _)
           if (decodedModel(ast).symbol == BoolTrue &&
                 (! ast.symbol.isInstanceOf[IndexedFunctionSymbol]
-                   || ast.symbol.asInstanceOf[FPPredicateSymbol].getFactory == FPEqualityFactory)) => {
+                   || ast.symbol.asInstanceOf[FPPredicateSymbol].getFactory == FPEqualityFactory
+                   || ast.symbol.asInstanceOf[FPPredicateSymbol].getFactory == FPFPEqualityFactory)) => {
             val lhs = ast.children(0)
             val rhs = ast.children(1)
             val lhsDefined = candidateModel.contains(lhs)

@@ -423,6 +423,7 @@ object Interpreter {
         case "Real" => RealSort
         case "Bool" => BooleanSort
         case "RoundingMode" => RoundingModeSort
+        case "Float32" => uppsat.theory.FloatingPointTheory.FPSortFactory(List(8, 24))
         case fpPattern(eBits, sBits) => uppsat.theory.FloatingPointTheory.FPSortFactory(List(eBits.toInt, sBits.toInt))
         case bvPattern(bits) => uppsat.theory.BitVectorTheory.BVSortFactory(List(bits.toInt))
         case id => {

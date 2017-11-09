@@ -102,7 +102,10 @@ object ApproximationSolver {
           verbose("Model reconstruction failed: maximal precision reached")
           return (None, None)
         } else {
-          verbose("Model reconstruction failed: refining precision")            
+          verbose("Model reconstruction failed: refining precision")       
+          if (globalOptions.VERBOSE) {
+            formula.ppWithModels("->", decodedModel, reconstructedModel)
+          }
           val newPmap = approximation.satRefine(formula, decodedModel, reconstructedModel, pmap)
           newPmap.characterize
           (None, Some(newPmap))
