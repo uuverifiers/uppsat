@@ -12,35 +12,31 @@ import uppsat.globalOptions._
 // determine which precisions need to be refined
 // TODO: (Aleks) "Magic" numbers, I don't understand them
 trait ErrorBasedRefinementStrategy extends PostOrderRefinement {
-  val topK : Int // TODO: (Aleks) Should this be int or precision? RE: It should be int
   val fractionToRefine : Double
   val precisionIncrement : Precision
 
   def nodeError(decodedModel : Model)(failedModel : Model)(accu : Map[AST, Double], ast : AST) : Map[AST, Double]
-    override def satRefine(ast : AST, decodedModel : Model, failedModel : Model, pmap : PrecisionMap[Precision])
+  
+  def cmpErrors(f1 : Double, f2: Double) : Boolean = {
+    val d1 = f1.doubleValue()
+    val d2 = f2.doubleValue()
+    d1.compareTo(d2) > 0
+  }
+  
+  override def satRefine(ast : AST, decodedModel : Model, failedModel : Model, pmap : PrecisionMap[Precision])
       : PrecisionMap[Precision] = {
     val accu = Map[AST, Double]()
     val errorRatios = AST.postVisit(ast, accu, nodeError(decodedModel)(failedModel))
-      //    debug(errorRatios.mkString("\n"))
-      //    debug(errorRatios.getClass)
-
-    // TODO: (Aleks) Is this correct?ErrorBasedRefinementStrategy
-    def compareFloatsWithSpecialNumbers(f1 : Double, f2: Double) : Boolean = {
-      val d1 = f1.doubleValue()
-      val d2 = f2.doubleValue()
-      d1.compareTo(d2) > 0
-    }
-
-    val sortedErrRatios = errorRatios.toList.sortWith((x, y) => compareFloatsWithSpecialNumbers(x._2, y._2))
+    val sortedErrRatios = errorRatios.toList.sortWith((x, y) => cmpErrors(x._2, y._2))
     val k = math.ceil(fractionToRefine * sortedErrRatios.length).toInt //TODO: Assertions
 
-    val relevantNodes = Toolbox.booleanComparisonOfModels(ast, decodedModel, failedModel)
-    val nodesToRefine = sortedErrRatios.filter( x => relevantNodes.contains(x._1)).map(_._1)
+    val relevant = Toolbox.booleanComparisonOfModels(ast, decodedModel, failedModel)
+    val toRefine = sortedErrRatios.filter( x => relevant.contains(x._1)).map(_._1)
 
     var newPMap = pmap
     var changes = 0
     for (node <-
-         nodesToRefine.filter(
+         toRefine.filter(
            x => precisionOrdering.lt(newPMap(x.label),  pmap.precisionOrdering.maximalPrecision)
          ).take(k)) {
       newPMap = newPMap.update(node.label, satRefinePrecision(node, newPMap))

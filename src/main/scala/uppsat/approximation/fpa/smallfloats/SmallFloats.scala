@@ -238,11 +238,10 @@ trait SmallFloatsRefinementStrategy extends SmallFloatsCore
       case literal : FloatingPointLiteral => accu      
       case fpfs : FloatingPointFunctionSymbol => {
         val Some(outErr) = computeRelativeError(ast, decodedModel, failedModel)
-        val inErrors = children.map(computeRelativeError(_, decodedModel, failedModel)) 
-        val sumInErrors = inErrors.collect { case Some(x) => x }.fold(0.0){(x,y) => x + y}
-        var numArgs = inErrors.length
-        val inErr = sumInErrors / numArgs
-        accu + (ast -> outErr / (1 + inErr))        
+        val inErrors = children.map(computeRelativeError(_, decodedModel, failedModel)).collect{case Some(x) => x}
+        val sumInErrors = inErrors.fold(0.0){(x,y) => x + y}
+        val avgInErr = sumInErrors /  inErrors.length
+        accu + (ast -> outErr / (1 + avgInErr))        
       }
       case _ => accu
     }
