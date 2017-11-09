@@ -581,6 +581,17 @@ object Interpreter {
       }    
     }
     
+    case PlainSymbol("fp.sub") => {
+      checkArgs("fp.sub", 3, args)
+      val ta = args.map(translateTerm)
+      (ta(0).symbol.sort, ta(1).symbol.sort, ta(2).symbol.sort) match {
+        case (RoundingModeSort, fp1 : FPSort, fp2 : FPSort) if (fp1 == fp2) =>
+          uppsat.ast.AST(FloatingPointTheory.FPSubstractionFactory(fp1, fp1, fp1), ta.toList)
+        case (s1, s2, s3) => 
+          throw new SMTParserException("Wrong sorts for fp.sub: " + ((s1, s2, s3)))
+      }    
+    }    
+    
     case PlainSymbol("fp.mul") => {
       checkArgs("fp.mul", 3, args)
       val ta = args.map(translateTerm)
