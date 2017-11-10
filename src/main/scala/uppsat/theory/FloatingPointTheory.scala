@@ -588,7 +588,7 @@ def floatFPEquality(left : AST, right : AST) =
   
   
   def parseLiteral(lit : String) = {
-    val bitPattern = """\(?fp (\S+) (\S+) ([^\s)]+)[)]*""".r    
+    val bitPattern = """\(?fp (\S+) (\S+) ([^\s)]+)[)]*""".r
     val zeroPattern = "\\(?_ ([\\+\\-])zero (\\d+) (\\d+)\\)*".r
     val infPattern = "\\(?_ ([\\+\\-])oo (\\d+) (\\d+)\\)*".r
     val nanPattern = "\\(?_ NaN (\\d+) (\\d+)\\)*".r
@@ -599,6 +599,28 @@ def floatFPEquality(left : AST, right : AST) =
       case "roundTowardNegative" | "RTN"  => RoundToNegative
       case "roundTowardZero" | "RTZ" => RoundToZero      
 
+     
+      case zeroPattern(sign, eBits, sBits) => {
+        val fpsort = FPSortFactory(List(eBits.toInt, sBits.toInt))
+        if (sign == "+") 
+          Leaf(FPPositiveZero(fpsort))
+        else  
+          Leaf(FPNegativeZero(fpsort))
+      }
+      
+      case infPattern(sign, eBits, sBits) => {
+        val fpsort = FPSortFactory(List(eBits.toInt, sBits.toInt))
+        if (sign == "+")
+          Leaf(FPPlusInfinity(fpsort))
+        else
+          Leaf(FPMinusInfinity(fpsort))
+      } 
+   
+      case nanPattern(eBits, sBits) => {
+        val fpsort = FPSortFactory(List(eBits.toInt, sBits.toInt))
+        Leaf(FPNaN(fpsort))        
+      }
+      
       case bitPattern(s1, s2, s3) => {
         val sign = 
           if (s1 == "#b0") 0
@@ -607,28 +629,28 @@ def floatFPEquality(left : AST, right : AST) =
         
         val eBits = parseSymbol(s2).toList
         val sBits = parseSymbol(s3).toList
-        val constFactory = new FPConstantFactory(sign, eBits, sBits)
         val fpsort = FPSortFactory(List(eBits.length, sBits.length + 1))
-        Leaf(constFactory(fpsort))
-      }
-      case zeroPattern(sign, eBits, sBits) => {
-        val fpsort = FPSortFactory(List(eBits.toInt, sBits.toInt))
-        if (sign == "+") 
+
+       if (!(eBits contains 1) && !(sBits contains 1)) {
+        if (sign == 0) 
           Leaf(FPPositiveZero(fpsort))
         else  
-          Leaf(FPNegativeZero(fpsort))
-      }
-      case infPattern(sign, eBits, sBits) => {
-        val fpsort = FPSortFactory(List(eBits.toInt, sBits.toInt))
-        if (sign == "+")
-          Leaf(FPPlusInfinity(fpsort))
-        else
-          Leaf(FPMinusInfinity(fpsort))
-      } 
-      case nanPattern(eBits, sBits) => {
-        val fpsort = FPSortFactory(List(eBits.toInt, sBits.toInt))
-        Leaf(FPNaN(fpsort))        
-      }
+          Leaf(FPNegativeZero(fpsort))         
+       } else if (!(eBits contains 0)) {
+         if (!(sBits contains 1)) {
+          if (sign == 0)
+            Leaf(FPPlusInfinity(fpsort))
+          else
+            Leaf(FPMinusInfinity(fpsort))
+         } else {
+           Leaf(FPNaN(fpsort))        
+         }
+       } else {
+          val constFactory = new FPConstantFactory(sign, eBits, sBits)
+          Leaf(constFactory(fpsort))
+       }
+      }      
+      
       case _ => throw new Exception("Unknown FP literal: " + lit)
     }
   }

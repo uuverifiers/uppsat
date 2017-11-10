@@ -156,7 +156,7 @@ trait SmallFloatsCodec extends SmallFloatsCore with PostOrderCodec {
         fp.getFactory match {
           case _ : FPSpecialValuesFactory => fp(FPSort(e, s))          
           case _ if !fp.eBits.contains(1) => {
-            val sPrefix = fp.sBits.dropWhile(_ == 0)            
+            val sPrefix = fp.sBits.dropWhile(_ == 0)
             val eUnderflow = fp.sBits.length - sPrefix.length
             val sBits = sPrefix.tail ::: List.fill(s - sPrefix.length)(0)  
             val exp = - bias(fp.eBits.length) - eUnderflow
