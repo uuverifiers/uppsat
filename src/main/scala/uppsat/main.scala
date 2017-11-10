@@ -150,7 +150,7 @@ object main {
         case "-d" => globalOptions.DEBUG = true
         case "-p" => globalOptions.PARANOID =  true
         case "-h" | "-help" => printUsage()
-        case "f" => globalOptions.FORMULAS = true
+        case "-f" => globalOptions.FORMULAS = true
         case "-surrender" => globalOptions.SURRENDER = true
         case "-te" => globalOptions.THROW_EXCEPTIONS = true
         
