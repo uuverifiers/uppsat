@@ -57,12 +57,12 @@ trait SmallFloatsCodec extends SmallFloatsCore with PostOrderCodec {
    * 
    * @return sort scaled down according to p 
 	 */
-  def scaleSort(ast : AST, p : Int) = {
+  def scaleSort(ast : AST, p : Int, encodedChildren : List[AST]) = {
     val AST(symbol, label, children) = ast
     val sort = symbol.sort
     symbol match {
       case _ : FloatingPointPredicateSymbol =>
-        val childrenSorts = children.map(_.symbol.sort) 
+        val childrenSorts = encodedChildren.map(_.symbol.sort) 
         childrenSorts.foldLeft(childrenSorts.head)(fpsortMaximum)
    
       case _ : FloatingPointFunctionSymbol =>
@@ -136,7 +136,7 @@ trait SmallFloatsCodec extends SmallFloatsCore with PostOrderCodec {
    *  @return ast encoded according to precision.
    */
   def encodeNode(ast : AST, encodedChildren : List[AST], precision : Int) : AST = {
-    val sort = scaleSort(ast, precision)
+    val sort = scaleSort(ast, precision, encodedChildren)
     val children = encodedChildren.map(cast(_, sort))
     val symbol = encodeSymbol(ast.symbol, sort, children)
     AST(symbol, ast.label, children)

@@ -68,8 +68,10 @@ class Z3Solver(name : String = "Z3", val checkSatCmd : String = "(check-sat)") e
     }
     process.waitFor();
     val exitValue = process.exitValue()
-    if (exitValue != 0) 
+    if (exitValue != 0) {
+      println(result.mkString("\n"))
       throw new Exception("[" + name + "] Exited with a non-zero value")
+    }
     result.mkString("\n")
   }
  
