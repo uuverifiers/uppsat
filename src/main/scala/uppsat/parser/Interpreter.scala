@@ -456,9 +456,10 @@ object Interpreter {
     
     // TODO: This could be more than 2 arguments!
     case PlainSymbol("and") => {
-      if (args.length > 2)
-        throw new SMTParserException("and with more than 2 arguments...")
-      uppsat.ast.AST(BoolConjunction, List(translateTerm(args(0)), translateTerm(args(1))))
+      val argCount = args.length
+      val transArgs = args.map(translateTerm)
+      val symbol = naryConjunction(argCount)
+      uppsat.ast.AST(symbol, transArgs.toList)  
     }
     
     // TODO: This could be more than 2 arguments!
