@@ -39,9 +39,21 @@ class Environment {
   
   // Pushes the bindings and returns a list with new symbols that should be used
   def pushLet(bindings : List[(String, AST)]) = {
+    val specialChars = "#:"
     val tmp = 
       for ((name, ast) <- bindings) yield {
-        val newVarName = "let" + letSuffix + "_" + name
+        // First strip any surrounding |
+        val stripName =
+          if (name.startsWith("|") && name.endsWith("|"))
+            name.substring(1, name.length - 1)
+          else
+            name
+        val letName = "let" + letSuffix + "_" + stripName 
+        val newVarName = 
+          if (name.exists(specialChars.contains(_))) 
+            "|" + letName + "|"
+          else
+            letName
         letSuffix += 1
         
         val newVar = 

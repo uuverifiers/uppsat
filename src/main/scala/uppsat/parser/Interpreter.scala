@@ -120,7 +120,9 @@ object Interpreter {
         val bindings = (for (b <- t.listbindingc_) yield {
           val binding = b.asInstanceOf[Binding]
           val boundTerm = translateTerm(binding.term_)
-          (asString(binding.symbol_), boundTerm)
+          val fullname = asString(binding.symbol_)
+          val name = fixName(fullname)
+          (name, boundTerm)
         }).toList
         myEnv.pushLet(bindings)
         val ast = translateTerm(t.term_)
@@ -187,7 +189,13 @@ object Interpreter {
     }
   }
 
- 
+  def fixName(name : String) = {
+    val specialChars = "#:"
+    if (name.exists(specialChars.contains(_))) 
+      "|" + name + "|"
+    else
+      name
+  }
 
   private def parse(cmd : Command) : Unit = cmd match {
     
@@ -227,7 +235,7 @@ object Interpreter {
       
     case cmd : FunctionDeclCommand => {
       val fullname = asString(cmd.symbol_)
-      val name = if (fullname contains ':') "|" + fullname + "|" else fullname
+      val name = fixName(fullname)
       cmd.mesorts_ match {
         case _ : NoSorts => {
           val res = translateSort(cmd.sort_) 
@@ -251,7 +259,7 @@ object Interpreter {
             }
           }
 
-          myEnv.addSymbol(fullname, symbol)
+          myEnv.addSymbol(name, symbol)
         }
         case _ => throw new SMTParserException("Function Declaration with arguments unsupported")
       }
@@ -260,7 +268,8 @@ object Interpreter {
   //     //////////////////////////////////////////////////////////////////////////
 
     case cmd : ConstDeclCommand => {
-      val name = asString(cmd.symbol_)
+      val fullname = asString(cmd.symbol_)
+      val name = fixName(fullname)
       val res = translateSort(cmd.sort_)
 
       val symbol = 
@@ -278,7 +287,7 @@ object Interpreter {
 
      case cmd : FunctionDefCommand => {       
        val fullname = asString(cmd.symbol_)
-       val name = if (fullname contains ':') "|" + fullname + "|" else fullname
+       val name = fixName(fullname)
        if (!cmd.listesortedvarc_.isEmpty) {
          throw new SMTParserException("Function Definitions with arguments unsupported")
        } else {
@@ -864,7 +873,9 @@ object Interpreter {
     // Declared symbols from the environment
     case id => {
       // TODO: We should maybe not use strings as IDs?
-      (myEnv.findSymbol(asString(id)), myEnv.findDefinition(asString(id))) match {
+      val fullname = asString(id)
+      val name = fixName(fullname)
+      (myEnv.findSymbol(name), myEnv.findDefinition(name)) match {
         case (Some(symbol), _) =>
           uppsat.ast.Leaf(symbol)
         case (_, Some(ast)) => ast
