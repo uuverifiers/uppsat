@@ -156,21 +156,19 @@ trait SmallFloatsCodec extends SmallFloatsCore with PostOrderCodec {
         fp.getFactory match {
           case _ : FPSpecialValuesFactory => fp(FPSort(e, s))          
           case _ if !fp.eBits.contains(1) => {
-            println(symbol + " " + fp)
-            val significantDigits = fp.sBits.dropWhile(x => x == 0)
-            val pre = fp.sBits.length - significantDigits.length
-            val sBits = significantDigits.tail ::: List.fill(s - significantDigits.length)(0)  
-            val ebw = fp.eBits.length            
-            val actualExp = - bias(ebw) - pre
-            val eBits = biasExp(intToBits(actualExp, e), e)                       
+            val sPrefix = fp.sBits.dropWhile(_ == 0)            
+            val eUnderflow = fp.sBits.length - sPrefix.length
+            val sBits = sPrefix.tail ::: List.fill(s - sPrefix.length)(0)  
+            val exp = - bias(fp.eBits.length) - eUnderflow
+            val eBits = biasExp(intToBits(exp, e), e)                       
             FloatingPointLiteral(fp.sign, eBits, sBits, FPSort(e,s))
           }
           case _ => {
             val exp = unbiasExp(fp.eBits, fp.eBits.length)
-            val paddedEBits = biasExp(exp, e)
+            val eBits = biasExp(exp, e)
             val missing = (s - 1) - fp.sBits.length
-            val paddedSBits = fp.sBits ::: List.fill(missing)(0)
-            FloatingPointLiteral(fp.sign, paddedEBits, paddedSBits, FPSort(e, s))
+            val sBits = fp.sBits ::: List.fill(missing)(0)
+            FloatingPointLiteral(fp.sign, eBits, sBits, FPSort(e, s))
           }
         }
       }      
