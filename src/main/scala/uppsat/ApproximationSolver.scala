@@ -86,11 +86,6 @@ object ApproximationSolver {
       
       verbose("Validating model ...")
 
-//      TODO: (Aleks?) Align models and sorts somehow... What does this mean?
-//      verbose("Model comparison : ")
-//      if (globalOptions.VERBOSE)
-//        encodedFormula.ppWithModels("", appModel, reconstructedModel)
- 
       if (ModelEvaluator.valAST(formula, assignments.toList, approximation.inputTheory, smtSolver)) {
         val extModel =
           for ((symbol, value) <- reconstructedModel.getModel) yield {
@@ -104,6 +99,7 @@ object ApproximationSolver {
         } else {
           verbose("Model reconstruction failed: refining precision")       
           if (globalOptions.VERBOSE) {
+            println("Comparing decoded Model with reconstructed Model:")
             formula.ppWithModels("->", decodedModel, reconstructedModel)
           }
           val newPmap = approximation.satRefine(formula, decodedModel, reconstructedModel, pmap)

@@ -160,12 +160,12 @@ trait SmallFloatsCodec extends SmallFloatsCore with PostOrderCodec {
             val eUnderflow = fp.sBits.length - sPrefix.length
             val sBits = sPrefix.tail ::: List.fill(s - sPrefix.length)(0)  
             val exp = - bias(fp.eBits.length) - eUnderflow
-            val eBits = biasExp(intToBits(exp, e), e)                       
+            val eBits = intToBits(biasExp(exp, e), e)                       
             FloatingPointLiteral(fp.sign, eBits, sBits, FPSort(e,s))
           }
           case _ => {
             val exp = unbiasExp(fp.eBits, fp.eBits.length)
-            val eBits = biasExp(exp, e)
+            val eBits = intToBits(biasExp(exp, e), e)
             val missing = (s - 1) - fp.sBits.length
             val sBits = fp.sBits ::: List.fill(missing)(0)
             FloatingPointLiteral(fp.sign, eBits, sBits, FPSort(e, s))

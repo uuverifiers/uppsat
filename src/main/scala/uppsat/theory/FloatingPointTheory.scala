@@ -704,16 +704,16 @@ def floatFPEquality(left : AST, right : AST) =
     exp + bias(expBitWidth)
   }
   
-  def biasExp(exp : List[Int], expBitWidth : Int) : List[Int] = {
-   intToBits(biasExp(bitsToInt(exp), expBitWidth), expBitWidth)
+  def biasExp(exp : List[Int], expBitWidth : Int) : Int = {
+   biasExp(bitsToInt(exp), expBitWidth)
   }
   
   def unbiasExp(exp : Int, expBitWidth : Int) : Int = {
-    exp - bias(expBitWidth)
+    exp - bias(expBitWidth) 
   }
   
-   def unbiasExp(exp : List[Int], expBitWidth : Int) : List[Int] = {
-   intToBits(unbiasExp(bitsToInt(exp), expBitWidth), expBitWidth)
+   def unbiasExp(exp : List[Int], expBitWidth : Int) : Int = {
+   unbiasExp(bitsToInt(exp), expBitWidth)
   }
   
   /** Returns a FloatingPointSymbol which corresponds to the ULP of given fpValue
