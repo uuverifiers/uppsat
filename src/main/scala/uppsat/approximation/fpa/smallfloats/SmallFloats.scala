@@ -155,15 +155,21 @@ trait SmallFloatsCodec extends SmallFloatsCore with PostOrderCodec {
       case (FPSort(e, s), fp : FloatingPointLiteral) => {
         fp.getFactory match {
           case _ : FPSpecialValuesFactory => fp(FPSort(e, s))          
+          case _ if !fp.eBits.contains(1) => {
+            println(symbol + " " + fp)
+            val significantDigits = fp.sBits.dropWhile(x => x == 0)
+            val pre = fp.sBits.length - significantDigits.length
+            val sBits = significantDigits.tail ::: List.fill(s - significantDigits.length)(0)  
+            val ebw = fp.eBits.length            
+            val actualExp = - bias(ebw) - pre
+            val eBits = biasExp(intToBits(actualExp, e), e)                       
+            FloatingPointLiteral(fp.sign, eBits, sBits, FPSort(e,s))
+          }
           case _ => {
-            // When padding exponent, we retain the bias bit in the first position,
-            // pad with negation of the bias bit and retain the value of the small exponent.
-            val biasBit = fp.eBits.head
-            val missingEBits = e - fp.eBits.length
-            val paddedEBits = biasBit :: List.fill(missingEBits)(1 - biasBit) ++ fp.eBits.tail
-            // Padding significant is trivial, just adding the zero bits in lowest positions 
-            val missingSBits = (s - 1) - fp.sBits.length
-            val paddedSBits = fp.sBits ++ List.fill(missingSBits)(0)
+            val exp = unbiasExp(fp.eBits, fp.eBits.length)
+            val paddedEBits = biasExp(exp, e)
+            val missing = (s - 1) - fp.sBits.length
+            val paddedSBits = fp.sBits ::: List.fill(missing)(0)
             FloatingPointLiteral(fp.sign, paddedEBits, paddedSBits, FPSort(e, s))
           }
         }
@@ -263,11 +269,9 @@ trait SmallFloatsRefinementStrategy extends SmallFloatsCore
 object IJCARSmallFloatsApp extends SmallFloatsCore 
                               with SmallFloatsCodec
                               with EqualityAsAssignmentReconstruction
-                              with SmallFloatsRefinementStrategy {
-}
+                              with SmallFloatsRefinementStrategy 
 
 object FxPntSmallFloatsApp extends SmallFloatsCore 
                               with SmallFloatsCodec
                               with FixpointReconstruction
-                              with SmallFloatsRefinementStrategy {
-}
+                              with SmallFloatsRefinementStrategy 
