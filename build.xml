@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- WARNING: Eclipse auto-generated file.
+              Any modifications will be overwritten.
+              To include a user specific buildfile here, simply create one in the same
+              directory with the processing instruction <?eclipse.ant.import?>
+              as the first entry and export the buildfile again. --><project basedir="." default="build" name="uppsat">
+    <property environment="env"/>
+    <property name="ECLIPSE_HOME" value="../../eclipse/"/>
+    <property name="debuglevel" value="source,lines,vars"/>
+    <property name="target" value="1.8"/>
+    <property name="source" value="1.8"/>
+    <path id="Scala Library container [ 2.10.6 ].libraryclasspath">
+        <pathelement location="${ECLIPSE_HOME}plugins/org.scala-ide.scala210.jars_4.4.1.201605041056/target/jars/scala-library.jar"/>
+        <pathelement location="${ECLIPSE_HOME}plugins/org.scala-ide.scala210.jars_4.4.1.201605041056/target/jars/scala-reflect.jar"/>
+        <pathelement location="${ECLIPSE_HOME}plugins/org.scala-ide.scala210.jars_4.4.1.201605041056/target/jars/scala-swing.jar"/>
+    </path>
+    <path id="uppsat.classpath">
+        <pathelement location="bin"/>
+        <pathelement location="lib/parser.jar"/>
+        <pathelement location="lib/smt-parser.jar"/>
+        <pathelement location="lib/java-cup-11a.jar"/>
+        <path refid="Scala Library container [ 2.10.6 ].libraryclasspath"/>
+    </path>
+    <path id="run.New_configuration (1).bootclasspath">
+        <path refid="Scala Library container [ 2.10.6 ].libraryclasspath"/>
+        <fileset dir="${java.home}/lib" includes="*.jar"/>
+        <fileset dir="${java.home}/lib/ext" includes="*.jar"/>
+    </path>
+    <target name="init">
+        <mkdir dir="bin"/>
+        <copy includeemptydirs="false" todir="bin">
+            <fileset dir="src/main/scala">
+                <exclude name="**/*.java"/>
+            </fileset>
+        </copy>
+    </target>
+    <target name="clean">
+        <delete dir="bin"/>
+    </target>
+    <target depends="clean" name="cleanall"/>
+    <target depends="build-subprojects,build-project" name="build"/>
+    <target name="build-subprojects"/>
+    <target depends="init" name="build-project">
+        <echo message="${ant.project.name}: ${ant.file}"/>
+        <javac debug="true" debuglevel="${debuglevel}" destdir="bin" includeantruntime="false" source="${source}" target="${target}">
+            <src path="src/main/scala"/>
+            <classpath refid="uppsat.classpath"/>
+        </javac>
+    </target>
+    <target description="Build all projects which reference this project. Useful to propagate changes." name="build-refprojects"/>
+    <target description="copy Eclipse compiler jars to ant lib directory" name="init-eclipse-compiler">
+        <copy todir="${ant.library.dir}">
+            <fileset dir="${ECLIPSE_HOME}/plugins" includes="org.eclipse.jdt.core_*.jar"/>
+        </copy>
+        <unzip dest="${ant.library.dir}">
+            <patternset includes="jdtCompilerAdapter.jar"/>
+            <fileset dir="${ECLIPSE_HOME}/plugins" includes="org.eclipse.jdt.core_*.jar"/>
+        </unzip>
+    </target>
+    <target description="compile project with Eclipse compiler" name="build-eclipse-compiler">
+        <property name="build.compiler" value="org.eclipse.jdt.core.JDTCompilerAdapter"/>
+        <antcall target="build"/>
+    </target>
+    <target name="New_configuration (1)">
+        <java classname="" failonerror="true" fork="yes">
+            <classpath refid="uppsat.classpath"/>
+            <bootclasspath>
+                <path refid="run.New_configuration (1).bootclasspath"/>
+            </bootclasspath>
+        </java>
+    </target>
+</project>
