@@ -145,10 +145,10 @@ case class AST(val symbol : ConcreteFunctionSymbol, val label : Label, val child
     for (c <- children) (c prettyPrint newIndent)
   }
   
-  def ppWithModels(indent : String, smallModel : Model, bigModel : Model) : Unit = {
+  def ppWithModels(indent : String, smallModel : Model, bigModel : Model, diff : Boolean = true) : Unit = {
     val newIndent = indent + "   "
     this.symbol.sort match {
-      case BooleanSort if (smallModel(this) == bigModel(this)) => ()
+      case BooleanSort if (diff && (smallModel(this) == bigModel(this))) => ()
       case _ => { 
           println(indent + symbol + " [" + label.mkString(",") + "] //" + symbol.sort + " " + smallModel(this).symbol + " -> " + bigModel(this).symbol)
           for (c <- children) (c ppWithModels(newIndent, smallModel, bigModel) )

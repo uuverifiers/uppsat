@@ -1,6 +1,8 @@
 package uppsat.approximation.reconstruction
 
+import uppsat.globalOptions._
 import uppsat.ast.AST
+import uppsat.ast.IndexedFunctionSymbol
 
 import uppsat.ModelEvaluator
 import uppsat.ModelEvaluator.Model
@@ -14,7 +16,7 @@ import uppsat.theory.FloatingPointTheory.FPPredicateSymbol
 import uppsat.theory.FloatingPointTheory.FPEqualityFactory
 import uppsat.theory.FloatingPointTheory.FPFPEqualityFactory
 import uppsat.theory.FloatingPointTheory.FPSortFactory.FPSort
-import uppsat.ast.IndexedFunctionSymbol
+
 
 trait EqualityAsAssignmentReconstruction extends PostOrderReconstruction {
   
@@ -27,10 +29,12 @@ trait EqualityAsAssignmentReconstruction extends PostOrderReconstruction {
         case (true, true) => {
           (lhsDefined, rhsDefined) match {
             case (false, true) => {
+              verbose(">> " + lhs.symbol + " " + lhs.label + " " + " <- " + candidateModel(rhs).symbol + "/" + rhs.symbol + " " + rhs.label + "/")  
               candidateModel.set(lhs, candidateModel(rhs))
               true
             }
             case (true, false) => {
+              verbose(">> " + rhs.symbol + " " + rhs.label + " " + " <- " + candidateModel(lhs).symbol + "/" + lhs.symbol + " " + lhs.label + "/")
               candidateModel.set(rhs, candidateModel(lhs))
               true
             }
@@ -43,10 +47,12 @@ trait EqualityAsAssignmentReconstruction extends PostOrderReconstruction {
           }
         }
         case (true, false) if (!lhsDefined) => {
+          verbose(">> " + lhs.symbol + " " + lhs.label + " " + " <- " + candidateModel(rhs).symbol + "/" + rhs.symbol + " " + rhs.label + "/")
           candidateModel.set(lhs, candidateModel(rhs))
           true
         }
         case (false, true) if (!rhsDefined) =>{
+          verbose(">> " + rhs.symbol + " " + rhs.label + " " + " <- " + candidateModel(lhs).symbol + "/" + lhs.symbol + " " + lhs.label + "/")
           candidateModel.set(rhs, candidateModel(lhs))
           true
         }
@@ -76,6 +82,7 @@ trait EqualityAsAssignmentReconstruction extends PostOrderReconstruction {
         false
       }
     if (ret) {
+      verbose("> " + ast.symbol + " " + ast.label + " " + " <- " + BoolTrue)
       candidateModel.set(ast, BoolTrue)
     }
     ret
@@ -90,7 +97,11 @@ trait EqualityAsAssignmentReconstruction extends PostOrderReconstruction {
 
       val newAST = AST(symbol, label, newChildren.toList)
       val newValue = ModelEvaluator.evalAST(newAST, inputTheory)
-      candidateModel.set(ast, newValue)
+      println("-----------------")
+      verbose(ast.symbol + " " + ast.label + " " + " <- " + newValue.symbol)
+      candidateModel.set(ast, newValue)      
+//      ast.ppWithModels("", decodedModel, candidateModel, false)
+//      println("-----------------")
     }
     candidateModel
   }
