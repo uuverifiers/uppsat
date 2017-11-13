@@ -48,19 +48,20 @@ class Z3Solver(name : String = "Z3", val checkSatCmd : String = "(check-sat)") e
     
     val outReader = new BufferedReader(new InputStreamReader (stdout))
     var result = List() : List[String] 
-    val errorPattern = ".*error.*".r
     val toPattern = ".*timeout.*".r
+    // TODO: Maybe restore the errorPattern but excluding model calls
+    
     
     var line = outReader.readLine()
     while (line != null) {
       line match { 
-        case errorPattern() =>  {
-          import java.io._
-          val pw = new PrintWriter(new File("error.smt2"))
-          pw.write(formula)
-          pw.close
-          throw new Z3Exception(line)
-        }
+//        case errorPattern() =>  {
+//          import java.io._
+//          val pw = new PrintWriter(new File("error.smt2"))
+//          pw.write(formula)
+//          pw.close
+//          throw new Z3Exception(line)
+//        }
         case toPattern() => throw new TimeoutException("Z3Solver.evaluate")
         case other => result = result ++ List(other)        
       }
@@ -68,10 +69,10 @@ class Z3Solver(name : String = "Z3", val checkSatCmd : String = "(check-sat)") e
     }
     process.waitFor();
     val exitValue = process.exitValue()
-    if (exitValue != 0) {
-      println(result.mkString("\n"))
-      throw new Exception("[" + name + "] Exited with a non-zero value")
-    }
+//    if (exitValue != 0) {
+//      println(result.mkString("\n"))
+//      throw new Exception("[" + name + "] Exited with a non-zero value")
+//    }
     result.mkString("\n")
   }
  
@@ -81,6 +82,7 @@ class Z3Solver(name : String = "Z3", val checkSatCmd : String = "(check-sat)") e
     lines.head.trim() match {
       case "timeout" => throw new TimeoutException("Z3solver")
       case "sat" => Some((extractSymbols zip lines.tail).toMap)
+      case "unsat" => None
       case result => throw new Exception("Trying to get model from non-sat result (" + result + ")") 
     }
   }
@@ -88,7 +90,7 @@ class Z3Solver(name : String = "Z3", val checkSatCmd : String = "(check-sat)") e
   def getStringModel(formula : String, extractSymbols : List[String]) = {
     val extendedFormula = formula + "\n" + checkSatCmd + (extractSymbols.map("(eval " + _ + ")").mkString("\n", "\n", ""))
     val result = evaluate(extendedFormula)
-    parseOutput(result, extractSymbols).get    
+    parseOutput(result, extractSymbols)   
   }
   
   def checkSat(formula : String) : Boolean = {

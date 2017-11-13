@@ -1,6 +1,7 @@
 package uppsat.solver;
 
 import java.io.ByteArrayInputStream;
+import uppsat.Timer.TimeoutException
 import sys.process._
 import scala.sys.process.stringToProcess
 import uppsat.solver._
@@ -120,18 +121,18 @@ class Z3OnlineSolver(checkSatCmd : String = "(check-sat)\n") extends SMTSolver {
   
   def parseOutput(output : String, extractSymbols : List[String]) : Option[Map[String, String]] = {
     val lines = output.split("\n")
-    val result = lines.head.trim()
-    if (result != "sat")
-      throw new Exception("Trying to get model from non-sat result (" + result + ")")
-    
-    val model = (extractSymbols zip lines.tail).toMap
-    Some(model)
+    lines.head.trim() match {
+      case "timeout" => throw new TimeoutException("Z3solver")
+      case "sat" => Some((extractSymbols zip lines.tail).toMap)
+      case "unsat" => None
+      case result => throw new Exception("Trying to get model from non-sat result (" + result + ")") 
+    }
   }
   
   def getStringModel(formula : String, extractSymbols : List[String]) = {
     val extendedFormula = formula + "\n" + checkSatCmd + (extractSymbols.map("(eval " + _ + ")").mkString("\n", "\n", ""))
     val result = evaluate(extendedFormula)
-    parseOutput(result, extractSymbols).get    
+    parseOutput(result, extractSymbols)    
   }
   
   def checkSat(formula : String) : Boolean = {

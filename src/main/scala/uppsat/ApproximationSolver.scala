@@ -71,8 +71,9 @@ object ApproximationSolver {
     val smtSolver = globalOptions.getBackendSolver
     
     def tryReconstruct(encodedFormula : AST, encodedSMT : String) : (Option[ExtModel], Option[PrecisionMap[approximation.P]]) = Timer.measure("tryReconstruct") {
+      // MAJORTODO : getstringmodel called?
       val stringModel = smtSolver.getStringModel(encodedSMT, translator.getDefinedSymbols.toList)
-      val appModel = translator.getModel(encodedFormula, stringModel)
+      val appModel = translator.getModel(encodedFormula, stringModel.get)
       
       verbose("Decoding model ... ")
       val decodedModel = approximation.decodeModel(formula, appModel, pmap)
@@ -165,9 +166,9 @@ object ApproximationSolver {
         
         val validator = globalOptions.getValidator  
         val smtFormula = translator.translate(formula)
-        if (validator.checkSat(smtFormula)) {
-          val stringModel = validator.getStringModel(smtFormula, translator.getDefinedSymbols.toList)
-          val model = translator.getModel(formula, stringModel) 
+        val stringModel = validator.getStringModel(smtFormula, translator.getDefinedSymbols.toList) 
+        if (stringModel.isDefined) {
+          val model = translator.getModel(formula, stringModel.get) 
           val extModel =
               for ((symbol, value) <- model.getModel) yield {
               (symbol, value.symbol.theory.symbolToSMTLib(value.symbol) )
