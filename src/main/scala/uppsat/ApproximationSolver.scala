@@ -157,7 +157,12 @@ object ApproximationSolver {
           println("Surrendering")
           return Unknown
         }
-          
+        
+        if (globalOptions.DEADLINE.isDefined)
+          println("Full precision search (" + ((globalOptions.remainingTime.get) / 1000.0).ceil.toInt + " seconds left)")
+        else
+          println("Full precision search")          
+        
         val validator = globalOptions.getValidator  
         val smtFormula = translator.translate(formula)
         if (validator.checkSat(smtFormula)) {
