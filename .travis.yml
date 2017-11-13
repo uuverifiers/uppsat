@@ -14,5 +14,5 @@ before_install:
     - echo "(exit)" > test.smt2
     - export PATH=$PATH:`pwd`
     - z3-4.5.0 -smt2 test.smt2
-    - mathsat.master -smt2 test.smt2
+    - mathsat.master test.smt2
     - cd ..
