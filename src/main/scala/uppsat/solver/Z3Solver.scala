@@ -81,6 +81,7 @@ class Z3Solver(name : String = "Z3", val checkSatCmd : String = "(check-sat)") e
     lines.head.trim() match {
       case "timeout" => throw new TimeoutException("Z3solver")
       case "sat" => Some((extractSymbols zip lines.tail).toMap)
+      case "unsat" => None
       case result => throw new Exception("Trying to get model from non-sat result (" + result + ")") 
     }
   }
@@ -88,7 +89,7 @@ class Z3Solver(name : String = "Z3", val checkSatCmd : String = "(check-sat)") e
   def getStringModel(formula : String, extractSymbols : List[String]) = {
     val extendedFormula = formula + "\n" + checkSatCmd + (extractSymbols.map("(eval " + _ + ")").mkString("\n", "\n", ""))
     val result = evaluate(extendedFormula)
-    parseOutput(result, extractSymbols).get    
+    parseOutput(result, extractSymbols)   
   }
   
   def checkSat(formula : String) : Boolean = {

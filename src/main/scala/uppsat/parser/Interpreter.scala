@@ -676,12 +676,19 @@ object Interpreter {
             }
         }
       }      
+
+
       val transArgs = args.map(bitTermToBitList)
       val signBit = transArgs(0)(0)
       val eBits = transArgs(1)
       val sBits = transArgs(2)
       val fpsort = uppsat.theory.FloatingPointTheory.FPSortFactory(List(eBits.length, sBits.length+1))
-      uppsat.ast.Leaf(uppsat.theory.FloatingPointTheory.FloatingPointLiteral(signBit, eBits, sBits, fpsort))
+      if (!eBits.contains(1) && !sBits.contains(1)) {
+        val value = FloatingPointTheory.FPPositiveZero(fpsort)
+        uppsat.ast.AST(value, List())
+      } else {
+        uppsat.ast.Leaf(uppsat.theory.FloatingPointTheory.FloatingPointLiteral(signBit, eBits, sBits, fpsort))
+      }
     }
     
 

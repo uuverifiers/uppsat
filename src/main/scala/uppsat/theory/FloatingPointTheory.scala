@@ -40,6 +40,8 @@ object FloatingPointTheory extends Theory {
 
   object FloatingPointLiteral {
     def apply(sign : Int, eBits : List[Int], sBits : List[Int], sort : FPSort) : FloatingPointLiteral = {
+      if (!eBits.contains(1) && !sBits.contains(1))
+        throw new FloatingPointTheoryException("Trying to create 0 with ConstantFactory")
       val newFactory = new FPConstantFactory(sign, eBits, sBits)
       if (sort.eBitWidth != eBits.length || sort.sBitWidth != sBits.length + 1) {
         throw new Exception("Creating literal with wrong sort? " + sort + ", " + eBits + ", " + sBits)

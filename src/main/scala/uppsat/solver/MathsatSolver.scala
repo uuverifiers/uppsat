@@ -114,18 +114,24 @@ class MathSatSolver(name : String = "MathSAT", params : String = "") extends SMT
   def parseOutput(output : String, extractSymbols : List[String]) : Option[Map[String, String]] = {
     val lines = output.split("\n")
     val result = lines.head.trim()
-    if (result != "sat")
-      throw new Exception("Trying to get model from non-sat result (" + result + ")")
-    
-    mathsatPrint("Model:\n\t" + lines.mkString("\n\t"))
-    val model = lines.tail.map(valueExtractor(_)).filter(_._1 != "").toMap //.head is "sat"
-    Some(model)
+    result match {
+      case "sat" => {
+        if (result != "sat")
+          throw new Exception("Trying to get model from non-sat result (" + result + ")")
+        
+        mathsatPrint("Model:\n\t" + lines.mkString("\n\t"))
+        val model = lines.tail.map(valueExtractor(_)).filter(_._1 != "").toMap //.head is "sat"
+        Some(model)
+      }
+      case "unsat" => None
+      case other => throw new Exception("Strange Mathsat return value: " + other)
+    }
   }
   
   def getStringModel(formula : String, extractSymbols : List[String]) = {
     val extendedFormula = formula // + (extractSymbols.map("(eval " + _ + ")").mkString("\n", "\n", ""))
     val result = evaluate(extendedFormula)
-    parseOutput(result, extractSymbols).get    
+    parseOutput(result, extractSymbols)  
   }
   
   def checkSat(formula : String) : Boolean = {
