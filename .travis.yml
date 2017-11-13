@@ -7,11 +7,12 @@ os:
     - linux
     
 before_install: 
-    - mkdir solvers
-    - cd solvers
-    - wget http://user.it.uu.se/~aleze648/z3/z3    
+    - wget http://user.it.uu.se/~petba168/z3-4.5.0
+    - wget http://user.it.uu.se/~petba168/mathsat.master    
     - chmod u+=x z3
+    - chmod u+=x mathsat.master    
     - echo "(exit)" > test.smt2
     - export PATH=$PATH:`pwd`
     - z3 -smt2 test.smt2
+    - mathsat.master -smt2 test.smt2
     - cd ..
