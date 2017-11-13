@@ -9,8 +9,8 @@ os:
 before_install: 
     - wget http://user.it.uu.se/~petba168/z3-4.5.0
     - wget http://user.it.uu.se/~petba168/mathsat.master    
-    - chmod u+=x z3
-    - chmod u+=x mathsat.master    
+    - chmod u+=x z3-4.5.0
+    - chmod u+=x mathsat.master
     - echo "(exit)" > test.smt2
     - export PATH=$PATH:`pwd`
     - z3 -smt2 test.smt2
