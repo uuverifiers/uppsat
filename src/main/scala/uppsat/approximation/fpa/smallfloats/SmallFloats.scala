@@ -62,7 +62,7 @@ trait SmallFloatsCodec extends SmallFloatsCore with PostOrderCodec {
     val sort = symbol.sort
     symbol match {
       case _ : FloatingPointPredicateSymbol =>
-        val childrenSorts = encodedChildren.map(_.symbol.sort) 
+        val childrenSorts = encodedChildren.filterNot(x => FloatingPointTheory.isLiteral(x.symbol)).map(_.symbol.sort) 
         childrenSorts.foldLeft(childrenSorts.head)(fpsortMaximum)
    
       case _ : FloatingPointFunctionSymbol =>
