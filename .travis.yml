@@ -5,7 +5,7 @@ scala:
   
 os:
     - linux
-    
+
 before_install: 
     - wget http://user.it.uu.se/~petba168/z3-4.5.0
     - wget http://user.it.uu.se/~petba168/mathsat.master    
@@ -16,3 +16,6 @@ before_install:
     - z3-4.5.0 -smt2 test.smt2
     - mathsat.master test.smt2
     - cd ..
+
+script:
+    - sbt compile
