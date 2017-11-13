@@ -149,7 +149,14 @@ object Interpreter {
         
         // TODO: Should this be 53,11 or 52,11?
         val fpsort = FPSortFactory(List(11, 53))
-        uppsat.ast.Leaf(FloatingPointTheory.FloatingPointLiteral(sign.toInt, eBits, sBits, fpsort))
+        
+        // MAJORTODO
+        if (!eBits.contains(1) && !sBits.contains(1)) {
+          val value = FloatingPointTheory.FPPositiveZero(fpsort)
+          uppsat.ast.AST(value, List())
+        } else {
+          uppsat.ast.Leaf(uppsat.theory.FloatingPointTheory.FloatingPointLiteral(sign.toInt, eBits, sBits, fpsort))
+        }
       }
         
       case c : RatConstant => {
