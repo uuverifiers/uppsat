@@ -43,8 +43,6 @@ z3
 
 *.gz
 
-*.smt2
-
 \.ensime_cache/
 
 \.ensime
@@ -52,3 +50,17 @@ z3
 output
 
 uppsat\.jar
+
+sat/
+
+benchmarks/benchmarks/
+
+benchmarks/
+
+bmc-bv/
+
+errors/
+
+esbmc/
+
+lexerror/
