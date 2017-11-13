@@ -35,13 +35,9 @@ trait EqualityAsAssignmentReconstruction extends PostOrderReconstruction {
               true
             }
             case (false, false) => {
-              println("trySet: " + lhs + " := "  + rhs)              
-              println("\t\tCase 1.3")
               false
             }
             case (true, true) => {
-              println("trySet: " + lhs + " := "  + rhs)              
-              println("\t\tCase 1.4")
               false
             }
           }
@@ -55,8 +51,6 @@ trait EqualityAsAssignmentReconstruction extends PostOrderReconstruction {
           true
         }
         case (_, _) => {
-          println("trySet: " + lhs + " := "  + rhs)          
-          println("\tCase 4 " + ((lhsDefined, rhsDefined)))
           false
         }
     }
@@ -76,8 +70,7 @@ trait EqualityAsAssignmentReconstruction extends PostOrderReconstruction {
             else
               false
           case BoolEquality => trySet(ast.children(0), ast.children(1), candidateModel)
-          case BoolNegation | _ : NaryConjunction => false
-          case other => throw new Exception("Unhandled Bool expresion in equalityAsAsssignment: " + other)
+          case other => false
         } 
       } else {
         false
@@ -97,7 +90,6 @@ trait EqualityAsAssignmentReconstruction extends PostOrderReconstruction {
 
       val newAST = AST(symbol, label, newChildren.toList)
       val newValue = ModelEvaluator.evalAST(newAST, inputTheory)
-      println("\t" + newValue)
       candidateModel.set(ast, newValue)
     }
     candidateModel
