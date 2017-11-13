@@ -15,7 +15,3 @@ before_install:
     - export PATH=$PATH:`pwd`
     - z3-4.5.0 -smt2 test.smt2
     - mathsat.master test.smt2
-    - cd ..
-
-script:
-    - sbt compile
