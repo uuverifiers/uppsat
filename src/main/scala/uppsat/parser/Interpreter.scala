@@ -147,7 +147,6 @@ object Interpreter {
         val eBits = allBits.tail.take(11).map(_.toInt).toList
         val sBits = allBits.tail.drop(11).map(_.toInt).toList
         
-        // TODO: Should this be 53,11 or 52,11?
         val fpsort = FPSortFactory(List(11, 53))
         
         // MAJORTODO

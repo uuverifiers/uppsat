@@ -1,6 +1,8 @@
 package uppsat.approximation.reconstruction
 
 import uppsat.globalOptions._
+import uppsat.approximation.ModelReconstruction
+
 import uppsat.ast.AST
 import uppsat.ast.IndexedFunctionSymbol
 
@@ -17,8 +19,14 @@ import uppsat.theory.FloatingPointTheory.FPEqualityFactory
 import uppsat.theory.FloatingPointTheory.FPFPEqualityFactory
 import uppsat.theory.FloatingPointTheory.FPSortFactory.FPSort
 
+import uppsat.approximation.toolbox.Toolbox
 
-trait EqualityAsAssignmentReconstruction extends PostOrderReconstruction {
+import scala.collection.mutable.Queue
+import scala.collection.mutable.Stack
+import uppsat.theory.FloatingPointTheory.FloatingPointPredicateSymbol
+
+
+trait EqualityAsAssignmentReconstruction extends ModelReconstruction {
   
   def trySet(lhs : AST, rhs : AST, candidateModel : Model) : Boolean = {
     val lhsDefined = candidateModel.contains(lhs)
@@ -136,17 +144,64 @@ trait EqualityAsAssignmentReconstruction extends PostOrderReconstruction {
     val AST(symbol, label, children) = ast
     if (children.length > 0 && !equalityAsAssignment(ast, decodedModel, candidateModel)) {
       val newChildren = for ( c <- children) yield {
-        getCurrentValue(c, decodedModel, candidateModel)
+        Toolbox.getCurrentValue(c, decodedModel, candidateModel)
       }
 
+      
       val newAST = AST(symbol, label, newChildren.toList)
       val newValue = ModelEvaluator.evalAST(newAST, inputTheory)
-      println("-----------------")
-      verbose(ast.symbol + " " + ast.label + " " + " <- " + newValue.symbol)
+      //verbose(ast.symbol + " " + ast.label + " " + " <- " + newValue.symbol)
+      
       candidateModel.set(ast, newValue)      
 //      ast.ppWithModels("", decodedModel, candidateModel, false)
 //      println("-----------------")
     }
     candidateModel
   }
+  
+  def reconstructSubtree(ast : AST, decodedModel : Model, candidateModel : Model) : Model = {
+    AST.postVisit[Model, Model](ast, candidateModel, decodedModel, reconstructNode)
+    candidateModel
+  }
+  
+  
+  def reconstruct(ast : AST, decodedModel : Model) : Model = {
+    val candidateModel = new Model()
+    
+    val todo = new Stack[AST]()
+    val toEvaluateBoolean = new Stack[AST]()
+    val toReconstructPredicate = new Queue[AST]()
+    todo.push(ast)
+    
+     
+    
+    while (!todo.isEmpty) {
+      val nextItem = todo.pop()
+      (nextItem.symbol) match {
+        
+       case (RoundingModeEquality)| 
+            (FPEqualityFactory(_)) |
+            (FPFPEqualityFactory(_)) => {
+              nextItem.prettyPrint("-->")
+            reconstructSubtree(nextItem, decodedModel, candidateModel)
+        }
+        
+       case fpPred : FloatingPointPredicateSymbol => {
+         toReconstructPredicate += nextItem
+       }
+            
+       case _ if nextItem.symbol.sort == BooleanSort => {
+         toEvaluateBoolean.push(nextItem)
+          for (c <- nextItem.children)
+            todo.push(c)
+        }
+        
+      }
+    }
+    
+    toReconstructPredicate.map(reconstructSubtree(_, decodedModel, candidateModel))
+    toEvaluateBoolean.map(reconstructNode(decodedModel, candidateModel, _))
+    candidateModel
+    
+  }  
 }

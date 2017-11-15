@@ -101,4 +101,12 @@ object Toolbox {
 
     AST.boolVisit(ast, List(), boolCond, boolWork).toSet.toList
   }
+  
+  def getCurrentValue(ast : AST, decodedModel : Model, candidateModel : Model) : AST = {
+    if (! candidateModel.contains(ast)) {
+      verbose(ast.symbol + " " + ast.label + " " + " <- " + decodedModel(ast).symbol)
+      candidateModel.set(ast, decodedModel(ast))
+    }
+    candidateModel(ast)
+  }  
 }
