@@ -13,6 +13,7 @@ import uppsat.theory.RealTheory._
 import uppsat.ast.AST._
 
 object Leaf {
+  val height = 0
   def apply(symbol : ConcreteFunctionSymbol) = new AST(symbol, List(), List())
   def apply(d : ConcreteFunctionSymbol, label : Label ) = AST(d, label, List())
   def unapply(t : AST) : Option[(ConcreteFunctionSymbol, Label)] = t match {
@@ -61,7 +62,12 @@ def boolVisit[T]( ast : AST, accumulator : T, cond : (T, AST) => Boolean, work :
 }
 
 case class AST(val symbol : ConcreteFunctionSymbol, val label : Label, val children : List[AST]) {
-  
+  lazy val height : Int = if (children.isEmpty) 0 else (children.map(_.height).max + 1)
+  lazy val variableCount : Int = 
+    (if (symbol.theory.isVariable(symbol))
+      1
+    else
+      0) + children.map(_.variableCount).sum
   // Copied TREE, some of these functions might not make sense when we introduce more kinds of nodes
   // i.e., Quantifiers...
   

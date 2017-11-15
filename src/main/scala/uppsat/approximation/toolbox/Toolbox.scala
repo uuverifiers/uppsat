@@ -2,9 +2,15 @@ package uppsat.approximation.toolbox
 
 
 import uppsat.approximation._
+import scala.collection.mutable.{HashMap, MultiMap}
+
+
+
 import uppsat.theory.Theory
 import uppsat.ast.AST
+import scala.collection.mutable.Set
 import uppsat.ast.ConcreteSort
+import uppsat.ast.ConcreteFunctionSymbol
 import uppsat.precision.PrecisionOrdering
 import uppsat.precision.PrecisionMap
 import uppsat.ModelEvaluator.Model
@@ -15,9 +21,7 @@ import uppsat.theory.FloatingPointTheory
 import uppsat.theory.BooleanTheory._
 import uppsat.theory.BooleanTheory.BoolEquality
 import uppsat.theory.IntegerTheory.IntEquality
-import uppsat.theory.FloatingPointTheory.RoundingModeEquality
-import uppsat.theory.FloatingPointTheory.FPPredicateSymbol
-import uppsat.theory.FloatingPointTheory.FPEqualityFactory
+import uppsat.theory.FloatingPointTheory._
 import uppsat.theory.FloatingPointTheory.FPSortFactory.FPSort
 import uppsat.ast.IndexedFunctionSymbol
 
@@ -108,5 +112,118 @@ object Toolbox {
       candidateModel.set(ast, decodedModel(ast))
     }
     candidateModel(ast)
+  }
+  
+  def isDefinition(ast : AST) : Boolean = {
+    ast.symbol match {
+      case pred : FloatingPointPredicateSymbol 
+        if (pred.getFactory == FPEqualityFactory)  => ast.children(0).isVariable || ast.children(1).isVariable
+      case BoolEquality
+      |    RoundingModeEquality =>
+        ast.children(0).isVariable || ast.children(1).isVariable
+      case _ => false
+    }
   }  
+  
+  
+  /** Returns a topological sorting of the dependencies
+   *
+   *  Returns a list of corresponding to a topological sorting of the dependency graph implied by allDependencies.
+   *  Uses the function sortLessThan as a sorting of sorts to choose which to pick first. 
+   *
+   * @param allDependencies Dependency edges in the dependency graph.
+   *
+   * @return A topological sort of the nodes in allDependencies 
+   */
+
+  //TODO: Remove the Boolean filter from this function. It should be generic.
+  def topologicalSort(allDependencies : HashMap[ConcreteFunctionSymbol, Set[ConcreteFunctionSymbol]]) : List[ConcreteFunctionSymbol] = {
+    var dependencies = new HashMap[ConcreteFunctionSymbol, Set[ConcreteFunctionSymbol]] with MultiMap[ConcreteFunctionSymbol, ConcreteFunctionSymbol]
+    for ((k, vs) <- allDependencies;
+        v <- vs)
+      dependencies.addBinding(k, v)
+
+    val allVars = dependencies.keys.toList
+    var independentVars =  allVars.filter(_.sort != BooleanSort).filterNot(dependencies.contains(_)).sortWith((x , y) => !sortLessThan(x.sort,y.sort))
+
+      for ( variable <- independentVars; 
+            (k, v) <- dependencies) {
+            dependencies.removeBinding(k, variable)
+      }
+      verbose("Variables :\n\t" + independentVars.mkString("\n\t"))
+      verbose("Dependency graph : \n\t" + dependencies.mkString("\n\t"))
+      while (!dependencies.isEmpty) {
+        var next = dependencies.keys.head
+        var cnt = dependencies(next).size
+        for ( (key, set) <- dependencies) {
+          val curr = set.size
+          if (curr < cnt || (curr == cnt && sortLessThan(next.sort, key.sort))){
+            next = key
+            cnt = curr
+          }
+        }
+        // TODO: if cyclic dependency exists, all the remaining keys need to be removed
+        dependencies.remove(next)
+        independentVars = next :: independentVars
+        for ((k, v) <- dependencies) {
+          dependencies.removeBinding(k, next)
+        }
+      }
+      independentVars.toList.reverse
+  }
+  
+
+  // TODO: This should be elsewhere, implement using an explicit ordering
+  
+  def sortLessThan(s1 : ConcreteSort, s2 : ConcreteSort) = {
+    (s1, s2) match {
+      case (BooleanSort, _) => false
+      case (_, BooleanSort) => true
+      case (RoundingModeSort, _) => false
+      case (_, RoundingModeSort) => true
+      case (FPSort(eb1, sb1), FPSort(eb2, sb2)) => eb1 + sb1 < eb2 + sb2
+      case (FPSort(_, _), _) => false
+      case (_, FPSort(_, _)) => true
+    }
+  }
+  
+  
+//TODO: Remove the Boolean filter from this function. It should be generic.
+  def topologicalSortEqualities(allDependencies : HashMap[AST, Set[ConcreteFunctionSymbol]]) : List[AST] = {
+    var dependencies = new HashMap[AST, Set[ConcreteFunctionSymbol]] with MultiMap[AST, ConcreteFunctionSymbol]
+    for ((k, vs) <- allDependencies;
+        v <- vs)
+      dependencies.addBinding(k, v)
+
+    val allVars = dependencies.keys.toList
+    var independentEqualities =  allVars.filterNot(dependencies.contains(_))
+
+      for ( eq <- independentEqualities; v <- eq.iterator.filter(_.isVariable);
+            k <- dependencies.keys) {
+            dependencies.removeBinding(eq, v.symbol)
+      }
+    
+      verbose("Equalities: \n\t" + independentEqualities.mkString("\n\t"))
+      verbose("Dependency graph: \n\t" + dependencies.mkString("\n\t"))
+      while (!dependencies.isEmpty) {
+        var next = dependencies.keys.head
+        var cnt = dependencies(next).size
+        for ( (key, set) <- dependencies) {
+          val curr = set.size
+          if (curr < cnt || (curr == cnt)) {
+            next = key
+            cnt = curr
+          }
+        }
+        
+        // TODO: if cyclic dependency exists, all the remaining keys need to be removed
+        dependencies.remove(next)
+        independentEqualities = next :: independentEqualities
+        for ((k, _) <- dependencies; v <- next.iterator.filter(_.isVariable)) {
+          dependencies.removeBinding(k, v.symbol)
+        }
+      }
+      independentEqualities.toList.reverse
+  }  
+ 
 }

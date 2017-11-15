@@ -219,8 +219,6 @@ object main {
         Interpreter.interpret(script)
       }
       debug(Timer.toString())
-      if (globalOptions.STATS)
-        println(Timer.stats)
       if (globalOptions.MODEL)
         Interpreter.myEnv.result match {
           case Sat(model) => {
@@ -231,6 +229,8 @@ object main {
           }
           case _ => 
         }
+      if (globalOptions.STATS)
+        println(Timer.stats)      
       Interpreter.myEnv.result
     }
   }

@@ -2,6 +2,9 @@ package uppsat.approximation.reconstruction
 
 import uppsat.globalOptions._
 import uppsat.approximation.ModelReconstruction
+import scala.collection.mutable.{ListBuffer, Set}
+import uppsat.ast.ConcreteFunctionSymbol
+import scala.collection.mutable.{HashMap, MultiMap}
 
 import uppsat.ast.AST
 import uppsat.ast.IndexedFunctionSymbol
@@ -169,6 +172,7 @@ trait EqualityAsAssignmentReconstruction extends ModelReconstruction {
     val candidateModel = new Model()
     
     val todo = new Stack[AST]()
+    val toEvaluateEquality = ListBuffer() : ListBuffer[AST]
     val toEvaluateBoolean = new Stack[AST]()
     val toReconstructPredicate = new Queue[AST]()
     todo.push(ast)
@@ -182,8 +186,7 @@ trait EqualityAsAssignmentReconstruction extends ModelReconstruction {
        case (RoundingModeEquality)| 
             (FPEqualityFactory(_)) |
             (FPFPEqualityFactory(_)) => {
-              nextItem.prettyPrint("-->")
-            reconstructSubtree(nextItem, decodedModel, candidateModel)
+            toEvaluateEquality += nextItem //reconstructSubtree(nextItem, decodedModel, candidateModel)
         }
         
        case fpPred : FloatingPointPredicateSymbol => {
@@ -199,6 +202,19 @@ trait EqualityAsAssignmentReconstruction extends ModelReconstruction {
       }
     }
     
+    var eqDependency = new HashMap[AST, Set[ConcreteFunctionSymbol]] with MultiMap[AST, ConcreteFunctionSymbol]
+
+    for ( eq <- toEvaluateEquality.toList) {
+      val variables = eq.children.map(_.iterator.filter(_.isVariable)).flatten
+      for (v <- variables) {
+        eqDependency.addBinding(eq, v.symbol)
+      }
+    }
+
+    val equalitySort = Toolbox.topologicalSortEqualities(eqDependency)
+    
+    equalitySort.map(reconstructSubtree(_, decodedModel, candidateModel))
+    //toEvaluateEquality.map(reconstructSubtree(_, decodedModel, candidateModel))
     toReconstructPredicate.map(reconstructSubtree(_, decodedModel, candidateModel))
     toEvaluateBoolean.map(reconstructNode(decodedModel, candidateModel, _))
     candidateModel

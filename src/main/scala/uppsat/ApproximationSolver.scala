@@ -70,10 +70,9 @@ object ApproximationSolver {
     
     val smtSolver = globalOptions.getBackendSolver
     
-    def tryReconstruct(encodedFormula : AST, encodedSMT : String) : (Option[ExtModel], Option[PrecisionMap[approximation.P]]) = Timer.measure("tryReconstruct") {
+    def tryReconstruct(encodedFormula : AST, stringModel : Map[String, String]) : (Option[ExtModel], Option[PrecisionMap[approximation.P]]) = Timer.measure("tryReconstruct") {
       // MAJORTODO : getstringmodel called?
-      val stringModel = smtSolver.getStringModel(encodedSMT, translator.getDefinedSymbols.toList)
-      val appModel = translator.getModel(encodedFormula, stringModel.get)
+      val appModel = translator.getModel(encodedFormula, stringModel)
       
       println("appModel")
       println(appModel)
@@ -135,8 +134,9 @@ object ApproximationSolver {
       if (globalOptions.FORMULAS)
         println(encodedSMT)
       
-      if (smtSolver.checkSat(encodedSMT)) {
-        val (extModel, newPMap) = tryReconstruct(encodedFormula, encodedSMT)
+      val maybeModel = smtSolver.getStringModel(encodedSMT, translator.getDefinedSymbols.toList)
+      if (maybeModel.isDefined) {
+        val (extModel, newPMap) = tryReconstruct(encodedFormula, maybeModel.get)
         (extModel, newPMap) match {
           case (Some(model), _) => return Sat(model)
           case (_, Some(p)) => pmap = pmap.merge(p)

@@ -1,5 +1,6 @@
 package uppsat.approximation.components
 
+
 import uppsat.theory.Theory
 import uppsat.approximation.toolbox.Toolbox
 
@@ -47,6 +48,7 @@ import scala.collection.mutable.MultiMap
 import scala.collection.mutable.Set
 import uppsat.theory.FloatingPointTheory.FPFunctionSymbol
 import uppsat.theory.FloatingPointTheory.FPSpecialValuesFactory
+import uppsat.theory.FloatingPointTheory.FPSortFactory.FPSort
 import uppsat.theory.FloatingPointTheory.FloatingPointLiteral
 import uppsat.solver.Z3OnlineSolver
 import uppsat.approximation._
@@ -167,19 +169,6 @@ class FixpointException(msg : String) extends Exception("FixpointException: " + 
     }
   }
 
-  // TODO: This should be elsewhere, implement using an explicit ordering
-  import uppsat.theory.FloatingPointTheory.FPSortFactory.FPSort
-  def sortLessThan(s1 : Sort, s2 : Sort) = {
-    (s1, s2) match {
-      case (BooleanSort, _) => false
-      case (_, BooleanSort) => true
-      case (RoundingModeSort, _) => false
-      case (_, RoundingModeSort) => true
-      case (FPSort(eb1, sb1), FPSort(eb2, sb2)) => eb1 + sb1 < eb2 + sb2
-      case (FPSort(_, _), _) => false
-      case (_, FPSort(_, _)) => true
-    }
-  }
 
   // TODO: This should be implicit in AST - this might require a meta-variable notion
   def varToNode(variable : ConcreteFunctionSymbol) : AST = {
@@ -216,51 +205,6 @@ class FixpointException(msg : String) extends Exception("FixpointException: " + 
     (definitions, critical, conjuncts) // TODO: Inspect the correct returns
   }
 
-  /** Returns a topological sorting of the dependencies
-   *
-   *  Returns a list of corresponding to a topological sorting of the dependency graph implied by allDependencies.
-   *  Uses the function sortLessThan as a sorting of sorts to choose which to pick first. 
-   *
-   * @param allDependencies Dependency edges in the dependency graph.
-   *
-   * @return A topological sort of the nodes in allDependencies 
-   */
-
-  //TODO: Remove the Boolean filter from this function. It should be generic.
-  def topologicalSort(allDependencies : HashMap[ConcreteFunctionSymbol, Set[ConcreteFunctionSymbol]]) : List[ConcreteFunctionSymbol] = {
-    var dependencies = new HashMap[ConcreteFunctionSymbol, Set[ConcreteFunctionSymbol]] with MultiMap[ConcreteFunctionSymbol, ConcreteFunctionSymbol]
-    for ((k, vs) <- allDependencies;
-        v <- vs)
-      dependencies.addBinding(k, v)
-
-    val allVars = dependencies.keys.toList
-    var independentVars =  allVars.filter(_.sort != BooleanSort).filterNot(dependencies.contains(_)).sortWith((x , y) => !sortLessThan(x.sort,y.sort))
-
-      for ( variable <- independentVars; 
-            (k, v) <- dependencies) {
-            dependencies.removeBinding(k, variable)
-      }
-      verbose("Variables :\n\t" + independentVars.mkString("\n\t"))
-      verbose("Dependency graph : \n\t" + dependencies.mkString("\n\t"))
-      while (!dependencies.isEmpty) {
-        var next = dependencies.keys.head
-        var cnt = dependencies(next).size
-        for ( (key, set) <- dependencies) {
-          val curr = set.size
-          if (curr < cnt || (curr == cnt && sortLessThan(next.sort, key.sort))){
-            next = key
-            cnt = curr
-          }
-        }
-        // TODO: if cyclic dependency exists, all the remaining keys need to be removed
-        dependencies.remove(next)
-        independentVars = next :: independentVars
-        for ((k, v) <- dependencies) {
-          dependencies.removeBinding(k, next)
-        }
-      }
-      independentVars.toList.reverse
-  }
 
   def reconstruct(ast : AST, decodedModel : Model) : Model = {
     val candidateModel = new Model()
@@ -304,7 +248,7 @@ class FixpointException(msg : String) extends Exception("FixpointException: " + 
       }
     }
 
-    val independentVars = topologicalSort(varDependency)
+    val independentVars = Toolbox.topologicalSort(varDependency)
 
     // TODO: This is theory specific...
     // First migrate special values

@@ -149,9 +149,17 @@ object Interpreter {
         
         val fpsort = FPSortFactory(List(11, 53))
         
+        if (!eBits.contains(0))
+          throw new Exception("Special number!")
+        
+        
         // MAJORTODO
         if (!eBits.contains(1) && !sBits.contains(1)) {
-          val value = FloatingPointTheory.FPPositiveZero(fpsort)
+          val value = 
+            if (sign == 0)
+              FloatingPointTheory.FPPositiveZero(fpsort)
+            else
+              FloatingPointTheory.FPNegativeZero(fpsort)
           uppsat.ast.AST(value, List())
         } else {
           uppsat.ast.Leaf(uppsat.theory.FloatingPointTheory.FloatingPointLiteral(sign.toInt, eBits, sBits, fpsort))
