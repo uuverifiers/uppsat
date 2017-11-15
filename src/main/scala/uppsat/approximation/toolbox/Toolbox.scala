@@ -1,6 +1,7 @@
 package uppsat.approximation.toolbox
 
 
+
 import uppsat.approximation._
 import scala.collection.mutable.{HashMap, MultiMap}
 
@@ -24,6 +25,7 @@ import uppsat.theory.IntegerTheory.IntEquality
 import uppsat.theory.FloatingPointTheory._
 import uppsat.theory.FloatingPointTheory.FPSortFactory.FPSort
 import uppsat.ast.IndexedFunctionSymbol
+
 
 object Toolbox {
   // A critical atom is a Boolean node which has at least one non-Boolean child and all ancestors are Boolean nodes
@@ -187,40 +189,51 @@ object Toolbox {
     }
   }
   
-  
-//TODO: Remove the Boolean filter from this function. It should be generic.
-  def topologicalSortEqualities(allDependencies : HashMap[AST, Set[ConcreteFunctionSymbol]]) : List[AST] = {
+
+      import scala.collection.mutable.{Set => MSet}
     import scala.collection.mutable.Set
-    val allEqualities : Set[AST] = Set()
+  
+def topologicalSortEqualities(allDependencies : HashMap[AST, Set[(Set[ConcreteFunctionSymbol], ConcreteFunctionSymbol)]]) : List[AST] = {
+
+    val allEqualities : MSet[AST] = MSet()
     allEqualities ++= allDependencies.keySet
     
-    var dependencies = new HashMap[AST, Set[ConcreteFunctionSymbol]] with MultiMap[AST, ConcreteFunctionSymbol]
-    for ((k, vs) <- allDependencies;
-        v <- vs)
-      dependencies.addBinding(k, v)
-
-      var independentEqualities =  List() : List[AST]
+    val definedSymbols : MSet[ConcreteFunctionSymbol] = MSet()
+    
+    var independentEqualities =  List() : List[AST]
 
     while (!allEqualities.isEmpty) {
       val remEqs = allEqualities.toList
       var next = remEqs.head
-      var cnt = if (dependencies.contains(next)) next.size else 0
+      
+      val implications = allDependencies(next)
+      var cnt = (for ((antecedent, _) <- implications) yield { (antecedent diff definedSymbols).size }).min
+      
       for ( eq <- remEqs.tail) {
-        val curr = if (dependencies.contains(eq)) eq.size else 0
-        if (curr < cnt || (curr == cnt)) {
+        val imps = allDependencies(eq)
+        val curr = (for ((ants, _) <- imps) yield { (ants diff definedSymbols).size }).min      
+        if (curr < cnt) {
           next = eq
           cnt = curr
         }
       }
       
       // TODO: if cyclic dependency exists, all the remaining keys need to be removed
+      
+      val imps = allDependencies(next)
+      val asd = imps.dropWhile(x => (x._1 diff definedSymbols).size != cnt)
+      val (ants, cons) = imps.dropWhile(x => (x._1 diff definedSymbols).size != cnt).head
+      definedSymbols += cons
+      definedSymbols ++= ants
       allEqualities.remove(next)
+      
+      print(">>")
+      next.prettyPrint
+      
       independentEqualities = next :: independentEqualities
-      for ((k, _) <- dependencies; v <- next.iterator.filter(_.isVariable)) {
-        dependencies.removeBinding(k, v.symbol)
-      }
     }
+    println("Done")
     independentEqualities.toList.reverse
-  }  
+  }    
  
 }

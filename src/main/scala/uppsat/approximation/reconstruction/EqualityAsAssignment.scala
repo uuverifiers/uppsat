@@ -1,5 +1,7 @@
 package uppsat.approximation.reconstruction
 
+
+
 import uppsat.globalOptions._
 import uppsat.approximation.ModelReconstruction
 import scala.collection.mutable.{ListBuffer, Set}
@@ -202,16 +204,79 @@ trait EqualityAsAssignmentReconstruction extends ModelReconstruction {
       }
     }
     
-    var eqDependency = new HashMap[AST, Set[ConcreteFunctionSymbol]] with MultiMap[AST, ConcreteFunctionSymbol]
-
+//    var eqDependency = new HashMap[AST, Set[ConcreteFunctionSymbol]] with MultiMap[AST, ConcreteFunctionSymbol]
+//    
+//
+//    for ( eq <- toEvaluateEquality.toList) {
+//      val lhsVars = eq.children(0).iterator.filter(_.isVariable)
+//      val rhsVars = eq.children(1).iterator.filter(_.isVariable)
+//      
+//      if (eq.children(0).isVariable) {
+//        for (v <- rhsVars)
+//          eqDependency.addBinding(eq, v.symbol)
+//      }
+//
+//      if (eq.children(1).isVariable) {
+//        for (v <- lhsVars)
+//          eqDependency.addBinding(eq, v.symbol)
+//      }
+//      
+//      if (!eq.children(0).isVariable && !eq.children(1).isVariable) {
+//        val variables = eq.children.map(_.iterator.filter(_.isVariable)).flatten
+//        for (v <- variables)
+//          eqDependency.addBinding(eq, v.symbol)      
+//      }
+//    }   
+//          
+//    for ( eq <- toEvaluateEquality.toList) {
+//      val variables = eq.children.map(_.iterator.filter(_.isVariable)).flatten
+//      for (v <- variables) {
+//        eqDependency.addBinding(eq, v.symbol)
+//      }
+//    }
+    
+    var eqDependency = new HashMap[AST, Set[(Set[ConcreteFunctionSymbol], ConcreteFunctionSymbol)]] with MultiMap[AST, (Set[ConcreteFunctionSymbol], ConcreteFunctionSymbol)]
+    
+    import scala.collection.mutable.Set
+    
     for ( eq <- toEvaluateEquality.toList) {
-      val variables = eq.children.map(_.iterator.filter(_.isVariable)).flatten
-      for (v <- variables) {
-        eqDependency.addBinding(eq, v.symbol)
+      val lhsVars = eq.children(0).iterator.filter(_.isVariable).map(_.symbol).toList
+      val rhsVars = eq.children(1).iterator.filter(_.isVariable).map(_.symbol).toList
+      
+      if (lhsVars.size + rhsVars.size == 0)
+        throw new Exception("No variables in equality?")
+      
+      val (lhs, rhs) = (eq.children(0), eq.children(1))
+      val binding : List[ ( Set[ConcreteFunctionSymbol], ConcreteFunctionSymbol) ] =
+        (lhs.isVariable, rhs.isVariable) match {
+          case (true, true) => List( (Set(lhs.symbol), rhs.symbol), (Set(rhs.symbol), lhs.symbol) )
+          case (true, false) => List( ( Set() ++ rhsVars.toSet, lhs.symbol) )
+          case (false, true) => List( ( Set() ++ lhsVars.toSet, rhs.symbol) )
+          case (false, false) => List( (Set() ++ (lhsVars ++ rhsVars).toSet, (lhsVars ++ rhsVars).toList.head) )
       }
-    }      
+
+      for (b <- binding)
+        eqDependency.addBinding(eq, b)
+    }
+
+
+    
       
     val equalitySort = Toolbox.topologicalSortEqualities(eqDependency)
+
+      
+    val eqSet1 = toEvaluateEquality.toSet
+    val eqSet2 = equalitySort.toSet
+    
+      
+      
+    println("non-sorted equalities:")
+    for (eq <- eqSet1) 
+      eq.prettyPrint("$")
+    println("topological sorted equalities: ")
+    for (eq <- eqSet2)
+      eq.prettyPrint("£")
+      println("end")
     
     equalitySort.map(reconstructSubtree(_, decodedModel, candidateModel))
     //toEvaluateEquality.map(reconstructSubtree(_, decodedModel, candidateModel))
