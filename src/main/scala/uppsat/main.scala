@@ -31,6 +31,8 @@ import uppsat.approximation.Approximation
 
 object globalOptions {
   // FLAGS
+  var REACHED_MAX_PRECISON = false
+  
   var VERBOSE = false
   var STATS = false
   var MODEL = false
@@ -218,7 +220,7 @@ object main {
         Interpreter.reset()
         Interpreter.interpret(script)
       }
-      debug(Timer.toString())
+
       if (globalOptions.MODEL)
         Interpreter.myEnv.result match {
           case Sat(model) => {
@@ -229,8 +231,10 @@ object main {
           }
           case _ => 
         }
-      if (globalOptions.STATS)
-        println(Timer.stats)      
+      if (globalOptions.STATS) {
+        println(Timer.stats)
+        println(":max_precision " + globalOptions.REACHED_MAX_PRECISON)
+      }
       Interpreter.myEnv.result
     }
   }

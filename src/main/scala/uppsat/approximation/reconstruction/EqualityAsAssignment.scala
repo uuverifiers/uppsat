@@ -153,10 +153,10 @@ trait EqualityAsAssignmentReconstruction extends ModelReconstruction {
       
       val newAST = AST(symbol, label, newChildren.toList)
       val newValue = ModelEvaluator.evalAST(newAST, inputTheory)
-      //verbose(ast.symbol + " " + ast.label + " " + " <- " + newValue.symbol)
+      verbose(ast.symbol + " " + ast.label + " " + " <- " + newValue.symbol)
       
       candidateModel.set(ast, newValue)      
-//      ast.ppWithModels("", decodedModel, candidateModel, false)
+      ast.ppWithModels("", decodedModel, candidateModel, false)
 //      println("-----------------")
     }
     candidateModel
@@ -212,7 +212,9 @@ trait EqualityAsAssignmentReconstruction extends ModelReconstruction {
     }
 
     val equalitySort = Toolbox.topologicalSortEqualities(eqDependency)
-    
+    println("topological sorted equalities: ")
+    for (eq <- equalitySort)
+      println("\t" + eq.prettyPrint)
     equalitySort.map(reconstructSubtree(_, decodedModel, candidateModel))
     //toEvaluateEquality.map(reconstructSubtree(_, decodedModel, candidateModel))
     toReconstructPredicate.map(reconstructSubtree(_, decodedModel, candidateModel))

@@ -203,8 +203,6 @@ object Toolbox {
             dependencies.removeBinding(eq, v.symbol)
       }
     
-      verbose("Equalities: \n\t" + independentEqualities.mkString("\n\t"))
-      verbose("Dependency graph: \n\t" + dependencies.mkString("\n\t"))
       while (!dependencies.isEmpty) {
         var next = dependencies.keys.head
         var cnt = dependencies(next).size

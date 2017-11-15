@@ -164,7 +164,9 @@ object ApproximationSolver {
         if (globalOptions.DEADLINE.isDefined)
           println("Full precision search (" + ((globalOptions.remainingTime.get) / 1000.0).ceil.toInt + " seconds left)")
         else
-          println("Full precision search")          
+          println("Full precision search")        
+          
+        globalOptions.REACHED_MAX_PRECISON = true
         
         val validator = globalOptions.getValidator  
         val smtFormula = translator.translate(formula)
