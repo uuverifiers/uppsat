@@ -209,12 +209,10 @@ trait EqualityAsAssignmentReconstruction extends ModelReconstruction {
       for (v <- variables) {
         eqDependency.addBinding(eq, v.symbol)
       }
-    }
-
+    }      
+      
     val equalitySort = Toolbox.topologicalSortEqualities(eqDependency)
-    println("topological sorted equalities: ")
-    for (eq <- equalitySort)
-      println("\t" + eq.prettyPrint)
+    
     equalitySort.map(reconstructSubtree(_, decodedModel, candidateModel))
     //toEvaluateEquality.map(reconstructSubtree(_, decodedModel, candidateModel))
     toReconstructPredicate.map(reconstructSubtree(_, decodedModel, candidateModel))

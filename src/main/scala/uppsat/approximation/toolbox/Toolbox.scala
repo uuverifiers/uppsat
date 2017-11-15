@@ -190,38 +190,37 @@ object Toolbox {
   
 //TODO: Remove the Boolean filter from this function. It should be generic.
   def topologicalSortEqualities(allDependencies : HashMap[AST, Set[ConcreteFunctionSymbol]]) : List[AST] = {
+    import scala.collection.mutable.Set
+    val allEqualities : Set[AST] = Set()
+    allEqualities ++= allDependencies.keySet
+    
     var dependencies = new HashMap[AST, Set[ConcreteFunctionSymbol]] with MultiMap[AST, ConcreteFunctionSymbol]
     for ((k, vs) <- allDependencies;
         v <- vs)
       dependencies.addBinding(k, v)
 
-    val allVars = dependencies.keys.toList
-    var independentEqualities =  allVars.filterNot(dependencies.contains(_))
+      var independentEqualities =  List() : List[AST]
 
-      for ( eq <- independentEqualities; v <- eq.iterator.filter(_.isVariable);
-            k <- dependencies.keys) {
-            dependencies.removeBinding(eq, v.symbol)
-      }
-    
-      while (!dependencies.isEmpty) {
-        var next = dependencies.keys.head
-        var cnt = dependencies(next).size
-        for ( (key, set) <- dependencies) {
-          val curr = set.size
-          if (curr < cnt || (curr == cnt)) {
-            next = key
-            cnt = curr
-          }
-        }
-        
-        // TODO: if cyclic dependency exists, all the remaining keys need to be removed
-        dependencies.remove(next)
-        independentEqualities = next :: independentEqualities
-        for ((k, _) <- dependencies; v <- next.iterator.filter(_.isVariable)) {
-          dependencies.removeBinding(k, v.symbol)
+    while (!allEqualities.isEmpty) {
+      val remEqs = allEqualities.toList
+      var next = remEqs.head
+      var cnt = if (dependencies.contains(next)) next.size else 0
+      for ( eq <- remEqs.tail) {
+        val curr = if (dependencies.contains(eq)) eq.size else 0
+        if (curr < cnt || (curr == cnt)) {
+          next = eq
+          cnt = curr
         }
       }
-      independentEqualities.toList.reverse
+      
+      // TODO: if cyclic dependency exists, all the remaining keys need to be removed
+      allEqualities.remove(next)
+      independentEqualities = next :: independentEqualities
+      for ((k, _) <- dependencies; v <- next.iterator.filter(_.isVariable)) {
+        dependencies.removeBinding(k, v.symbol)
+      }
+    }
+    independentEqualities.toList.reverse
   }  
  
 }
