@@ -102,7 +102,7 @@ trait EqualityAsAssignmentReconstruction extends ModelReconstruction {
   }
 
   
- def equalityAsAssignment(ast : AST, decodedModel : Model,  candidateModel : Model) : Boolean = { 
+ def equalityAsAssignment(ast : AST, decodedModel : Model,  candidateModel : Model) : Boolean = {
     ast match { 
       //        case AST(BoolEquality, _, _) | 
       //             AST(IntEquality, _, _)| 
@@ -120,23 +120,30 @@ trait EqualityAsAssignmentReconstruction extends ModelReconstruction {
             (lhs.isVariable, rhs.isVariable) match { 
               case (true, true) => { 
                 (lhsDefined, rhsDefined) match { 
-                  case (false, true) => candidateModel.set(lhs, candidateModel(rhs)) 
+                  case (false, true) => {
+                    candidateModel.set(lhs, candidateModel(rhs)) 
                     true 
-                  case (true, false) => candidateModel.set(rhs, candidateModel(lhs)) 
+                  }
+                  case (true, false) => {
+                    candidateModel.set(rhs, candidateModel(lhs)) 
                     true 
-                  case (false, false) => false 
-                  case (true, true) => false 
+                  }
+                  case (false, false) | (true, true) => {
+                    false 
+                  }
                 } 
               } 
-              case (true, false) if (!lhsDefined) => { 
+              case (true, false) if (!lhsDefined) => {                 
                 candidateModel.set(lhs, candidateModel(rhs)) 
                 true 
               } 
-              case (false, true) if (!rhsDefined) =>{ 
+              case (false, true) if (!rhsDefined) =>{                                     
                 candidateModel.set(rhs, candidateModel(lhs)) 
                 true 
               } 
-              case (_, _) => false 
+              case (_, _) => {
+                false 
+              }
             }
         }
       case _ => false
@@ -159,7 +166,6 @@ trait EqualityAsAssignmentReconstruction extends ModelReconstruction {
       
       candidateModel.set(ast, newValue)      
       ast.ppWithModels("", decodedModel, candidateModel, false)
-//      println("-----------------")
     }
     candidateModel
   }
@@ -195,6 +201,7 @@ trait EqualityAsAssignmentReconstruction extends ModelReconstruction {
          toReconstructPredicate += nextItem
        }
             
+       // Check if this node is actually true
        case _ if nextItem.symbol.sort == BooleanSort => {
          toEvaluateBoolean.push(nextItem)
           for (c <- nextItem.children)
@@ -235,48 +242,27 @@ trait EqualityAsAssignmentReconstruction extends ModelReconstruction {
 //      }
 //    }
     
-    var eqDependency = new HashMap[AST, Set[(Set[ConcreteFunctionSymbol], ConcreteFunctionSymbol)]] with MultiMap[AST, (Set[ConcreteFunctionSymbol], ConcreteFunctionSymbol)]
+    type Implication = (scala.collection.immutable.Set[ConcreteFunctionSymbol], ConcreteFunctionSymbol)
     
-    import scala.collection.mutable.Set
-    
-    for ( eq <- toEvaluateEquality.toList) {
-      val lhsVars = eq.children(0).iterator.filter(_.isVariable).map(_.symbol).toList
-      val rhsVars = eq.children(1).iterator.filter(_.isVariable).map(_.symbol).toList
+    import scala.collection.mutable.{ListBuffer}
+    import scala.collection.immutable.Set
+
       
-      if (lhsVars.size + rhsVars.size == 0)
-        throw new Exception("No variables in equality?")
-      
-      val (lhs, rhs) = (eq.children(0), eq.children(1))
-      val binding : List[ ( Set[ConcreteFunctionSymbol], ConcreteFunctionSymbol) ] =
-        (lhs.isVariable, rhs.isVariable) match {
-          case (true, true) => List( (Set(lhs.symbol), rhs.symbol), (Set(rhs.symbol), lhs.symbol) )
-          case (true, false) => List( ( Set() ++ rhsVars.toSet, lhs.symbol) )
-          case (false, true) => List( ( Set() ++ lhsVars.toSet, rhs.symbol) )
-          case (false, false) => List( (Set() ++ (lhsVars ++ rhsVars).toSet, (lhsVars ++ rhsVars).toList.head) )
-      }
-
-      for (b <- binding)
-        eqDependency.addBinding(eq, b)
-    }
-
-
-    
-      
-    val equalitySort = Toolbox.topologicalSortEqualities(eqDependency)
-
+    val equalitySort = Toolbox.topologicalSortEqualities(toEvaluateEquality.toList)
+    //val equalitySort = toEvaluateEquality.toList 
       
     val eqSet1 = toEvaluateEquality.toSet
     val eqSet2 = equalitySort.toSet
     
       
       
-    println("non-sorted equalities:")
-    for (eq <- eqSet1) 
-      eq.prettyPrint("$")
-    println("topological sorted equalities: ")
-    for (eq <- eqSet2)
-      eq.prettyPrint("£")
-      println("end")
+//    println("non-sorted equalities:")
+//    for (eq <- eqSet1) 
+//      eq.prettyPrint("$")
+//    println("topological sorted equalities: ")
+//    for (eq <- eqSet2)
+//      eq.prettyPrint("£")
+//      println("end")
     
     equalitySort.map(reconstructSubtree(_, decodedModel, candidateModel))
     //toEvaluateEquality.map(reconstructSubtree(_, decodedModel, candidateModel))

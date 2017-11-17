@@ -732,8 +732,8 @@ def hexToBitList(hex : String) = {
           val targetSort = FloatingPointTheory.FPSortFactory(List(eBits.toInt, sBits.toInt))
           val s = FloatingPointTheory.FPToFPFactory(targetSort)
           // TODO: Why do we have two arguments here?
-          //uppsat.ast.AST(s, List(translateTerm(args(0)), translateTerm(args(1))))
-          uppsat.ast.AST(s, List(translateTerm(args(0))))
+          uppsat.ast.AST(s, List(translateTerm(args(0)), translateTerm(args(1))))
+          //uppsat.ast.AST(s, List(translateTerm(args(0))))
         }
       }
     }

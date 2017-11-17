@@ -190,50 +190,333 @@ object Toolbox {
   }
   
 
-      import scala.collection.mutable.{Set => MSet}
-    import scala.collection.mutable.Set
+      import scala.collection.mutable.{Set => MSet, ListBuffer}
+      import scala.collection.immutable.Set
+        type Implication = (scala.collection.immutable.Set[ConcreteFunctionSymbol], ConcreteFunctionSymbol)
+
   
-def topologicalSortEqualities(allDependencies : HashMap[AST, Set[(Set[ConcreteFunctionSymbol], ConcreteFunctionSymbol)]]) : List[AST] = {
+//def topologicalSortEqualities(allDependencies : HashMap[AST, Set[(Set[ConcreteFunctionSymbol], ConcreteFunctionSymbol)]]) : List[AST] = {
+  def topologicalSortEqualities(allEquations : List[AST]) : List[AST] = {
 
-    val allEqualities : MSet[AST] = MSet()
-    allEqualities ++= allDependencies.keySet
-    
-    val definedSymbols : MSet[ConcreteFunctionSymbol] = MSet()
-    
-    var independentEqualities =  List() : List[AST]
+    val allVariables = allEquations.map(_.iterator.filter(_.isVariable).toSet).flatten.map(_.symbol).toSet        
 
-    while (!allEqualities.isEmpty) {
-      val remEqs = allEqualities.toList
-      var next = remEqs.head
+    // Let's begin by creating a partial order over variables
+    
+   
+    for (eq <- allEquations)
+      eq.prettyPrint
       
-      val implications = allDependencies(next)
-      var cnt = (for ((antecedent, _) <- implications) yield { (antecedent diff definedSymbols).size }).min
       
-      for ( eq <- remEqs.tail) {
-        val imps = allDependencies(eq)
-        val curr = (for ((ants, _) <- imps) yield { (ants diff definedSymbols).size }).min      
-        if (curr < cnt) {
-          next = eq
-          cnt = curr
+    val simpleEqualities = MSet() : MSet[AST]
+    val definingEqualities = MSet() : MSet[AST]
+    val complexEqualities = MSet() : MSet[AST]
+    
+    for (eq <- allEquations) {
+      (eq.children(0).isVariable, eq.children(1).isVariable) match {
+        case (true, true) => simpleEqualities += eq
+        case (true, false) | (false, true) => definingEqualities += eq
+        case (false, false) => complexEqualities += eq
+      }
+    }
+
+    // Simple equalities x = y yields a dependence x -> y as well as y -> x
+    // Defining equlaities x = exp yield a dependences x -> vars(exp)
+    // Complex equlities are just ignored for now
+    var undefVars = MSet() ++ allVariables
+    var defVars = MSet() : MSet[ConcreteFunctionSymbol]
+    var varOrder = ListBuffer() : ListBuffer[ConcreteFunctionSymbol]
+    
+    val implications = new HashMap[ConcreteFunctionSymbol, MSet[Set[ConcreteFunctionSymbol]]] with MultiMap[ConcreteFunctionSymbol, Set[ConcreteFunctionSymbol]]
+    for (seq <- simpleEqualities) {
+      val lhs = seq.children(0).symbol
+      val rhs = seq.children(1).symbol
+      implications.addBinding(lhs, Set(rhs))
+      implications.addBinding(rhs, Set(lhs))
+    }
+    
+    for (deq <- definingEqualities) {
+      val definedVar = 
+        if (deq.children(0).isVariable) 
+          deq.children(0).symbol
+        else
+          deq.children(1).symbol
+          
+      val definingVars =
+        if (deq.children(0).isVariable)
+          deq.children(1).iterator.filter(_.isVariable).map(_.symbol).toSet
+        else
+          deq.children(0).iterator.filter(_.isVariable).map(_.symbol).toSet
+
+      implications.addBinding(definedVar, definingVars)
+    }
+   
+    
+    def mostConstrainedVar(vars : List[ConcreteFunctionSymbol]) : ConcreteFunctionSymbol = {
+      val antCount = new HashMap[ConcreteFunctionSymbol, Int]
+      
+      for ((_, ants) <- implications; ant <- ants; a <- ant) {
+        antCount += a -> ((antCount.getOrElse(a, 0)) + 1) 
+      }
+           
+      var best = vars.head
+      var count = antCount(vars.head)
+      for (v <- vars.tail) {
+        if (antCount.getOrElse(v, 0) > count) {
+          best = v
+          count = antCount(v)
         }
       }
-      
-      // TODO: if cyclic dependency exists, all the remaining keys need to be removed
-      
-      val imps = allDependencies(next)
-      val asd = imps.dropWhile(x => (x._1 diff definedSymbols).size != cnt)
-      val (ants, cons) = imps.dropWhile(x => (x._1 diff definedSymbols).size != cnt).head
-      definedSymbols += cons
-      definedSymbols ++= ants
-      allEqualities.remove(next)
-      
-      print(">>")
-      next.prettyPrint
-      
-      independentEqualities = next :: independentEqualities
+      best
     }
-    println("Done")
-    independentEqualities.toList.reverse
-  }    
- 
+    
+    def findDefinableVar(vars : List[ConcreteFunctionSymbol]) : Option[ConcreteFunctionSymbol] = {
+      vars match {
+        case Nil => None
+        case h :: tail => {
+          // Check if h is good candidate
+          if (implications(h).exists(x => (x diff defVars).isEmpty)) {
+            implications.remove(h)
+            Some(h)
+          } else {
+            findDefinableVar(tail)
+          }
+        }
+      }
+    }
+    
+    def defineVar(v : ConcreteFunctionSymbol) = {
+      defVars += v
+      varOrder += v
+      undefVars -= v
+    }
+   
+    
+//    println("allEquations:")
+//    for (eq <- allEquations)
+//      eq.prettyPrint(".")
+//    println("IMPLICATIONS:")
+//    println(implications.mkString("\n"))
+
+
+    for (v <- allVariables) {
+      // If nothing implies this variable, just define it right away
+      if (!(implications contains v) | (implications(v).exists(_.isEmpty)))
+        defineVar(v)
+    }
+    
+//    println("PreDefined: " + varOrder.mkString(", "))
+    
+    while (!undefVars.isEmpty) {
+      val v = 
+        findDefinableVar(undefVars.toList) match {
+          case Some(v) => v
+          case None => mostConstrainedVar(undefVars.toList)
+      }
+//      println("Defining: " + v)
+      defineVar(v)
+    }
+    
+    val eqOrder = ListBuffer() : ListBuffer[AST]
+    var remEquations = MSet() ++ allEquations
+    println("varOrder: " + varOrder.mkString(","))
+    
+    def isDefined(eq : AST) = {
+      val vars = eq.iterator.filter(_.isVariable).map(_.symbol).toSet
+      (vars intersect varOrder.toSet).isEmpty 
+    }
+    
+    while (!remEquations.isEmpty) {
+      // Remove first element
+      val v = varOrder.head
+      varOrder = varOrder.tail
+      val rEqs = remEquations.toList
+      for (req <- rEqs; if isDefined(req)) {
+        eqOrder += req
+        remEquations -= req
+      }
+      //Add all remaining equalities which are now defined
+    }
+    
+    println("EQOrder: ")
+    for (eq <- eqOrder)
+		  eq.prettyPrint("..")
+		  
+		eqOrder.toList
+  }     
 }
+
+
+
+//def topologicalSortEqualities(allEquations : List[AST]) : List[AST] = {
+//
+//    for (eq <- allEquations)
+//      eq.prettyPrint
+//      
+//    val simpleEqualities = MSet() : MSet[AST]
+//    val definingEqualities = MSet() : MSet[AST]
+//    val complexEqualities = MSet() : MSet[AST]
+//    
+//    for (eq <- allEquations) {
+//      (eq.children(0).isVariable, eq.children(1).isVariable) match {
+//        case (true, true) => simpleEqualities += eq
+//        case (true, false) | (false, true) => definingEqualities += eq
+//        case (false, false) => complexEqualities += eq
+//      }
+//    }
+//    
+//    var badVariables = MSet() : MSet[ConcreteFunctionSymbol]
+//    
+//    // Maps function symbols to all simple equations containing it as well as the other side of the equation
+//    val simpleMap = new HashMap[ConcreteFunctionSymbol, MSet[(AST, ConcreteFunctionSymbol)]] with MultiMap[ConcreteFunctionSymbol, (AST, ConcreteFunctionSymbol)]
+//    for (eq <- simpleEqualities) yield {
+//      val (v1, v2) = (eq.children(0).symbol, eq.children(1).symbol)
+//      simpleMap.addBinding(v1, (eq, v2))
+//      simpleMap.addBinding(v2, (eq, v1))
+//      // Try changing this
+//      badVariables += v1
+//      badVariables += v2
+//    }
+//    
+//    // Contains tuples Set[ConcreteFunctionSymbol] => AST
+//    val complexList = 
+//      for (eq <- complexEqualities.toList) yield {
+//        (eq.iterator.filter(_.isVariable).map(_.symbol).toSet, eq)
+//      }
+//    
+//    val definingMap = new HashMap[AST, Implication]
+//    
+//    for ( eq <- allEquations.toList) {
+//      val definedVar = 
+//        if (eq.children(0).isVariable) 
+//          eq.children(0).symbol
+//        else
+//          eq.children(1).symbol
+//          
+//      val definingVars =
+//        if (eq.children(0).isVariable)
+//          eq.children(1).iterator.filter(_.isVariable).map(_.symbol).toSet
+//        else
+//          eq.children(0).iterator.filter(_.isVariable).map(_.symbol).toSet
+//
+//      badVariables += definedVar
+//      definingMap += eq -> (definingVars, definedVar)
+//    }      
+//           
+//    
+//    //val undefinedVariables : MSet[ConcreteFunctionSymbol] = MSet() ++ allEquations.map(_.iterator.filter(_.isVariable).map(_.symbol)).toSet.flatten
+//    val allVariables = allEquations.map(_.iterator.filter(_.isVariable).map(_.symbol)).toSet.flatten
+//
+//    val definedVariables : MSet[ConcreteFunctionSymbol] = (MSet() ++ allVariables) diff badVariables
+//    
+//    println("allvariables: " + allVariables)
+//    println("bad variables: " + badVariables)
+//    println("Defined variables: " + definedVariables)
+//      
+//    var sortedEqualities =  List() : List[AST]
+//
+//    // So in each iteration we want to find a variable which either:
+//    // (i)  Is defined by any equation in definingMap
+//    // (ii) ... lets find more cases
+//    
+//    def defineVariable(v : ConcreteFunctionSymbol) : Unit = {
+////      println("defineVariable(" + v + ")")
+//      definedVariables += v      
+//      if (!(definedVariables contains v)) {
+//        // Go through simple map
+//        if (simpleMap contains v) {
+//          val simpleEqs = simpleMap.remove(v).get
+//          for ((seq, svar) <- simpleEqs) {
+//            sortedEqualities = seq :: sortedEqualities
+//            simpleEqualities -= seq
+//            defineVariable(svar)
+//          }                 
+//        }
+//      }
+//    }
+//    
+//    while (!definingEqualities.isEmpty) {
+//      
+//     
+//      def antCount(v : ConcreteFunctionSymbol) : Int = {
+//        (for (deq <- definingEqualities) yield {
+//          val (defVars, defVar) = definingMap(deq)
+//          if (defVars contains v) 1 else 0
+//        }).sum
+//      }
+//      
+//      def findDefiningEquality(remEqs : List[AST]) : AST = {
+//        remEqs match {
+//          case Nil => {
+////            println("No suitable equality found, picking a variable instead")
+//            // Define a variable instead
+//            val undefVars = allVariables diff definedVariables
+//            var best = undefVars.head
+//            var value = antCount(best) 
+//            for (v <-undefVars.tail) {
+//              if (antCount(v) < value) {
+//                best = v
+//                value = antCount(v)
+//              }
+//            }
+//            defineVariable(best)
+//            findDefiningEquality(definingEqualities.toList)
+//          }
+//          case eq :: rest => {
+//            val (dVars, _) = definingMap(eq)
+//            if ((dVars diff definedVariables).isEmpty)
+//              eq
+//            else
+//              findDefiningEquality(rest)
+//          }
+//        }
+//      }
+//      
+//      val next = findDefiningEquality(definingEqualities.toList)
+//      definingEqualities -= next
+//      sortedEqualities = next :: sortedEqualities
+//      val (defVars, defVar) = definingMap(next)
+//      // defVar is now defined
+//      defineVariable(defVar)
+//      
+//    }
+//    
+//    // We are probably going to process simple equalities twice now
+//    for (seq <- simpleEqualities) {
+//      sortedEqualities = seq :: sortedEqualities
+//    }
+//    
+//    for (ceq <- complexEqualities) {
+//      sortedEqualities = ceq :: sortedEqualities
+//    }
+//    
+//    println("Don't forget to add complex and remaingin simple equations")
+//    println("Done")
+//    sortedEqualities.toList.reverse
+//  }    
+// 
+//}
+//    val symDependency = new HashMap[ConcreteFunctionSymbol, Set[Set[ConcreteFunctionSymbol]]] with MultiMap[ConcreteFunctionSymbol, Set[ConcreteFunctionSymbol]]
+//
+//    for ((_, imps) <- allDependencies) {
+//        for ((ant, con) <- imps) {
+//          symDependency.addBinding(con, ant)
+//        }
+//    }
+//    
+//    for (v <- allVariables) {
+//      println("Checking:" + v)
+//      val deps = symDependency(v)
+//      println("\t" + deps)
+//      if (deps.isEmpty || deps.head.isEmpty) {
+//        definedSymbols += v
+//        println("Added: " + v)
+//      } else {
+//        println("Set nonempty: " + deps.mkString(","))
+//      }
+//      } else if (deps.size == 1 && deps.head.size == 1)) {
+//    }
+//    
+//    println("All vars:")
+//    println(allVariables)
+//    println("Pre-defined symbols:")
+//    println(definedSymbols.mkString(", "))
