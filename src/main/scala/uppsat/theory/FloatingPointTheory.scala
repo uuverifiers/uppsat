@@ -812,6 +812,7 @@ def floatFPEquality(left : AST, right : AST) =
           case FPLessThanFactory => "fp.lt"
           case FPGreaterThanOrEqualFactory => "fp.geq"
           case FPGreaterThanFactory => "fp.gt"
+          case FPIsZeroFactory => "fp.isZero"
           case str => throw new Exception("Unsupported FP symbol: " + str)
         }
       }

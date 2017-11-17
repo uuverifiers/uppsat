@@ -31,6 +31,33 @@ import uppsat.theory.BitVectorTheory
 case class SMTParserException(msg : String) extends Exception(msg)
 
 object Interpreter {
+
+def hexToBitList(hex : String) = {
+        val list = hex.map { x =>
+          x match {
+            case '0' => List(0,0,0,0)
+            case '1' => List(0,0,0,1)
+            case '2' => List(0,0,1,0)
+            case '3' => List(0,0,1,1)
+            
+            case '4' => List(0,1,0,0)
+            case '5' => List(0,1,0,1)
+            case '6' => List(0,1,1,0)
+            case '7' => List(0,1,1,1)        
+    
+            case '8' => List(1,0,0,0)
+            case '9' => List(1,0,0,1)
+            case 'a' | 'A' => List(1,0,1,0)
+            case 'b' | 'B' => List(1,0,1,1)
+            
+            case 'c' | 'C' => List(1,1,0,0)
+            case 'd' | 'D' => List(1,1,0,1)
+            case 'e' | 'E' => List(1,1,1,0)
+            case 'f' | 'F' => List(1,1,1,1)        
+          }
+        }
+        list.flatten.toList
+      }    
   
   
   class SMTParser extends smtlib.Absyn.ScriptC.Visitor[Int, Object] {
@@ -186,7 +213,17 @@ object Interpreter {
       }
         
         
-  //    case c : HexConstant =>
+    case c : HexConstant =>
+      val hexPattern = "\\#x([0-9a-f]+)".r
+      c.hexadecimal_ match {
+        case hexPattern(hex) => {
+          val bitList = hexToBitList(hex)
+          val sort = BitVectorTheory.BVSortFactory(List(bitList.length))
+          val value = BitVectorTheory.BitVectorLiteral(bitList, sort)
+          uppsat.ast.Leaf(value)
+        }
+        case other => throw new Exception("Strange hexadecimal literal: " + other)
+      }
   //      (MyIntLit(c.hexadecimal_ substring (2, 16)), SMTInteger)
       // TODO: (Aleks) Are Binary Constants always Bit Vectors?
       case c : BinConstant =>
@@ -566,6 +603,12 @@ object Interpreter {
       checkArgs("fp.neg", 1, args)
       -translateTerm(args(0))
     }      
+
+    case PlainSymbol("fp.isZero") => {
+      checkArgs("fp.isZero", 1, args)
+      val ta = translateTerm(args(0))
+      uppsat.ast.AST(FloatingPointTheory.FPIsZeroFactory(ta.symbol.sort), List(ta))      
+    }          
     
     case PlainSymbol("fp.lt") => {
       checkArgs("fp.lt", 2, args)
@@ -646,32 +689,7 @@ object Interpreter {
      
     case PlainSymbol("fp") => {
       
-      def hexToBitList(hex : String) = {
-        val list = hex.map { x =>
-          x match {
-            case '0' => List(0,0,0,0)
-            case '1' => List(0,0,0,1)
-            case '2' => List(0,0,1,0)
-            case '3' => List(0,0,1,1)
-            
-            case '4' => List(0,1,0,0)
-            case '5' => List(0,1,0,1)
-            case '6' => List(0,1,1,0)
-            case '7' => List(0,1,1,1)        
-    
-            case '8' => List(1,0,0,0)
-            case '9' => List(1,0,0,1)
-            case 'a' | 'A' => List(1,0,1,0)
-            case 'b' | 'B' => List(1,0,1,1)
-            
-            case 'c' | 'C' => List(1,1,0,0)
-            case 'd' | 'D' => List(1,1,0,1)
-            case 'e' | 'E' => List(1,1,1,0)
-            case 'f' | 'F' => List(1,1,1,1)        
-          }
-        }
-        list.flatten.toList
-      }      
+          
       def bitTermToBitList(term : Term) : List[Int] = {
         term match {
           case t : smtlib.Absyn.ConstantTerm =>
@@ -713,7 +731,9 @@ object Interpreter {
         case p(eBits, sBits) => {
           val targetSort = FloatingPointTheory.FPSortFactory(List(eBits.toInt, sBits.toInt))
           val s = FloatingPointTheory.FPToFPFactory(targetSort)
-          uppsat.ast.AST(s, List(translateTerm(args(0)), translateTerm(args(1))))
+          // TODO: Why do we have two arguments here?
+          //uppsat.ast.AST(s, List(translateTerm(args(0)), translateTerm(args(1))))
+          uppsat.ast.AST(s, List(translateTerm(args(0))))
         }
       }
     }
