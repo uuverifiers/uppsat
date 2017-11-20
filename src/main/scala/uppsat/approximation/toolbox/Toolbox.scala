@@ -259,7 +259,8 @@ object Toolbox {
       }
            
       var best = vars.head
-      var count = antCount(vars.head)
+      // I thought this could never be undefined but apparently it can
+      var count = antCount.getOrElse(vars.head, 0)
       for (v <- vars.tail) {
         if (antCount.getOrElse(v, 0) > count) {
           best = v
