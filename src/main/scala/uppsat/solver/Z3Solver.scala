@@ -83,7 +83,7 @@ class Z3Solver(name : String = "Z3", val checkSatCmd : String = "(check-sat)") e
       case "timeout" => throw new TimeoutException("Z3solver")
       case "sat" => Some((extractSymbols zip lines.tail).toMap)
       case "unsat" => None
-      case result => throw new Exception("Trying to get model from non-sat result (" + result + ")") 
+      case result => throw new Exception("Trying to get model from non-sat result (" + output + ")") 
     }
   }
   
