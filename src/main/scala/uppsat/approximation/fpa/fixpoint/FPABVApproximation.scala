@@ -63,12 +63,7 @@ trait FPABVCodec extends FPABVCore with PostOrderCodec {
   def cast(ast : AST, target : ConcreteSort) : AST = {
     (ast.symbol.sort, target) match {
       case (RealNegation.sort, FXSort(decW, fracW)) => {
-        ast.prettyPrint
         val child = cast(ast.children.head, target)
-        child.prettyPrint("...")
-        println(child.symbol)
-        println(child.symbol.sort)
-        println(child.symbol.getClass)
         child.symbol.asInstanceOf[IndexedFunctionSymbol].getFactory match {
           case FXConstantFactory(iBits, fBits) => {
             val newBits = twosComplement(iBits ++ fBits)
@@ -144,7 +139,7 @@ trait FPABVCodec extends FPABVCore with PostOrderCodec {
 
    */
   def floatToFixPoint(sign : Int, eBits : List[Int], sBits : List[Int], fxsort : FXSort) = {
-    val exp = ebitsToInt(eBits)
+    val exp = unbiasExp(eBits, eBits.length)
     val FXSort(integralWidth, fractionalWidth) = fxsort
     
     // Position indicates the number of bits in the integral part of the number 
@@ -163,11 +158,10 @@ trait FPABVCodec extends FPABVCore with PostOrderCodec {
         prependedBits ++ List.fill(integralWidth + fractionalWidth - prependedBits.length)(0)
       else
         prependedBits
-        
+       
     val iBits = appendedBits.drop(newPosition - integralWidth).take(integralWidth)
     val fBits = appendedBits.drop(newPosition).take(fractionalWidth)
-    
-    
+
     val (newiBits, newfBits) = 
       if (sign == 1) {
         // Do some 2-complements magic over iBits ++ fBits
@@ -262,7 +256,6 @@ trait FPABVCodec extends FPABVCore with PostOrderCodec {
   
   
   def encodeNode(ast : AST, children : List[AST], precision : (Int, Int)) : AST = {
-    println("Encoding: " + ast.symbol)
     val newSort = FXSortFactory(List(precision._1, precision._2))
       ast.symbol match {
       
@@ -275,7 +268,6 @@ trait FPABVCodec extends FPABVCore with PostOrderCodec {
         fpLit.getFactory match {
            case FPConstantFactory(sign, eBits,  sBits) => {
              val fxSymbol = floatToFixPoint(sign, eBits, sBits, newSort)
-          
              Leaf(fxSymbol, ast.label)
            }
            case FPPositiveZero => {
@@ -295,27 +287,34 @@ trait FPABVCodec extends FPABVCore with PostOrderCodec {
       
       
       case fpSym : FloatingPointFunctionSymbol => {
+        
         var newChildren = 
           for (c <- children if c.symbol.sort != RoundingModeSort) yield
             cast(c, newSort)
         var label = ast.label
-        val newSymbol = fpSym.getFactory match {
-          case FPNegateFactory   => FXNotFactory(newSort)
-          case FPAdditionFactory => FXAddFactory(newSort)
-          case FPSubstractionFactory => FXSubFactory(newSort)
-          case FPMultiplicationFactory => FXMulFactory(newSort)
-          case FPDivisionFactory => FXDivFactory(newSort)
+        if (fpSym.getFactory == FPNegateFactory) {
+          val notNode = AST(FXNotFactory(newSort), newChildren)
+          val oneNode = Leaf(FX(List.fill(newSort.integralWidth)(0), List.fill(newSort.fractionalWidth - 1)(0) ++ List(1))(newSort))
+          AST(FXAddFactory(newSort), label, List(notNode, oneNode))
+        } else {
+          val newSymbol = fpSym.getFactory match {
+            case FPNegateFactory   => FXNotFactory(newSort)
+            case FPAdditionFactory => FXAddFactory(newSort)
+            case FPSubstractionFactory => FXSubFactory(newSort)
+            case FPMultiplicationFactory => FXMulFactory(newSort)
+            case FPDivisionFactory => FXDivFactory(newSort)
+            
+            case FPToFPFactory => val r = newChildren(0).symbol
+                                  label = newChildren(0).label
+                                  newChildren = newChildren(0).children
+                                  r
+                                  
+            case _ => throw new Exception(fpSym + " unsupported")
+          }
           
-          case FPToFPFactory => val r = newChildren(0).symbol
-                                label = newChildren(0).label
-                                newChildren = newChildren(0).children
-                                r
-                                
-          case _ => throw new Exception(fpSym + " unsupported")
+          
+          AST(newSymbol, label, newChildren)
         }
-        
-        
-        AST(newSymbol, label, newChildren)
       }
       
       case fpPred : FloatingPointPredicateSymbol => {
@@ -344,9 +343,8 @@ trait FPABVCodec extends FPABVCore with PostOrderCodec {
         Leaf(fxSymbol, ast.label)        
       }
       case rv : RealDecimal => {
-        val (sign, eBits, sBits) = floatToBits((rv.num / rv.denom).toFloat)
+        val (sign, eBits, sBits) = floatToBits((rv.num.toFloat / rv.denom.toFloat).toFloat)
         val fxSymbol = floatToFixPoint(sign, eBits, sBits, newSort)
-        
        Leaf(fxSymbol, ast.label)        
         
       }

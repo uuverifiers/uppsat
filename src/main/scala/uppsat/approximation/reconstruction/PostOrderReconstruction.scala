@@ -30,12 +30,8 @@ trait PostOrderReconstruction extends ModelReconstruction {
   
   
   def reconstruct(ast : AST, decodedModel : Model) : Model = {
-    println("DECODED MODEL")
-    println(decodedModel)
     val reconstructedModel = new Model()
     AST.postVisit[Model, Model](ast, reconstructedModel, decodedModel, reconstructNode)
-    println("RECONSTRUCTED MODEL")
-    println(reconstructedModel)
     reconstructedModel
   }
 

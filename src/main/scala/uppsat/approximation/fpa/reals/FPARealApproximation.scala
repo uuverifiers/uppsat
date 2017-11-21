@@ -32,6 +32,7 @@ import uppsat.theory.RealTheory
 import uppsat.approximation.reconstruction.EqualityAsAssignmentReconstruction
 import uppsat.approximation.refinement.UniformRefinementStrategy
 import uppsat.approximation.reconstruction.EmptyReconstruction
+import uppsat.approximation.reconstruction.PostOrderReconstruction
 
 trait FPARealCore extends ApproximationCore {
    type Precision = Int
@@ -249,9 +250,9 @@ object FPARealApp extends FPARealCore
                   with FPARealRefinementStrategy {
 }
 
-object FPARealEmptyApp extends FPARealCore 
+object FPARealNodeByNodeApp extends FPARealCore 
                   with FPARealCodec
-                  with EmptyReconstruction
+                  with PostOrderReconstruction
                   with FPARealRefinementStrategy {
 }
 

@@ -54,7 +54,7 @@ object globalOptions {
   val REG_APPROXS = Map( "ijcar" ->  new Approximation(IJCARSmallFloatsApp), 
                           "saturation" ->  new Approximation(FxPntSmallFloatsApp), 
                           "reals" ->  new Approximation(FPARealApp),
-                          "reals-no-reconstruct" ->  new Approximation(FPARealEmptyApp),
+                          "reals-node-by-node" ->  new Approximation(FPARealNodeByNodeApp),
                           "saturation_reals" -> new Approximation(FxPntFPARealApp),
                           "fixedpoint" ->  new Approximation(FPABVApp),
                           "fixedpoint-node-by-node" ->  new Approximation(FPABVNodeByNodeApp),                          
