@@ -31,6 +31,8 @@ import uppsat.globalOptions
 import uppsat.approximation.reconstruction.EqualityAsAssignmentReconstruction
 import uppsat.approximation.refinement.ErrorBasedRefinementStrategy
 import uppsat.approximation.refinement.UniformPGRefinementStrategy
+import uppsat.approximation.reconstruction.EmptyReconstruction
+import uppsat.approximation.reconstruction.PostOrderReconstruction
 
 trait SmallFloatsCore extends ApproximationCore {
    type Precision = Int
@@ -267,9 +269,22 @@ trait SmallFloatsRefinementStrategy extends SmallFloatsCore
 object IJCARSmallFloatsApp extends SmallFloatsCore 
                               with SmallFloatsCodec
                               with EqualityAsAssignmentReconstruction
-                              with SmallFloatsRefinementStrategy 
+                              with SmallFloatsRefinementStrategy                               
+
+object IJCARSmallFloatsNodeByNodeApp extends SmallFloatsCore 
+                                   with SmallFloatsCodec
+                                   with PostOrderReconstruction
+                                   with SmallFloatsRefinementStrategy
+                              
+                              
+object IJCARSmallFloatsEmptyapp extends SmallFloatsCore 
+                                   with SmallFloatsCodec
+                                   with EmptyReconstruction
+                                   with SmallFloatsRefinementStrategy
 
 object FxPntSmallFloatsApp extends SmallFloatsCore 
                               with SmallFloatsCodec
                               with FixpointReconstruction
-                              with SmallFloatsRefinementStrategy 
+                              with SmallFloatsRefinementStrategy
+                              
+                              

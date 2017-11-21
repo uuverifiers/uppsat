@@ -28,6 +28,8 @@ import uppsat.solver.Z3Solver
 import uppsat.globalOptions
 import uppsat.approximation.reconstruction.EqualityAsAssignmentReconstruction
 import uppsat.approximation.refinement.UniformRefinementStrategy
+import uppsat.approximation.reconstruction.EmptyReconstruction
+import uppsat.approximation.reconstruction.PostOrderReconstruction
 
 
 
@@ -60,6 +62,28 @@ trait FPABVCodec extends FPABVCore with PostOrderCodec {
   
   def cast(ast : AST, target : ConcreteSort) : AST = {
     (ast.symbol.sort, target) match {
+      case (RealNegation.sort, FXSort(decW, fracW)) => {
+        ast.prettyPrint
+        val child = cast(ast.children.head, target)
+        child.prettyPrint("...")
+        println(child.symbol)
+        println(child.symbol.sort)
+        println(child.symbol.getClass)
+        child.symbol.asInstanceOf[IndexedFunctionSymbol].getFactory match {
+          case FXConstantFactory(iBits, fBits) => {
+            val newBits = twosComplement(iBits ++ fBits)
+              // TODO: (Aleks) Dropping bit at overflow?        
+            val nextBits = 
+              if (newBits.length > iBits.length + fBits.length) {
+                newBits.drop(newBits.length - (iBits.length + fBits.length))
+              } else {
+                newBits
+              }
+            
+            Leaf(FX(nextBits.take(iBits.length), nextBits.drop(iBits.length))(FXSort(decW, fracW)), ast.label)
+          }
+        }
+      }
       case (RealSort, FXSort(decW, fracW)) => {
         ast.symbol match {
           case realValue : RealNumeral => {
@@ -238,6 +262,7 @@ trait FPABVCodec extends FPABVCore with PostOrderCodec {
   
   
   def encodeNode(ast : AST, children : List[AST], precision : (Int, Int)) : AST = {
+    println("Encoding: " + ast.symbol)
     val newSort = FXSortFactory(List(precision._1, precision._2))
       ast.symbol match {
       
@@ -312,13 +337,22 @@ trait FPABVCodec extends FPABVCore with PostOrderCodec {
       
       case rm : RoundingMode => rm
       
-      case realValue : RealNumeral => throw new Exception("RealNumeral")
+      case realValue : RealNumeral => {
+        val (sign, eBits, sBits) = floatToBits(realValue.num.toFloat)
+        val fxSymbol = floatToFixPoint(sign, eBits, sBits, newSort)
+        
+        Leaf(fxSymbol, ast.label)        
+      }
       case rv : RealDecimal => {
         val (sign, eBits, sBits) = floatToBits((rv.num / rv.denom).toFloat)
         val fxSymbol = floatToFixPoint(sign, eBits, sBits, newSort)
         
        Leaf(fxSymbol, ast.label)        
         
+      }
+      
+      case rSym : RealFunctionSymbol => {
+        Leaf(rSym, ast.label)
       }
       
       case _ => AST(ast.symbol, ast.label, children) 
@@ -449,3 +483,17 @@ object FPABVApp extends FPABVCore
                   with EqualityAsAssignmentReconstruction
                   with FPABVRefinementStrategy {
 }
+
+object FPABVEmptyApp extends FPABVCore 
+                  with FPABVCodec
+                  with EmptyReconstruction
+                  with FPABVRefinementStrategy {
+}
+
+object FPABVNodeByNodeApp extends FPABVCore 
+                  with FPABVCodec
+                  with PostOrderReconstruction
+                  with FPABVRefinementStrategy {
+}
+
+
