@@ -328,6 +328,7 @@ trait FPABVCodec extends FPABVCore with PostOrderCodec {
           case FPLessThanOrEqualFactory => FXLessThanOrEqualFactory(newSort)
           case FPGreaterThanFactory => FXGreaterThanFactory(newSort)
           case FPGreaterThanOrEqualFactory => FXGreaterThanOrEqualFactory(newSort)
+          case FPFPEqualityFactory => FXEqualityFactory(newSort)
           case _ => throw new Exception(fpPred + " unsupported")
         }
 

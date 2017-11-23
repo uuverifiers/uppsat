@@ -139,6 +139,7 @@ trait FPARealCodec extends FPARealCore with PostOrderCodec {
             case fpPred : FloatingPointPredicateSymbol => {
               val newSymbol = fpPred.getFactory match {
                 case FPEqualityFactory => RealEquality
+                case FPFPEqualityFactory => RealEquality
                 case FPLessThanFactory => RealLT
                 case FPLessThanOrEqualFactory => RealLEQ
                 case FPGreaterThanFactory => RealGT
