@@ -20,7 +20,7 @@ sbt assembly
 
 cp target/scala-2.11/uppsat-assembly-0.01.jar uppsat.jar
 
-scala uppsat.jar -app=ijcar -backend=z3 -validator=z3 examples/e2a_1.smt2
+scala uppsat.jar -app=ijcar -backend=z3 -validator=z3 examples/e2a_1.c.smt2
 
 
 ## Running the tests
