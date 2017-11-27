@@ -51,10 +51,7 @@ object ApproximationSolver {
     //ModelReconstructor.stopOnlineSolver()
     
     retVal match {
-      case Sat(model) => {
-        verbose("Model found:\n" + model.mkString("\t", "\n\t", "\n"))        
-        println("sat")
-      }
+      case Sat(model) => println("sat")
       case Unsat => println("unsat")
       case Unknown => println("unknown")
     }

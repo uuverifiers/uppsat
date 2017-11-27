@@ -42,9 +42,6 @@ object globalOptions {
   var STARTTIME : Option[Long] = None
   var PARANOID = false
   var SURRENDER = false
-  var THROW_EXCEPTIONS = false
-
-
 
    val REG_SOLVERS = Map( "z3" -> new Z3Solver(), 
                          "mathsat" -> new MathSatSolver("Mathsat", ""),                         
@@ -165,7 +162,6 @@ object main {
         case "-h" | "-help" => printUsage()
         case "-f" => globalOptions.FORMULAS = true
         case "-surrender" => globalOptions.SURRENDER = true
-        case "-te" => globalOptions.THROW_EXCEPTIONS = true
         
         case backend(solver) => 
             if (globalOptions.REG_SOLVERS.contains(solver))
@@ -259,15 +255,9 @@ object main {
         println("timeout")
       }
       case e : Exception => {
-        println("Exception thrown: " + e)
+        println("Unhandled error: " + e)
         println(e.getStackTraceString)
-        if (globalOptions.THROW_EXCEPTIONS) {
-          println("Propagating exception")
-          throw e
-        } else {
-          println("terminating")
-          
-        }
+        println("terminating")
       }
     }
   }   
