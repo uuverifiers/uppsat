@@ -27,7 +27,8 @@ class Z3Solver(name : String = "Z3", val checkSatCmd : String = "(check-sat)") e
   def evaluate(formula : String) = Timer.measure("Z3Solver.runSolver") {
     import sys.process._
     
-    val z3Binary = "z3-4.5.0"
+    globalOptions.verbose("Using Z3 with seed: " + globalOptions.RANDOM_SEED)
+    val z3Binary = "z3-4.5.0 sat.random_seed=" + globalOptions.RANDOM_SEED
     
     val cmd = 
       if (globalOptions.DEADLINE.isDefined) {
@@ -37,6 +38,8 @@ class Z3Solver(name : String = "Z3", val checkSatCmd : String = "(check-sat)") e
         "./" + z3Binary + " -in -smt2"
       }       
           
+    
+    println(cmd)
     val process = Runtime.getRuntime().exec(cmd)
     z3print("[Started process: " + process)
     val stdin = process.getOutputStream ()

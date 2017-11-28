@@ -33,6 +33,7 @@ object globalOptions {
   // FLAGS
   var REACHED_MAX_PRECISON = false
   
+  var RANDOM_SEED = 0
   var VERBOSE = false
   var STATS = false
   var MODEL = false
@@ -106,7 +107,7 @@ object main {
     println("Options:")
     println("\t-v - verbose output")
     println("\t-s - print statistics")
-    println("\t-m - print model (debug purposes)3")
+    println("\t-m - print model (debug purposes)")
     println("\t-d - debugging output")
     println("\t-p - run a second check using z3 to verify internal queries")
     println("\t-backend= - use one of the following backends:")
@@ -142,6 +143,7 @@ object main {
    */
   def parseArgument( arg : String) : Boolean = {
       val timeoutPattern = "-t=([0-9.]+)".r
+      val seedPattern = "-seed=([0-9.]+)".r
       val appPattern = "-app=(\\S+)".r
       val backend = "-backend=(\\S+)".r
       val validator = "-validator=(\\S+)".r
@@ -183,6 +185,10 @@ object main {
         
         case timeoutPattern(t) => {
           globalOptions.DEADLINE = Some(t.toInt * 1000)
+        }
+        
+        case seedPattern(s) => {
+          globalOptions.RANDOM_SEED = s.toInt
         }
                
         case dashPattern() => printUsage()
