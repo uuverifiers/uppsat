@@ -33,7 +33,23 @@ import uppsat.globalOptions
 trait EqualityAsAssignmentReconstruction extends ModelReconstruction {
   
   
- def equalityAsAssignment(ast : AST, decodedModel : Model,  candidateModel : Model) : Boolean = {
+  /**
+   * Tries to apply the equality-as-assignment heuristic, returning true if successful (else otherwise)
+   *   
+   * Checks whether the root node of the AST is an equality. If so, if one of the sides is an undefined variable,
+   * that variables will be assigned the expression of the other side in candidateModel. 
+   *
+   * Note: If the root node of ast is an equality it has to be defined in the decodedModel. 
+   *   
+   * @param ast The node to which equality-as-assignment should be applied (node of the full-precision formula)
+   * @param decodedModel The model of the approximate formula 
+   * @param candidateModel The potential model which is under construction (of the full-precision formula),
+   *                       will be updated if equality-as-assignment is applied. 
+   * 
+   * @return True if equalityAsAssignment could be applied, otherwise false
+
+  */
+  def equalityAsAssignment(ast : AST, decodedModel : Model,  candidateModel : Model) : Boolean = {
     ast match { 
       case AST(RoundingModeEquality, _ , _)|
            AST(BoolEquality, _, _) | 
@@ -101,36 +117,34 @@ trait EqualityAsAssignmentReconstruction extends ModelReconstruction {
   
   def reconstruct(ast : AST, decodedModel : Model) : Model = {
     val candidateModel = new Model()
+
     
     val todo = new Stack[AST]()
+    todo.push(ast)
+    
     val toEvaluateEquality = ListBuffer() : ListBuffer[AST]
     val toEvaluateBoolean = new Stack[AST]()
     val toReconstructPredicate = new Queue[AST]()
-    todo.push(ast)
     
-     
-    
+    // Traverse the tree and add all nodes to respective list
     while (!todo.isEmpty) {
       val nextItem = todo.pop()
-      (nextItem.symbol) match {
-        
+      (nextItem.symbol) match {       
        case (RoundingModeEquality)| 
-            (FPEqualityFactory(_)) |
-            (FPFPEqualityFactory(_)) => {
-            toEvaluateEquality += nextItem //reconstructSubtree(nextItem, decodedModel, candidateModel)
+            FPEqualityFactory(_) |
+            FPFPEqualityFactory(_) => {
+            toEvaluateEquality += nextItem 
         }
         
        case fpPred : FloatingPointPredicateSymbol => {
          toReconstructPredicate += nextItem
        }
             
-       // Check if this node is actually true
        case _ if nextItem.symbol.sort == BooleanSort => {
          toEvaluateBoolean.push(nextItem)
           for (c <- nextItem.children)
             todo.push(c)
         }
-        
       }
     }
       
