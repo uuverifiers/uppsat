@@ -34,7 +34,7 @@ import uppsat.approximation.refinement.UniformPGRefinementStrategy
 import uppsat.approximation.reconstruction.EmptyReconstruction
 import uppsat.approximation.reconstruction.PostOrderReconstruction
 
-trait SmallFloatsCore extends ApproximationCore {
+trait SmallFloatsContext extends ApproximationContext {
    type Precision = Int
    val precisionOrdering = new IntPrecisionOrdering(0,5)
    val inputTheory = FloatingPointTheory
@@ -42,12 +42,12 @@ trait SmallFloatsCore extends ApproximationCore {
 }
 
   /**
-   * The core of the smallfloats approximation!
+   * The context of the smallfloats approximation!
 	 * Other approximations might add top level constraints over the domain rather than 
    * change the sorts of the formula itself.
 	 */
 
-trait SmallFloatsCodec extends SmallFloatsCore with PostOrderCodec {
+trait SmallFloatsCodec extends SmallFloatsContext with PostOrderCodec {
 
   class SmallFloatsException(msg : String) extends Exception("SmallFloats: " + msg)
   
@@ -214,7 +214,7 @@ trait SmallFloatsPGRefinementStrategy extends UniformPGRefinementStrategy {
   }
 }
 
-trait SmallFloatsMGRefinementStrategy extends SmallFloatsCore 
+trait SmallFloatsMGRefinementStrategy extends SmallFloatsContext 
                                        with ErrorBasedRefinementStrategy {
   val topK = 10 // K 
   val fractionToRefine = 1.0//K_percentage
@@ -270,26 +270,26 @@ trait SmallFloatsMGRefinementStrategy extends SmallFloatsCore
   } 
 }
 
-object IJCARSmallFloatsApp extends SmallFloatsCore 
+object IJCARSmallFloatsApp extends SmallFloatsContext 
                               with SmallFloatsCodec
                               with EqualityAsAssignmentReconstruction
                               with SmallFloatsMGRefinementStrategy   
                               with SmallFloatsPGRefinementStrategy
 
-object IJCARSmallFloatsNodeByNodeApp extends SmallFloatsCore 
+object IJCARSmallFloatsNodeByNodeApp extends SmallFloatsContext 
                                    with SmallFloatsCodec
                                    with PostOrderReconstruction
                                    with SmallFloatsMGRefinementStrategy
                                    with SmallFloatsPGRefinementStrategy
                               
                               
-object IJCARSmallFloatsEmptyapp extends SmallFloatsCore 
+object IJCARSmallFloatsEmptyapp extends SmallFloatsContext 
                                    with SmallFloatsCodec
                                    with EmptyReconstruction
                                    with SmallFloatsMGRefinementStrategy
                                    with SmallFloatsPGRefinementStrategy
 
-object FxPntSmallFloatsApp extends SmallFloatsCore 
+object FxPntSmallFloatsApp extends SmallFloatsContext 
                               with SmallFloatsCodec
                               with FixpointReconstruction
                               with SmallFloatsMGRefinementStrategy

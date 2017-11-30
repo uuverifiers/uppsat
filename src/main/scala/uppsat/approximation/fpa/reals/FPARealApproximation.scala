@@ -34,14 +34,14 @@ import uppsat.approximation.refinement.UniformRefinementStrategy
 import uppsat.approximation.reconstruction.EmptyReconstruction
 import uppsat.approximation.reconstruction.PostOrderReconstruction
 
-trait FPARealCore extends ApproximationCore {
+trait FPARealContext extends ApproximationContext {
    type Precision = Int
    val precisionOrdering = new IntPrecisionOrdering(0, 1)
    val inputTheory = FloatingPointTheory
    val outputTheory = RealTheory
 }
 
-trait FPARealCodec extends FPARealCore with PostOrderCodec {
+trait FPARealCodec extends FPARealContext with PostOrderCodec {
   // Encodes a node by scaling its sort based on precision and calling
   // cast to ensure sortedness.
   var fpToRealMap = Map[ConcreteFunctionSymbol, ConcreteFunctionSymbol]()
@@ -238,26 +238,26 @@ trait FPARealCodec extends FPARealCore with PostOrderCodec {
 }
 
 
-trait FPARealRefinementStrategy extends FPARealCore with UniformRefinementStrategy {
+trait FPARealRefinementStrategy extends FPARealContext with UniformRefinementStrategy {
   def increasePrecision(p : Precision) = {
     precisionOrdering.+(p, 1)
 
   }
 }
 
-object FPARealApp extends FPARealCore 
+object FPARealApp extends FPARealContext 
                   with FPARealCodec
                   with EqualityAsAssignmentReconstruction
                   with FPARealRefinementStrategy {
 }
 
-object FPARealNodeByNodeApp extends FPARealCore 
+object FPARealNodeByNodeApp extends FPARealContext 
                   with FPARealCodec
                   with PostOrderReconstruction
                   with FPARealRefinementStrategy {
 }
 
-object FxPntFPARealApp extends FPARealCore 
+object FxPntFPARealApp extends FPARealContext 
                   with FPARealCodec
                   with FixpointReconstruction
                   with FPARealRefinementStrategy {

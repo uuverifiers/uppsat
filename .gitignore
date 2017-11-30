@@ -64,3 +64,13 @@ errors/
 esbmc/
 
 lexerror/
+
+test\.smt2
+
+running\.smt2
+
+*.md#
+
+reduced2\.smt2
+
+reduced\.smt2

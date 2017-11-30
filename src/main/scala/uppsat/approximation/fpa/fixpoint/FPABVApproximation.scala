@@ -34,7 +34,7 @@ import uppsat.approximation.reconstruction.PostOrderReconstruction
 
 
 /**
- * FPABVCore - FloatingPoint Arithmetic by BitVector approximations
+ * FPABVContext - FloatingPoint Arithmetic by BitVector approximations
  * 
  * The approximation works by replacing FloatingPoint numbers by fixed point numbers (represented by BitVectors).
  * 
@@ -45,14 +45,14 @@ import uppsat.approximation.reconstruction.PostOrderReconstruction
  * all ancestor nodes must have precisions which are greater or equal to (i, j).
  * 
  */
-trait FPABVCore extends ApproximationCore {
+trait FPABVContext extends ApproximationContext {
    type Precision = (Int, Int) // (integralBits, FractionalBits)
    val precisionOrdering = new IntTuplePrecisionOrdering((5,5), (25,25))
    val inputTheory = FloatingPointTheory
    val outputTheory = FixPointTheory
 }
 
-trait FPABVCodec extends FPABVCore with PostOrderCodec {
+trait FPABVCodec extends FPABVContext with PostOrderCodec {
   var fpToFXMap = Map[ConcreteFunctionSymbol, ConcreteFunctionSymbol]()
 
   
@@ -471,25 +471,25 @@ trait FPABVCodec extends FPABVCore with PostOrderCodec {
   }
 }
 //
-trait FPABVRefinementStrategy extends FPABVCore with UniformRefinementStrategy {
+trait FPABVRefinementStrategy extends FPABVContext with UniformRefinementStrategy {
   def increasePrecision(p : Precision) = {
     precisionOrdering.+(p, (4,4))
   }
 } 
 
-object FPABVApp extends FPABVCore 
+object FPABVApp extends FPABVContext 
                   with FPABVCodec
                   with EqualityAsAssignmentReconstruction
                   with FPABVRefinementStrategy {
 }
 
-object FPABVEmptyApp extends FPABVCore 
+object FPABVEmptyApp extends FPABVContext 
                   with FPABVCodec
                   with EmptyReconstruction
                   with FPABVRefinementStrategy {
 }
 
-object FPABVNodeByNodeApp extends FPABVCore 
+object FPABVNodeByNodeApp extends FPABVContext 
                   with FPABVCodec
                   with PostOrderReconstruction
                   with FPABVRefinementStrategy {

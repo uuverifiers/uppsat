@@ -7,36 +7,36 @@ import uppsat.ModelEvaluator.Model
 import uppsat.precision.PrecisionMap
 
 
-class Approximation(val core : ApproximationCore
+class Approximation(val context : ApproximationContext
                         with Codec
                         with ModelReconstruction
                         with ProofGuidedRefinementStrategy
                         with ModelGuidedRefinementStrategy
                         ) {
-  type P = core.Precision
-  val precisionOrdering : PrecisionOrdering[P] = core.precisionOrdering
-  val inputTheory : Theory = core.inputTheory
-  val outputTheory : Theory = core.outputTheory
+  type P = context.Precision
+  val precisionOrdering : PrecisionOrdering[P] = context.precisionOrdering
+  val inputTheory : Theory = context.inputTheory
+  val outputTheory : Theory = context.outputTheory
   
   // General framework primitives
   def satRefine(ast : AST, decodedModel : Model, failedModel : Model, pmap : PrecisionMap[P]) : PrecisionMap[P] =
-    core.satRefine(ast, decodedModel, failedModel, pmap)
+    context.satRefine(ast, decodedModel, failedModel, pmap)
   
   def unsatRefine(ast : AST, unsatCore : List[AST], pmap : PrecisionMap[P]) : PrecisionMap[P] =
-    core.unsatRefine(ast, unsatCore, pmap)
+    context.unsatRefine(ast, unsatCore, pmap)
 
   def encodeFormula(ast : AST, pmap : PrecisionMap[P]) : AST =
-    core.encodeFormula(ast, pmap)
+    context.encodeFormula(ast, pmap)
 
   def decodeModel(ast : AST, appModel : Model, pmap : PrecisionMap[P]) : Model =
-    core.decodeModel(ast, appModel, pmap)
+    context.decodeModel(ast, appModel, pmap)
 
   def reconstruct(ast : AST, decodedModel : Model) : Model =
-    core.reconstruct(ast, decodedModel)
+    context.reconstruct(ast, decodedModel)
  }
 
 
-trait ApproximationCore {
+trait ApproximationContext {
   val inputTheory : Theory
   val outputTheory : Theory
 
@@ -44,20 +44,20 @@ trait ApproximationCore {
   val precisionOrdering : PrecisionOrdering[Precision]
 }
 
-trait Codec extends ApproximationCore {
+trait Codec extends ApproximationContext {
   def encodeFormula(ast : AST, pmap : PrecisionMap[Precision]) : AST
   def decodeModel(ast : AST, appMode : Model, pmap : PrecisionMap[Precision]) : Model
 }
 
-trait ModelReconstruction extends ApproximationCore {
+trait ModelReconstruction extends ApproximationContext {
   def reconstruct(ast : AST, decodedModel : Model) : Model
 }
 
-trait ModelGuidedRefinementStrategy extends ApproximationCore {
+trait ModelGuidedRefinementStrategy extends ApproximationContext {
   def satRefine(ast : AST, decodedModel : Model, failedModel : Model, pmap : PrecisionMap[Precision]) : PrecisionMap[Precision]
 }
 
-trait ProofGuidedRefinementStrategy extends ApproximationCore {
+trait ProofGuidedRefinementStrategy extends ApproximationContext {
   def unsatRefine(ast : AST, core : List[AST], pmap : PrecisionMap[Precision]) : PrecisionMap[Precision]
 }
 

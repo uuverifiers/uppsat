@@ -1,5 +1,5 @@
 package uppsat.approximation
 
-trait AppCore {
+trait AppContext {
   
 }
