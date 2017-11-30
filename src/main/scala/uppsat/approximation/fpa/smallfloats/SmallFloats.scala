@@ -208,10 +208,14 @@ trait SmallFloatsCodec extends SmallFloatsCore with PostOrderCodec {
   }
 }
 
+trait SmallFloatsPGRefinementStrategy extends UniformPGRefinementStrategy {
+  def unsatRefinePrecision( p : Int) : Int = {
+    p + 1
+  }
+}
 
-trait SmallFloatsRefinementStrategy extends SmallFloatsCore 
-                                       with ErrorBasedRefinementStrategy
-                                       with UniformPGRefinementStrategy{
+trait SmallFloatsMGRefinementStrategy extends SmallFloatsCore 
+                                       with ErrorBasedRefinementStrategy {
   val topK = 10 // K 
   val fractionToRefine = 1.0//K_percentage
   val precisionIncrement = 1 // 20/100 = 1/5
@@ -222,10 +226,10 @@ trait SmallFloatsRefinementStrategy extends SmallFloatsCore
     newP min pmap.precisionOrdering.maximalPrecision // TODO:  This check should be in the ordering somewhere?
   }
   
-  def unsatRefinePrecision( p : Int) : Int = {
+  def defaultRefinePrecision( p : Int) : Int = {
     p + 1
   }
-  
+
   def computeRelativeError ( ast : AST, decodedModel : Model, failedModel : Model) : Option[Double] = {
     (decodedModel(ast).symbol, failedModel(ast).symbol) match {
       case (aValue : FloatingPointLiteral, bValue : FloatingPointLiteral) => 
@@ -269,22 +273,26 @@ trait SmallFloatsRefinementStrategy extends SmallFloatsCore
 object IJCARSmallFloatsApp extends SmallFloatsCore 
                               with SmallFloatsCodec
                               with EqualityAsAssignmentReconstruction
-                              with SmallFloatsRefinementStrategy                               
+                              with SmallFloatsMGRefinementStrategy   
+                              with SmallFloatsPGRefinementStrategy
 
 object IJCARSmallFloatsNodeByNodeApp extends SmallFloatsCore 
                                    with SmallFloatsCodec
                                    with PostOrderReconstruction
-                                   with SmallFloatsRefinementStrategy
+                                   with SmallFloatsMGRefinementStrategy
+                                   with SmallFloatsPGRefinementStrategy
                               
                               
 object IJCARSmallFloatsEmptyapp extends SmallFloatsCore 
                                    with SmallFloatsCodec
                                    with EmptyReconstruction
-                                   with SmallFloatsRefinementStrategy
+                                   with SmallFloatsMGRefinementStrategy
+                                   with SmallFloatsPGRefinementStrategy
 
 object FxPntSmallFloatsApp extends SmallFloatsCore 
                               with SmallFloatsCodec
                               with FixpointReconstruction
-                              with SmallFloatsRefinementStrategy
+                              with SmallFloatsMGRefinementStrategy
+                              with SmallFloatsPGRefinementStrategy
                               
                               

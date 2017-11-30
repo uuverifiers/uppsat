@@ -16,13 +16,14 @@ trait ErrorBasedRefinementStrategy extends PostOrderRefinement {
   val precisionIncrement : Precision
 
   def nodeError(decodedModel : Model)(failedModel : Model)(accu : Map[AST, Double], ast : AST) : Map[AST, Double]
-  
+  def defaultRefinePrecision( p : Precision) : Precision 
+
   def cmpErrors(f1 : Double, f2: Double) : Boolean = {
     val d1 = f1.doubleValue()
     val d2 = f2.doubleValue()
     d1.compareTo(d2) > 0
   }
-  
+
   override def satRefine(ast : AST, decodedModel : Model, failedModel : Model, pmap : PrecisionMap[Precision])
       : PrecisionMap[Precision] = {
     val accu = Map[AST, Double]()
@@ -47,7 +48,7 @@ trait ErrorBasedRefinementStrategy extends PostOrderRefinement {
       // all the nodes where evaluation fails are at full precision.
       // UnsatRefine in that case.
       verbose("No changes, naive precision refinement")
-      newPMap = unsatRefine(ast, List(), pmap)
+      newPMap = pmap.map(defaultRefinePrecision)
     }
     newPMap
   }
