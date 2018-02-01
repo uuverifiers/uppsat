@@ -144,6 +144,29 @@ trait SmallFloatsCodec extends SmallFloatsContext with PostOrderCodec {
     AST(symbol, ast.label, children)
   }
   
+  
+  def decodeSubnormalFP(fp: FloatingPointLiteral, sort : ConcreteSort) : ConcreteFunctionSymbol = {
+    val FPSort(e, s) = sort
+    val sPrefix = fp.sBits.dropWhile(_ == 0)
+    val eUnderflow = fp.sBits.length - sPrefix.length
+    val sBits = sPrefix.tail ::: List.fill(s - sPrefix.length)(0)  
+    val exp = - bias(fp.eBits.length) - eUnderflow
+    val eBits = intToBits(biasExp(exp, e), e)                       
+    FloatingPointLiteral(fp.sign, eBits, sBits, FPSort(e,s))
+  }
+  
+  def isSubnormal(fp: FloatingPointLiteral) : Boolean = {
+     !fp.eBits.contains(1)
+  }
+  
+  def decodeNormalFP(fp : FloatingPointLiteral, sort : ConcreteSort) : ConcreteFunctionSymbol = {
+    val FPSort(e, s) = sort
+    val exp = unbiasExp(fp.eBits, fp.eBits.length)
+    val eBits = intToBits(biasExp(exp, e), e)
+    val missing = (s - 1) - fp.sBits.length
+    val sBits = fp.sBits ::: List.fill(missing)(0)
+    FloatingPointLiteral(fp.sign, eBits, sBits, FPSort(e, s))
+  }
   /** Decodes an approximative model value back to full precision.
    *  
    *  @param symbol A symbol representing the full precision sort.
@@ -153,27 +176,13 @@ trait SmallFloatsCodec extends SmallFloatsContext with PostOrderCodec {
    *  @return value decoded to the sort of symbol if it was encoded by precision p.
    */  
   def decodeFPValue(symbol : ConcreteFunctionSymbol, value : AST, p : Int) : ConcreteFunctionSymbol = {
-    (symbol.sort, value.symbol) match {
-      case (FPSort(e, s), fp : FloatingPointLiteral) => {
+    value.symbol match {
+      case fp : FloatingPointLiteral => 
         fp.getFactory match {
-          case _ : FPSpecialValuesFactory => fp(FPSort(e, s))          
-          case _ if !fp.eBits.contains(1) => {
-            val sPrefix = fp.sBits.dropWhile(_ == 0)
-            val eUnderflow = fp.sBits.length - sPrefix.length
-            val sBits = sPrefix.tail ::: List.fill(s - sPrefix.length)(0)  
-            val exp = - bias(fp.eBits.length) - eUnderflow
-            val eBits = intToBits(biasExp(exp, e), e)                       
-            FloatingPointLiteral(fp.sign, eBits, sBits, FPSort(e,s))
-          }
-          case _ => {
-            val exp = unbiasExp(fp.eBits, fp.eBits.length)
-            val eBits = intToBits(biasExp(exp, e), e)
-            val missing = (s - 1) - fp.sBits.length
-            val sBits = fp.sBits ::: List.fill(missing)(0)
-            FloatingPointLiteral(fp.sign, eBits, sBits, FPSort(e, s))
-          }
-        }
-      }      
+          case _ : FPSpecialValuesFactory => fp(symbol.sort)
+          case _ if isSubnormal(fp) => decodeSubnormalFP(fp, symbol.sort)
+          case _ => decodeNormalFP(fp, symbol.sort)
+        }    
       case _ => value.symbol
     }
   }
