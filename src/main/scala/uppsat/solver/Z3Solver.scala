@@ -28,14 +28,14 @@ class Z3Solver(name : String = "Z3", val checkSatCmd : String = "(check-sat)") e
     import sys.process._
     
     globalOptions.verbose("Using Z3 with seed: " + globalOptions.RANDOM_SEED)
-    val z3Binary = "z3-4.5.0 sat.random_seed=" + globalOptions.RANDOM_SEED
+    val z3Binary = "z3 sat.random_seed=" + globalOptions.RANDOM_SEED
     
     val cmd = 
       if (globalOptions.DEADLINE.isDefined) {
         val dlf = ((globalOptions.remainingTime.get) / 1000.0).ceil.toInt
-        "./" + z3Binary + " -T:" + dlf + " -in -smt2"
+        z3Binary + " -T:" + dlf + " -in -smt2"
       } else {
-        "./" + z3Binary + " -in -smt2"
+        z3Binary + " -in -smt2"
       }       
           
     

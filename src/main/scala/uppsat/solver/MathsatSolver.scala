@@ -29,14 +29,14 @@ class MathSatSolver(name : String = "MathSAT", params : String = "") extends SMT
   def evaluate(formula : String) = Timer.measure("MathSatSolver.runSolver") {
     import sys.process._
   
-    val mathsatBinary = "mathsat.master"
+    val mathsatBinary = "mathsat"
     
     val cmd = 
       if (globalOptions.DEADLINE.isDefined) {
         val dlf = ((globalOptions.remainingTime.get) / 1000.0).ceil.toInt
-        "timeout -s 2 " + dlf + "s " +  "./" + mathsatBinary + " -model -stats " + params
+        "timeout -s 2 " + dlf + "s " + mathsatBinary + " -model -stats " + params
       } else {
-        "./" + mathsatBinary + " -model -stats " + params
+      	mathsatBinary + " -model -stats " + params
       }
       
     val process = Runtime.getRuntime().exec(cmd)
