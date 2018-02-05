@@ -5,6 +5,7 @@ package uppsat.parser
 import uppsat.theory.IntegerTheory._
 
 import uppsat.globalOptions.verbose
+import uppsat.globalOptions.VERSION
 
 import uppsat.theory.FloatingPointTheory.FPSortFactory.FPSort
 import uppsat.theory.BitVectorTheory.BVSortFactory.BVSort
@@ -432,7 +433,7 @@ def hexToBitList(hex : String) = {
          case ":name" =>
            println("(:name \"uppsat\")")
          case ":version" =>
-           println("(:version 0.01)")
+           println("(:version " + uppsat.globalOptions.VERSION + ")")
          case ":error-behavior" =>
            println("(:error-behavior \"immediate-exit\")")
          case ":interpolation-method" =>

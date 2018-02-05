@@ -33,6 +33,8 @@ object globalOptions {
   // FLAGS
   var REACHED_MAX_PRECISON = false
   
+  val VERSION = "0.5"
+
   var RANDOM_SEED = 0
   var VERBOSE = false
   var STATS = false
@@ -103,6 +105,7 @@ object globalOptions {
 object main {
   
   def printUsage() = {
+    println("UppSAT version " + globalOptions.VERSION)
     println("Usage: uppsat [-options] input file")
     println("Options:")
     println("\t-v - verbose output")
