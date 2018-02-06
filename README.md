@@ -1,4 +1,4 @@
-# UppSat
+# UppSAT
 An approximating SMT solver
 
 ## Getting Started
@@ -23,6 +23,10 @@ cp target/scala-2.11/uppsat-assembly-0.01.jar uppsat.jar
 scala uppsat.jar -app=ijcar -backend=z3 -validator=z3 examples/e2a_1.c.smt2
 
 
+## Installing back-ends
+
+UppSAT currently supports Z3 and MathSAT as back-ends. To use them, make sure that the programs "z3" and "mathsat" are available on the path (e.g., you can add them to the $PATH environmental variable). The current version of UppSAT has been tested with MathSAT5 5.5.1 and Z3 4.5.0.
+
 ## Running the tests
 
 When running sbt assembly a set of test-cases will be run automatically.
@@ -33,6 +37,5 @@ When running sbt assembly a set of test-cases will be run automatically.
 * [Scala](https://www.scala-lang.org/) - Scala 
 
 ## License
-
 
 [![Build Status](https://travis-ci.org/uuverifiers/uppsat.svg?branch=master)](https://travis-ci.org/uuverifiers/uppsat)
