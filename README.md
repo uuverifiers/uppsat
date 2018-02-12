@@ -20,7 +20,17 @@ sbt assembly
 
 cp target/scala-2.11/uppsat-assembly-0.01.jar uppsat.jar
 
+N.B. Back-ends has to be installed seperately (see below).
+
+### Running UppSAT
+
+To execute uppsat, use either scala or java (see below) from the commandline:
+
 scala uppsat.jar -app=ijcar -backend=z3 -validator=z3 examples/e2a_1.c.smt2
+
+java -jar uppsat.jar -app=ijcar -backend=z3 -validator=z3 examples/e2a_1.c.smt2
+
+Use -h to get more information about parameters.
 
 
 ## Installing back-ends
@@ -35,6 +45,7 @@ When running sbt assembly a set of test-cases will be run automatically.
 
 * [SBT](http://www.scala-sbt.org/) - Simple Build Tool
 * [Scala](https://www.scala-lang.org/) - Scala 
+
 
 ## License
 
