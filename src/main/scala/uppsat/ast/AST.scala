@@ -213,7 +213,7 @@ case class AST(val symbol : ConcreteFunctionSymbol, val label : Label, val child
   
   def *(that : AST)(implicit rm : RoundingMode = RoundToZero) = {
      (this.symbol.sort, that.symbol.sort) match {
-       //case (IntegerSort, IntegerSort) => intAddition(this, that)
+       case (IntegerSort, IntegerSort) => intAddition(this, that)
        case (RealSort, RealSort) => realMultiplication(this, that)
        case (f1 : FPSort, f2 : FPSort) => floatMultiplication(this, that)       
      }

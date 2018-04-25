@@ -18,6 +18,9 @@ import ap.parser.smtlib._
 import ap.parser.smtlib.Absyn._
 import java.io._
 import scala.collection.JavaConversions._
+
+import uppsat.theory.IntegerTheory
+
 import uppsat.theory.FloatingPointTheory.RoundingModeSort
 import uppsat.theory.FloatingPointTheory
 import uppsat.theory.FloatingPointTheory.RoundingMode
@@ -163,7 +166,10 @@ def hexToBitList(hex : String) = {
   protected def translateSpecConstant(c : SpecConstant) : uppsat.ast.AST = {
     c match {
       case c : NumConstant => {
-        uppsat.ast.Leaf(uppsat.theory.RealTheory.RealNumeral(BigInt(c.numeral_.toString)))
+        myEnv.theory match {
+          case Some(uppsat.theory.FloatingPointTheory) => uppsat.ast.Leaf(uppsat.theory.RealTheory.RealNumeral(BigInt(c.numeral_.toString))) 
+          case Some(uppsat.theory.IntegerTheory) => uppsat.ast.Leaf(uppsat.theory.IntegerTheory.IntLiteral(BigInt(c.numeral_.toString)))
+        }
       }
       case c : RatConstant if myEnv.theory ==  Some(FloatingPointTheory) => 
       {
@@ -258,6 +264,7 @@ def hexToBitList(hex : String) = {
         case "QF_FPBV" => myEnv.setTheory(FloatingPointTheory)
         case "QF_BV" => myEnv.setTheory(BitVectorTheory)
         case "QF_BVFP" => myEnv.setTheory(FloatingPointTheory)
+        case "QF_LIA" => myEnv.setTheory(IntegerTheory)
         case _ => throw new Exception("unknown set-logic command : \n"  + asString(cmd.symbol_))
       }
     }
@@ -551,8 +558,10 @@ def hexToBitList(hex : String) = {
     }
     
     case PlainSymbol("-") => {
-      checkArgs("-", 1, args)
-      -translateTerm(args(0))
+      args.length match {
+        case 1 => -translateTerm(args(0))
+        case 2 => translateTerm(args(0)) - translateTerm(args(1))
+      }
     }      
     
     case PlainSymbol("*") => {

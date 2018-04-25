@@ -42,7 +42,8 @@ object IntegerTheory extends Theory {
   
   // Symbols, conjunction and negation
   case object IntAddition extends IntegerBinaryFunctionSymbol("addition")   
-  case object IntSubstraction extends IntegerBinaryFunctionSymbol("substraction")  
+  case object IntSubstraction extends IntegerBinaryFunctionSymbol("substraction")
+  case object IntModulo extends IntegerBinaryFunctionSymbol("modulo")   
   case object IntEquality extends IntegerPredicateSymbol("integer-equality", List(IntegerSort, IntegerSort))
   case object IntLessThanOrEqual extends IntegerPredicateSymbol("integer-leq", List(IntegerSort, IntegerSort))
   case object IntITE extends PolyITE("integer-ite", IntegerSort)
@@ -58,6 +59,10 @@ object IntegerTheory extends Theory {
   def intSubstraction(left: AST, right: AST) = {
     AST(IntSubstraction, List(left, right))
   }
+  
+  def intModulo(left: AST, right: AST) = {
+      AST(IntModulo, List(left, right))
+  }  
   
   def intEquality(left: AST, right: AST) = {
     AST(IntEquality, List(left, right))
@@ -87,7 +92,7 @@ object IntegerTheory extends Theory {
   }
 
   val sorts = List(IntegerSort)
-  val symbols = List(IntZero, IntAddition, IntSubstraction, IntLessThanOrEqual, IntEquality)
+  val symbols = List(IntZero, IntAddition, IntSubstraction, IntModulo, IntLessThanOrEqual, IntEquality)
   
   def isDefinedLiteral(symbol : ConcreteFunctionSymbol) = {
     symbol match {
@@ -110,6 +115,7 @@ object IntegerTheory extends Theory {
     symbol match {     
       case IntAddition => "+"
       case IntSubstraction => "-"
+        case IntModulo=> "mod"
       case IntEquality => "="
       case IntLessThanOrEqual => "<="
       case IntLiteral(value) => value.toString()

@@ -28,6 +28,7 @@ import scala.collection.mutable.Queue
 import scala.collection.mutable.Stack
 import uppsat.theory.FloatingPointTheory.FloatingPointPredicateSymbol
 import uppsat.globalOptions
+import uppsat.theory.IntegerTheory.IntegerPredicateSymbol
 
 
 trait EqualityAsAssignmentReconstruction extends ModelReconstruction {
@@ -136,6 +137,10 @@ trait EqualityAsAssignmentReconstruction extends ModelReconstruction {
             toEvaluateEquality += nextItem 
         }
         
+       case intPred : IntegerPredicateSymbol => {
+         toReconstructPredicate += nextItem
+       }
+            
        case fpPred : FloatingPointPredicateSymbol => {
          toReconstructPredicate += nextItem
        }
