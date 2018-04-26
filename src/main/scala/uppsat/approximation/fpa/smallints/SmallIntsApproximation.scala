@@ -32,25 +32,39 @@ import uppsat.approximation.refinement.UniformRefinementStrategy
 import uppsat.approximation.reconstruction.EmptyReconstruction
 import uppsat.approximation.reconstruction.PostOrderReconstruction
 import uppsat.theory.IntegerTheory
-import uppsat.theory.IntegerTheory.IntegerSort
+import uppsat.theory.IntegerTheory._
 
 
 
 trait SmallIntsContext extends ApproximationContext {
    type Precision = Int
-   val precisionOrdering = new IntPrecisionOrdering(1, 10)
+   val MAX_PRECISION = 100
+   val precisionOrdering = new IntPrecisionOrdering(2, MAX_PRECISION)
    val inputTheory = IntegerTheory
    val outputTheory = IntegerTheory
 }
 
 trait SmallIntsCodec extends SmallIntsContext with PostOrderCodec {
   def encodeNode(ast : AST, children : List[AST], precision : Int) : AST = {
-    if (ast.symbol.sort == IntegerSort && precision < 10) {
-      val (oldastsymbol, oldastlabel, oldast, oldchildren) = ast
-      val newoldast = AST(oldastsymbol, List(), children)
-      IntegerTheory.intModulo(ast, IntegerTheory.IntLiteral(precision))
+    if (ast.symbol.sort == IntegerSort && precision < MAX_PRECISION) {
+      ast.symbol match {
+        case intVar : IntVar => Leaf(intVar, ast.label)
+        case intLit : IntLiteral => Leaf(intLit, ast.label)
+        case intFun : IntegerFunctionSymbol => {
+          val oldAst = AST(ast.symbol, List(), children)             
+          
+          
+          val newAst = IntegerTheory.intModulo(oldAst, IntegerTheory.IntLiteral(precision))
+          val newSymbol = newAst.symbol
+          val newLabel = ast.label
+          val newChildren = newAst.children
+          val ret = AST(newSymbol, newLabel, newChildren)
+          ret          
+        }
+        case intPred : IntegerPredicateSymbol => AST(intPred, ast.label, children)
+      }
     } else {
-      ast
+      AST(ast.symbol, ast.label, children)
     }
   }
 
@@ -75,3 +89,4 @@ object SmallIntsApp extends SmallIntsContext
                     with EmptyReconstruction
                     with SmallIntsRefinementStrategy {
 }
+

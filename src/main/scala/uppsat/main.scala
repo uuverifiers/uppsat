@@ -23,6 +23,7 @@ import uppsat.ApproximationSolver.Unsat
 import uppsat.ApproximationSolver.Sat
 import uppsat.ApproximationSolver.Answer
 import uppsat.approximation.fpa.smallfloats._
+import uppsat.approximation.smallints.SmallIntsApp
 import uppsat.approximation.fpa.reals._
 import uppsat.approximation.fpa.fixpoint._
 import uppsat.approximation.components._
@@ -52,7 +53,8 @@ object globalOptions {
                          "nlsat" -> new Z3Solver("NLSAT","(check-sat-using qfnra-nlsat)\n")) 
                          
   val REG_APPROXS = Map( "ijcar" ->  new Approximation(IJCARSmallFloatsApp), 
-                          "saturation" ->  new Approximation(FxPntSmallFloatsApp), 
+                          "saturation" ->  new Approximation(FxPntSmallFloatsApp),
+                          "smallints" ->  new Approximation(SmallIntsApp),
                           "reals" ->  new Approximation(FPARealApp),
                           "reals-node-by-node" ->  new Approximation(FPARealNodeByNodeApp),
                           "saturation_reals" -> new Approximation(FxPntFPARealApp),

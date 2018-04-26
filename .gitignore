@@ -74,3 +74,5 @@ running\.smt2
 reduced2\.smt2
 
 reduced\.smt2
+
+*.out
