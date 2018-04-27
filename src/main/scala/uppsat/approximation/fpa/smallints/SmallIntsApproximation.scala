@@ -1,40 +1,19 @@
 package uppsat.approximation.smallints
 
 import uppsat.approximation._
-
-
-import uppsat.approximation.components._
 import uppsat.approximation.codec._
-import uppsat.theory.FloatingPointTheory._
-import uppsat.Timer
 import uppsat.ModelEvaluator.Model
-import uppsat.precision.PrecisionMap.Path
-//import uppsat.Encoder.PathMap
 import uppsat.precision.IntPrecisionOrdering
 import uppsat.precision.PrecisionMap
-import uppsat.ModelEvaluator
 import uppsat.ast.AST
-import uppsat.ast._
-import uppsat.solver.Z3Solver
-import uppsat.solver.Z3OnlineSolver
-import uppsat.theory.BooleanTheory.BoolTrue
-import uppsat.theory.BooleanTheory.BoolFalse
-import uppsat.theory.BooleanTheory
-import uppsat.theory.BooleanTheory.BooleanFunctionSymbol
-import uppsat.theory.BooleanTheory.BooleanConstant
-import uppsat.theory.BooleanTheory.BoolVar
-import uppsat.ModelEvaluator.Model
-import uppsat.solver.Z3OnlineException
-import uppsat.solver.Z3OnlineSolver
-import uppsat.globalOptions
-import uppsat.approximation.reconstruction.EqualityAsAssignmentReconstruction
+import uppsat.ast.Leaf
+import uppsat.ast.ConcreteFunctionSymbol
+import uppsat.ast.AST.Label
 import uppsat.approximation.refinement.UniformRefinementStrategy
 import uppsat.approximation.reconstruction.EmptyReconstruction
 import uppsat.approximation.reconstruction.PostOrderReconstruction
 import uppsat.theory.IntegerTheory
 import uppsat.theory.IntegerTheory._
-
-
 
 trait SmallIntsContext extends ApproximationContext {
    type Precision = Int
@@ -45,38 +24,24 @@ trait SmallIntsContext extends ApproximationContext {
 }
 
 trait SmallIntsCodec extends SmallIntsContext with PostOrderCodec {
-  def encodeNode(ast : AST, children : List[AST], precision : Int) : AST = {
-    if (ast.symbol.sort == IntegerSort && precision < MAX_PRECISION) {
-      ast.symbol match {
-        case intVar : IntVar => Leaf(intVar, ast.label)
-        case intLit : IntLiteral => Leaf(intLit, ast.label)
-        case intFun : IntegerFunctionSymbol => {
-          val oldAst = AST(ast.symbol, List(), children)             
-          
-          
-          val newAst = IntegerTheory.intModulo(oldAst, IntegerTheory.IntLiteral(precision))
-          val newSymbol = newAst.symbol
-          val newLabel = ast.label
-          val newChildren = newAst.children
-          val ret = AST(newSymbol, newLabel, newChildren)
-          ret          
+  def encodeNode(symbol : ConcreteFunctionSymbol, label : Label, children : List[AST], precision : Int) : AST = {
+      symbol match {
+        case _ : IntVar | _ : IntLiteral => AST(symbol, label, children)
+        case _: IntegerFunctionSymbol => {
+          val newSymbol = IntegerTheory.IntModulo
+          val newChildren = List(AST(symbol, List(), children), Leaf(IntegerTheory.IntLiteral(precision)))
+          AST(newSymbol, label, newChildren)
         }
-        case intPred : IntegerPredicateSymbol => AST(intPred, ast.label, children)
+        case _ => AST(symbol, label, children)
       }
-    } else {
-      AST(ast.symbol, ast.label, children)
-    }
   }
 
   def decodeNode( args : (Model, PrecisionMap[Precision]), decodedModel : Model, ast : AST) : Model = {
-    val appModel = args._1
-    val pmap = args._2
     if (!decodedModel.contains(ast))
-      decodedModel.set(ast, appModel(ast))
+      decodedModel.set(ast, args._1(ast))
     decodedModel
   }
 }
-
 
 trait SmallIntsRefinementStrategy extends SmallIntsContext with UniformRefinementStrategy {
   def increasePrecision(p : Precision) = {

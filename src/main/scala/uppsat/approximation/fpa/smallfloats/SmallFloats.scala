@@ -1,5 +1,6 @@
 package uppsat.approximation.fpa.smallfloats
 
+
 import uppsat.approximation._
 import uppsat.approximation.components._
 import uppsat.approximation.codec._
@@ -15,6 +16,7 @@ import uppsat.precision.PrecisionMap
 import uppsat.theory.FloatingPointTheory
 import uppsat.ModelEvaluator
 import uppsat.ast.AST
+import uppsat.ast.AST.Label
 import uppsat.ast._
 import uppsat.solver.Z3Solver
 import uppsat.solver.Z3OnlineSolver
@@ -59,8 +61,7 @@ trait SmallFloatsCodec extends SmallFloatsContext with PostOrderCodec {
    * 
    * @return sort scaled down according to p 
 	 */
-  def scaleSort(ast : AST, p : Int, encodedChildren : List[AST]) = {
-    val AST(symbol, label, children) = ast
+  def scaleSort(symbol : ConcreteFunctionSymbol, p : Int, encodedChildren : List[AST]) = {
     val sort = symbol.sort
     symbol match {
       case _ : FloatingPointPredicateSymbol =>
@@ -137,11 +138,11 @@ trait SmallFloatsCodec extends SmallFloatsContext with PostOrderCodec {
    *  
    *  @return ast encoded according to precision.
    */
-  def encodeNode(ast : AST, encodedChildren : List[AST], precision : Int) : AST = {
-    val sort = scaleSort(ast, precision, encodedChildren)
-    val children = encodedChildren.map(cast(_, sort))
-    val symbol = encodeSymbol(ast.symbol, sort, children)
-    AST(symbol, ast.label, children)
+  def encodeNode(symbol : ConcreteFunctionSymbol, label : Label, encodedChildren : List[AST], precision : Int) : AST = {
+    val sort = scaleSort(symbol, precision, encodedChildren)
+    val newChildren = encodedChildren.map(cast(_, sort))
+    val newSymbol = encodeSymbol(symbol, sort, newChildren)
+    AST(newSymbol, label, newChildren)
   }
   
   
@@ -194,7 +195,7 @@ trait SmallFloatsCodec extends SmallFloatsContext with PostOrderCodec {
     // TEMPORARY TODO: (Aleks) FIX!
     val newAST = 
       if (ast.isVariable)    
-        encodeNode(ast, List(), pmap(ast.label))
+        encodeNode(ast.symbol, ast.label, List(), pmap(ast.label))
       else
         ast
     

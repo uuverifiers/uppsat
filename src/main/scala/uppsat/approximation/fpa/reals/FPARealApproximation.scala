@@ -1,6 +1,8 @@
 package uppsat.approximation.fpa.reals
 
 import uppsat.approximation._
+
+import uppsat.ast.AST.Label
 import uppsat.approximation.components._
 import uppsat.approximation.codec._
 import uppsat.theory.FloatingPointTheory._
@@ -66,35 +68,35 @@ trait FPARealCodec extends FPARealContext with PostOrderCodec {
   // 3 - No encoding, retain FP constraints
   import BigInt._;
 
-  def encodeNode(ast : AST, children : List[AST], precision : Int) : AST = {
-    val (newAst, newChildren) =
+  def encodeNode(symbol : ConcreteFunctionSymbol, label : Label, children : List[AST], precision : Int) : AST = {
+    val (newSymbol, newLabel, newChildren) : (ConcreteFunctionSymbol, Label, List[AST]) =
       precision match {
         case precisionOrdering.maximalPrecision =>
-          (ast, children)
+          (symbol, label, children)
 
         case 0 =>
-          ast.symbol match {
+          symbol match {
             case fpVar : FPVar => {
               if (!fpToRealMap.contains(fpVar)) {
                 fpToRealMap = fpToRealMap + (fpVar ->  new RealVar(fpVar.name))
               }
-              (Leaf(fpToRealMap(fpVar), ast.label), children)
+              (fpToRealMap(fpVar), label, children)
             }
 
             case fpLit : FloatingPointLiteral => {
               fpLit.getFactory match {
                 case FPNegativeZero => {
-                  (Leaf(RealNumeral(0), ast.label), children)
+                  (RealNumeral(0), label, children)
                 }
                 case FPPositiveZero => {
-                  (Leaf(RealNumeral(0), ast.label), children)
+                  (RealNumeral(0), label, children)
                 }
                 case FPPlusInfinity => {
-                  (Leaf(RealNumeral(2.pow(53) + 1), ast.label), children) // TODO: fix magic constants
+                  (RealNumeral(2.pow(53) + 1), label, children) // TODO: fix magic constants
                 }
 
                 case FPMinusInfinity => {
-                  (Leaf(RealNumeral(-(2.pow(53) + 1)), ast.label), children) // TODO: fix magic constants
+                  (RealNumeral(-(2.pow(53) + 1)), label, children) // TODO: fix magic constants
                 }
 
                 case FPConstantFactory(sign, ebits,  sbits) => {
@@ -112,7 +114,7 @@ trait FPARealCodec extends FPARealContext with PostOrderCodec {
                     BigInt(1) << (- exp)
                   }
 
-                  (Leaf(RealDecimal(num, denom), ast.label), children)
+                  (RealDecimal(num, denom), label, children)
                 }
               }
             }
@@ -121,7 +123,7 @@ trait FPARealCodec extends FPARealContext with PostOrderCodec {
               var nChildren = if (children.head.symbol.sort == RoundingModeSort) children.tail
                                 else children
 
-              var nLabel = ast.label
+              var nLabel = label
               val newSymbol = fpSym.getFactory match {
                 case FPNegateFactory   => RealNegation
                 case FPAdditionFactory => RealAddition
@@ -134,7 +136,7 @@ trait FPARealCodec extends FPARealContext with PostOrderCodec {
                   r
                 case _ => throw new Exception(fpSym + " unsupported")
               }
-              (AST(newSymbol, nLabel, nChildren), nChildren)
+              (newSymbol, nLabel, nChildren)
             }
             case fpPred : FloatingPointPredicateSymbol => {
               val newSymbol = fpPred.getFactory match {
@@ -146,24 +148,24 @@ trait FPARealCodec extends FPARealContext with PostOrderCodec {
                 case FPGreaterThanOrEqualFactory => RealGEQ
                 case _ => throw new Exception(fpPred + " unsupported")
               }
-              (AST(newSymbol, ast.label, children), children)
+              (newSymbol, label, children)
             }
             case _ => {
-              (AST(ast.symbol, ast.label, children), children)
+              (symbol, label, children)
             }
           }
 
         case _  =>
-          (ast, children)
+          (symbol, label, children)
       }
 
 
     val sortedChildren =
       for (i <- newChildren.indices)
       yield
-          cast(newChildren(i), newAst.symbol.args(i))
+          cast(newChildren(i), newSymbol.args(i))
 
-    AST(newAst.symbol, newAst.label, sortedChildren.toList)
+    AST(newSymbol, newLabel, sortedChildren.toList)
   }
 
   // Describes translation of smallfloat values into values of the original formula.  

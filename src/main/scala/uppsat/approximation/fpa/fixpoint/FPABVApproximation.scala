@@ -2,6 +2,7 @@
 
 package uppsat.approximation.fpa.fixpoint
 
+
 import uppsat.approximation._
 import uppsat.approximation.components._
 import uppsat.approximation.codec._
@@ -24,6 +25,7 @@ import uppsat.precision.PrecisionMap.Path
 import uppsat.precision.IntTuplePrecisionOrdering
 import uppsat.ast._
 import uppsat.ast.AST
+import uppsat.ast.AST.Label
 import uppsat.solver.Z3Solver
 import uppsat.globalOptions
 import uppsat.approximation.reconstruction.EqualityAsAssignmentReconstruction
@@ -255,20 +257,20 @@ trait FPABVCodec extends FPABVContext with PostOrderCodec {
   }
   
   
-  def encodeNode(ast : AST, children : List[AST], precision : (Int, Int)) : AST = {
+  def encodeNode(symbol : ConcreteFunctionSymbol, label : Label, children : List[AST], precision : (Int, Int)) : AST = {
     val newSort = FXSortFactory(List(precision._1, precision._2))
-      ast.symbol match {
+      symbol match {
       
       case fpVar : FPVar => {        
         fpToFXMap += (fpVar ->  new FXVar(fpVar.name, newSort))
-        Leaf(fpToFXMap(fpVar), ast.label)
+        Leaf(fpToFXMap(fpVar), label)
       }
       
       case fpLit : FloatingPointLiteral => {
         fpLit.getFactory match {
            case FPConstantFactory(sign, eBits,  sBits) => {
              val fxSymbol = floatToFixPoint(sign, eBits, sBits, newSort)
-             Leaf(fxSymbol, ast.label)
+             Leaf(fxSymbol, label)
            }
            case FPPositiveZero => {
              Leaf(FixPointLiteral(List.fill(newSort.integralWidth)(0), List.fill(newSort.fractionalWidth)(0), newSort))
@@ -291,7 +293,7 @@ trait FPABVCodec extends FPABVContext with PostOrderCodec {
         var newChildren = 
           for (c <- children if c.symbol.sort != RoundingModeSort) yield
             cast(c, newSort)
-        var label = ast.label
+        var newLabel = label
         if (fpSym.getFactory == FPNegateFactory) {
           val notNode = AST(FXNotFactory(newSort), newChildren)
           val oneNode = Leaf(FX(List.fill(newSort.integralWidth)(0), List.fill(newSort.fractionalWidth - 1)(0) ++ List(1))(newSort))
@@ -305,7 +307,7 @@ trait FPABVCodec extends FPABVContext with PostOrderCodec {
             case FPDivisionFactory => FXDivFactory(newSort)
             
             case FPToFPFactory => val r = newChildren(0).symbol
-                                  label = newChildren(0).label
+                                  newLabel = newChildren(0).label
                                   newChildren = newChildren(0).children
                                   r
                                   
@@ -313,7 +315,7 @@ trait FPABVCodec extends FPABVContext with PostOrderCodec {
           }
           
           
-          AST(newSymbol, label, newChildren)
+          AST(newSymbol, newLabel, newChildren)
         }
       }
       
@@ -332,7 +334,7 @@ trait FPABVCodec extends FPABVContext with PostOrderCodec {
           case _ => throw new Exception(fpPred + " unsupported")
         }
 
-        AST(newSymbol, ast.label, newChildren)
+        AST(newSymbol, label, newChildren)
       }
       
       case rm : RoundingMode => rm
@@ -341,20 +343,20 @@ trait FPABVCodec extends FPABVContext with PostOrderCodec {
         val (sign, eBits, sBits) = floatToBits(realValue.num.toFloat)
         val fxSymbol = floatToFixPoint(sign, eBits, sBits, newSort)
         
-        Leaf(fxSymbol, ast.label)        
+        Leaf(fxSymbol, label)        
       }
       case rv : RealDecimal => {
         val (sign, eBits, sBits) = floatToBits((rv.num.toFloat / rv.denom.toFloat).toFloat)
         val fxSymbol = floatToFixPoint(sign, eBits, sBits, newSort)
-       Leaf(fxSymbol, ast.label)        
+       Leaf(fxSymbol, label)        
         
       }
       
       case rSym : RealFunctionSymbol => {
-        Leaf(rSym, ast.label)
+        Leaf(rSym, label)
       }
       
-      case _ => AST(ast.symbol, ast.label, children) 
+      case _ => AST(symbol, label, children) 
     }
   }
 
