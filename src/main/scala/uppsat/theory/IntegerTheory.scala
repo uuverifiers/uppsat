@@ -41,16 +41,22 @@ object IntegerTheory extends Theory {
   
   
   // Symbols, conjunction and negation
+  case object IntNegation extends IntegerUnaryFunctionSymbol("negation")
   case object IntAddition extends IntegerBinaryFunctionSymbol("addition")   
   case object IntSubstraction extends IntegerBinaryFunctionSymbol("substraction")
   case object IntModulo extends IntegerBinaryFunctionSymbol("modulo")   
   case object IntEquality extends IntegerPredicateSymbol("integer-equality", List(IntegerSort, IntegerSort))
   case object IntLessThanOrEqual extends IntegerPredicateSymbol("integer-leq", List(IntegerSort, IntegerSort))
+  case object IntGreaterThanOrEqual extends IntegerPredicateSymbol("integer-geq", List(IntegerSort, IntegerSort))
   case object IntITE extends PolyITE("integer-ite", IntegerSort)
   
   implicit def IntToAST(int : Int) = Leaf(new IntLiteral(int))
   implicit def IntVarToAST(intVar : IntVar) = Leaf(intVar)
   implicit def IntFunctionToAST(intConst : IntegerConstant) = Leaf(intConst)
+  
+  def intITE(condAST : AST, trueAST : AST, falseAST : AST) = {
+    AST(IntITE, List(condAST, trueAST, falseAST))
+  }
   
   def intAddition(left: AST, right: AST) = {
     AST(IntAddition, List(left, right))
@@ -72,6 +78,19 @@ object IntegerTheory extends Theory {
     AST(IntLessThanOrEqual, List(left, right))
   }
   
+  def intGreaterThanOrEqual(left: AST, right: AST) = {
+    AST(IntGreaterThanOrEqual, List(left, right))
+  }
+  
+  def intNegate(arg : AST) = 
+    arg.symbol.sort match {
+      case IntegerSort => {
+        val children : List[AST] = List(arg)
+        AST(IntNegation, children)
+      }
+      case _ => throw new Exception("Int-Operation of non-int-point AST: " + arg)
+    }
+  
   def parseLiteral(lit : String) = {
     val negPattern = "\\(- (\\d+)\\)".r
     val posPattern = "(\\d+)".r
@@ -92,7 +111,7 @@ object IntegerTheory extends Theory {
   }
 
   val sorts = List(IntegerSort)
-  val symbols = List(IntZero, IntAddition, IntSubstraction, IntModulo, IntLessThanOrEqual, IntEquality)
+  val symbols = List(IntZero, IntAddition, IntSubstraction, IntModulo, IntLessThanOrEqual, IntGreaterThanOrEqual, IntEquality)
   
   def isDefinedLiteral(symbol : ConcreteFunctionSymbol) = {
     symbol match {
@@ -112,12 +131,14 @@ object IntegerTheory extends Theory {
   }
   
   def symbolToSMTLib(symbol : ConcreteFunctionSymbol)(implicit translator : Option[uppsat.solver.SMTTranslator] = None) = {
-    symbol match {     
+    symbol match {
+      case IntNegation => "-"
       case IntAddition => "+"
       case IntSubstraction => "-"
-        case IntModulo=> "mod"
+      case IntModulo=> "mod"
       case IntEquality => "="
       case IntLessThanOrEqual => "<="
+      case IntGreaterThanOrEqual => ">="
       case IntLiteral(value) => value.toString()
       case IntVar(name) => name
       case other => throw new IntegerTheoryException("Unknown symbol: " + symbol)

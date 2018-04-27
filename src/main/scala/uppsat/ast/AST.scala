@@ -5,12 +5,14 @@ import uppsat.ModelEvaluator.Model
 import scala.collection.mutable.ArrayStack
 import uppsat.precision.PrecisionMap.Path
 import uppsat.theory.IntegerTheory._
+import uppsat.theory.IntegerTheory.IntegerSort
 import uppsat.theory.FloatingPointTheory._
 import uppsat.theory.FloatingPointTheory.FPSortFactory.FPSort
 import uppsat.theory.BitVectorTheory._
 import uppsat.theory.BitVectorTheory.BVSortFactory.BVSort
 import uppsat.theory.RealTheory._
 import uppsat.ast.AST._
+import java.lang.Integer
 
 object Leaf {
   val height = 0
@@ -189,6 +191,7 @@ case class AST(val symbol : ConcreteFunctionSymbol, val label : Label, val child
   
   def unary_- = {
      this.symbol.sort match {
+       case IntegerSort => intNegate(this)
        case f : FPSort => floatNegate(this)
        case RealSort => realNegate(this)
      }
