@@ -14,6 +14,8 @@ import uppsat.approximation.reconstruction.EmptyReconstruction
 import uppsat.approximation.reconstruction.PostOrderReconstruction
 import uppsat.theory.IntegerTheory
 import uppsat.theory.IntegerTheory._
+import uppsat.theory.PolymorphicTheory
+import uppsat.theory.FloatingPointTheory
 
 trait SmallIntsContext extends ApproximationContext {
    type Precision = Int
@@ -24,7 +26,8 @@ trait SmallIntsContext extends ApproximationContext {
 }
 
 trait SmallIntsCodec extends SmallIntsContext with PostOrderCodec {
-  def encodeNode(symbol : ConcreteFunctionSymbol, label : Label, children : List[AST], precision : Int) : AST = {
+  
+  def encodeNodeModulo(symbol : ConcreteFunctionSymbol, label : Label, children : List[AST], precision : Int) : AST = {
       symbol match {
         case _ : IntVar | _ : IntLiteral => AST(symbol, label, children)
         case _: IntegerFunctionSymbol => {
@@ -35,7 +38,24 @@ trait SmallIntsCodec extends SmallIntsContext with PostOrderCodec {
         case _ => AST(symbol, label, children)
       }
   }
-
+  
+  def encodeNodeLessThanOrEqual(symbol : ConcreteFunctionSymbol, label : Label, children : List[AST], precision : Int) : AST = {
+        symbol match {
+          case _ : IntVar | _ : IntLiteral => AST(symbol, label, children)
+          case _: IntegerFunctionSymbol => {
+            val oldAST = AST(symbol, List(), children)
+            val const = Leaf(IntegerTheory.IntLiteral(precision))
+            val condAST = IntegerTheory.intLessThanOrEqual(oldAST, const)
+            val newAST = IntegerTheory.intITE(condAST, oldAST, const)
+            AST(newAST.symbol, label, newAST.children)
+          }
+          case _ => AST(symbol, label, children)
+        }
+    }
+  
+   def encodeNode(symbol : ConcreteFunctionSymbol, label : Label, children : List[AST], precision : Int) : AST = 
+     encodeNodeLessThanOrEqual(symbol, label, children, precision)
+  
   def decodeNode( args : (Model, PrecisionMap[Precision]), decodedModel : Model, ast : AST) : Model = {
     if (!decodedModel.contains(ast))
       decodedModel.set(ast, args._1(ast))
