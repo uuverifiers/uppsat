@@ -38,7 +38,6 @@ import uppsat.solver.Z3Solver
 import uppsat.theory.BooleanTheory.BooleanConstant
 import uppsat.theory.FloatingPointTheory.RoundingModeEquality
 import scala.collection.mutable.ArrayStack
-import scala.collection.mutable.Leaf
 import scala.collection.mutable.Queue
 import uppsat.theory.FloatingPointTheory.FPPredicateSymbol
 import scala.collection.mutable.ArrayBuffer

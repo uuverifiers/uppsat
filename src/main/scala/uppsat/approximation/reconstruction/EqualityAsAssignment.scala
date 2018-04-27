@@ -65,19 +65,23 @@ trait EqualityAsAssignmentReconstruction extends ModelReconstruction {
 
             ((lhs.isVariable, lhsDefined), (rhs.isVariable, rhsDefined)) match {
               case ((true, false), (true, true)) => {
-                candidateModel.set(lhs, candidateModel(rhs)) 
+                candidateModel.set(lhs, candidateModel(rhs))
+                candidateModel.set(ast, BoolTrue)
                 true                
               }
               case ((true, true), (true, false)) => {
-                candidateModel.set(rhs, candidateModel(lhs)) 
+                candidateModel.set(rhs, candidateModel(lhs))
+                candidateModel.set(ast, BoolTrue)
                 true                
               }              
               case ((true, false), (false, _)) => {
-                candidateModel.set(lhs, candidateModel(rhs)) 
+                candidateModel.set(lhs, candidateModel(rhs))
+                candidateModel.set(ast, BoolTrue)
                 true                 
               }
               case ((false, _), (true, false)) => {
-                candidateModel.set(rhs, candidateModel(lhs)) 
+                candidateModel.set(rhs, candidateModel(lhs))
+                candidateModel.set(ast, BoolTrue)
                 true                 
               }              
               case (_, _) => {
@@ -102,12 +106,14 @@ trait EqualityAsAssignmentReconstruction extends ModelReconstruction {
       val newValue = ModelEvaluator.evalAST(newAST, inputTheory)
       verbose(ast.symbol + " " + ast.label + " " + " <- " + newValue.symbol)
       
-      candidateModel.set(ast, newValue)      
-      
-      if(globalOptions.VERBOSE)
+      candidateModel.set(ast, newValue)
+      candidateModel
+    } else {
+      /*if(globalOptions.VERBOSE) {
         ast.ppWithModels("", decodedModel, candidateModel, false)
+      }*/
+      candidateModel
     }
-    candidateModel
   }
   
   def reconstructSubtree(ast : AST, decodedModel : Model, candidateModel : Model) : Model = {
