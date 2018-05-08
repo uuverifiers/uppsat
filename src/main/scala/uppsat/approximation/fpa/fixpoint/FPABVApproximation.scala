@@ -155,11 +155,12 @@ trait FPABVCodec extends FPABVContext with PostOrderCodec {
       }
      
     
+
     val appendedBits =
-      if (integralWidth + fractionalWidth > prependedBits.length)
-        prependedBits ++ List.fill(integralWidth + fractionalWidth - prependedBits.length)(0)
-      else
-        prependedBits
+     if (fractionalWidth > prependedBits.length - newPosition)
+       prependedBits ++ List.fill(fractionalWidth - (prependedBits.length - newPosition))(0)
+     else
+       prependedBits
        
     val iBits = appendedBits.drop(newPosition - integralWidth).take(integralWidth)
     val fBits = appendedBits.drop(newPosition).take(fractionalWidth)

@@ -1,6 +1,7 @@
 package uppsat;
 
 
+
 import uppsat.precision.PrecisionMap
 import uppsat.Timer.TimeoutException
 import uppsat.theory.BooleanTheory._
