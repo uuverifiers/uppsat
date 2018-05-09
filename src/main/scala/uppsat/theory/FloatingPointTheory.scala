@@ -413,14 +413,7 @@ case class FPSpecialValuesFactory(symbolName : String) extends FPGenConstantFact
       case FPPlusInfinity => Double.PositiveInfinity
       case FPMinusInfinity => Double.NegativeInfinity
       case FPConstantFactory(sign, eBits, sBits) => {
-        //padding to a double
-        if( eBits.length + sBits.length + 1 > 64) 
-          throw new Exception("Converting to a double fpa with more than 64 bits")
-        
-        val exponent = eBits.head :: List.fill(11 - eBits.length)(0) ++ eBits.tail
-        val significand = List.fill(53 - sBits.length)(0) ++ sBits
-        val bits = sign :: exponent ++ significand
-        java.lang.Double.longBitsToDouble(BigInt(bits.mkString(""), 2).toLong)        
+        fpToDouble(sign, eBits, sBits)        
       } 
     }
   }
@@ -543,16 +536,23 @@ def floatFPEquality(left : AST, right : AST) =
     sum - 2.pow(bits.length - 1).toInt + 1
    }
   
-  def fpToDouble(signBit : Int, eBits : List[Int], sBits : List[Int]) = {
-    // TODO: subnormal numbers
-    val sign = (signBit == 0)
-    val exponent = bitsToInt(eBits) - (2.pow(eBits.length - 1).toInt - 1) - sBits.length
-    val significand = bitsToInt(1 :: sBits) // Adding the implicit leading bit
-    val magnitude = if (exponent >= 0) (2.pow(exponent).toDouble) else (1.0 / (2.pow(-exponent).toDouble))
+  def fpToDouble(sign : Int, eBits : List[Int], sBits : List[Int]) = {   
+    if( eBits.length + sBits.length + 1 > 64) 
+      throw new Exception("Converting to a double fpa with more than 64 bits")
     
-    // If denormal, etc
-    val absVal = significand * magnitude    
-    if (sign) absVal else -absVal    
+    val exponent = eBits.head :: List.fill(11 - eBits.length)(1 - eBits.head) ++ eBits.tail
+    val significand = sBits.tail ++ List.fill(53 - sBits.length)(0)
+    val bits = sign :: exponent ++ significand
+    java.lang.Double.longBitsToDouble(BigInt(bits.mkString(""), 2).toLong)
+//    // TODO: subnormal numbers
+//    val sign = (signBit == 0)
+//    val exponent = bitsToInt(eBits) - (2.pow(eBits.length - 1).toInt - 1) - sBits.length
+//    val significand = bitsToInt(1 :: sBits) // Adding the implicit leading bit
+//    val magnitude = if (exponent >= 0) (2.pow(exponent).toDouble) else (1.0 / (2.pow(-exponent).toDouble))
+//    
+//    // If denormal, etc
+//    val absVal = significand * magnitude    
+//    if (sign) absVal else -absVal    
   }
   
   def parseSymbol(sym : String) = {
