@@ -234,12 +234,9 @@ trait SmallFloatsMGRefinementStrategy extends SmallFloatsContext
     val p =  pmap(node.label)    
     val newP = (p + precisionIncrement) max p
     newP min pmap.precisionOrdering.maximalPrecision // TODO:  This check should be in the ordering somewhere?
+                                                     // AZ: pMap Already does this check in the map call. We should cut this.
   }
   
-  def defaultRefinePrecision( p : Int) : Int = {
-    p + 1
-  }
-
   def computeRelativeError ( ast : AST, decodedModel : Model, failedModel : Model) : Option[Double] = {
     (decodedModel(ast).symbol, failedModel(ast).symbol) match {
       case (aValue : FloatingPointLiteral, bValue : FloatingPointLiteral) => 

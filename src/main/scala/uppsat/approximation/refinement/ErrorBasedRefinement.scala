@@ -16,7 +16,10 @@ trait ErrorBasedRefinementStrategy extends PostOrderRefinement {
   val precisionIncrement : Precision
 
   def nodeError(decodedModel : Model)(failedModel : Model)(accu : Map[AST, Double], ast : AST) : Map[AST, Double]
-  def defaultRefinePrecision( p : Precision) : Precision 
+  
+  def defaultRefinePrecision( p : Precision) : Precision = {
+     precisionOrdering.+(p, precisionIncrement)
+  }
 
   def cmpErrors(f1 : Double, f2: Double) : Boolean = {
     val d1 = f1.doubleValue()
