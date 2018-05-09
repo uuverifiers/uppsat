@@ -301,7 +301,7 @@ object Toolbox {
 
     for (v <- allVariables) {
       // If nothing implies this variable, just define it right away
-      if (!(implications contains v) | (implications(v).exists(_.isEmpty)))
+      if (!(implications contains v) || (implications(v).exists(_.isEmpty)))
         defineVar(v)
     }
     
