@@ -76,3 +76,5 @@ reduced2\.smt2
 reduced\.smt2
 
 *.out
+
+*.jar

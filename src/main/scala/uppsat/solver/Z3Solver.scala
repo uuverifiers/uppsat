@@ -92,8 +92,6 @@ class Z3Solver(name : String = "Z3", val checkSatCmd : String = "(check-sat)") e
   
   def getStringModel(formula : String, extractSymbols : List[String]) = {
     val extendedFormula = formula + "\n" + checkSatCmd + (extractSymbols.map("(eval " + _ + ")").mkString("\n", "\n", ""))
-    println("EXTENDED FORMULA")
-    println(extendedFormula)
     val result = evaluate(extendedFormula)
     parseOutput(result, extractSymbols)   
   }
