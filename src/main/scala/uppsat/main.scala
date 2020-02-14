@@ -62,7 +62,17 @@ object globalOptions {
     NO_RUN = false
   }
 
-  
+
+  // TODO: It would be nice to specify approximation name, command and object as a tuple
+
+  val solverDescriptions : Map[String, String] = 
+    Map("z3" -> "Z3 Solver",
+      "mathsat" -> "MathSat solver",
+      "acdcl" -> "MathSat solver using ACDCL mode",
+      "nlsat" -> "Z3 using NLSAT mode")
+
+
+
   def registeredSolvers(str : String) = {
     str match {
       case "z3" => new Z3Solver() 
@@ -73,9 +83,9 @@ object globalOptions {
   }
 
 
-  // TODO: It would be nice to specify approximation name, command and object as a tuple
+
   // TODO: These descriptions could be more clear
-  val approximationDescriptions : Map[String, String] = {
+  val approximationDescriptions : Map[String, String] = 
     Map("ijcar" -> "The SmallFloats approximation introduced at IJCAR 2014",
     "ijcar-node-by-node" -> "The SmallFloats approximation introduced at IJCAR 2014 using node-by-node",
     "ijcar-no-reconstruct" -> "The SmallFloats approximation introduced at IJCAR 2014 with no reconstruction",
@@ -87,7 +97,6 @@ object globalOptions {
     "fixedpoint" -> "Fixed-point approximation of floating points",
     "fixedpoint-node-by-node" -> "Fixed-point approximation of floating points using node-by-node",
     "fixedpoint-no-reconstruct" -> "Fixed-point approximation of floating points with no reconstruction")
-  }
 
   def registeredApproximations(str : String) : Approximation = {
     str match {
