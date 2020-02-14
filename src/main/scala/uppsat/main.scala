@@ -47,6 +47,7 @@ object globalOptions {
   var STARTTIME : Option[Long] = None
   var PARANOID = false
   var SURRENDER = false
+  var NO_RUN = false
 
   
   def registeredSolvers(str : String) = {
@@ -57,7 +58,23 @@ object globalOptions {
       case "nlsat" => new Z3Solver("NLSAT","(check-sat-using qfnra-nlsat)\n")  
     }
   }
- 
+
+
+  // TODO: It would be nice to specify approximation name, command and object as a tuple
+  // TODO: These descriptions could be more clear
+  val approximationDescriptions : Map[String, String] = {
+    Map("ijcar" -> "The SmallFloats approximation introduced at IJCAR 2014",
+    "ijcar-node-by-node" -> "The SmallFloats approximation introduced at IJCAR 2014 using node-by-node",
+    "ijcar-no-reconstruct" -> "The SmallFloats approximation introduced at IJCAR 2014 with no reconstruction",
+    "saturation" -> "Saturation based approximation",
+    "smallints" -> "SmallInts approximation",
+    "reals" -> "Real approximation of floating points",
+    "reals-node-by-node" -> "Real approximation evaluating by node-by-node", 
+    "saturation_reals" -> "Real approximation using saturation",
+    "fixedpoint" -> "Fixed-point approximation of floating points",
+    "fixedpoint-node-by-node" -> "Fixed-point approximation of floating points using node-by-node",
+    "fixedpoint-no-reconstruct" -> "Fixed-point approximation of floating points with no reconstruction")
+  }
 
   def registeredApproximations(str : String) : Approximation = {
     str match {
@@ -120,6 +137,7 @@ object main {
     println("UppSAT version " + globalOptions.VERSION)
     println("Usage: uppsat [-options] input file")
     println("Options:")
+    println("\t-a - print detailed approximation information")    
     println("\t-v - verbose output")
     println("\t-s - print statistics")
     println("\t-m - print model (debug purposes)")
@@ -149,6 +167,19 @@ object main {
   def printHelpInfo() = {
     println("Input file missing. Call uppsat -h or uppsat -help for usage help.")
   }
+
+  /**
+    * Prints description of approximations
+    */
+  def printDescriptions() = {
+    val maxLength = approximationDescriptions.map(_._1.length).max + 3
+    val title = "Approximation:"
+    println(title + " "*(maxLength - title.length) + "Description:")
+    println("-"*(maxLength + approximationDescriptions.map(_._2.length).max))
+    for ((app, desc) <- approximationDescriptions) {
+      println(app + " "*(maxLength - app.length) + desc)
+    }
+  }
   
   /**
    * Parses argument and sets globalOptions accordingly.
@@ -176,7 +207,14 @@ object main {
         case "-v" => globalOptions.VERBOSE = true
         case "-d" => globalOptions.DEBUG = true
         case "-p" => globalOptions.PARANOID =  true
-        case "-h" | "-help" => printUsage()
+        case "-h" | "-help" => {
+          printUsage()
+          globalOptions.NO_RUN = true
+        }
+        case "-a" => {
+          printDescriptions()
+          globalOptions.NO_RUN = true          
+        }
         case "-f" => globalOptions.FORMULAS = true
         case "-surrender" => globalOptions.SURRENDER = true
         
@@ -217,8 +255,11 @@ object main {
     }
       
     val files = args.filterNot(_.startsWith("-")).toList  
-    
-    if (files.isEmpty) {
+
+    if (globalOptions.NO_RUN) {
+      // Do nothing
+      Unknown
+    } else if (files.isEmpty) {
        printHelpInfo()
        Unknown
     } else {
