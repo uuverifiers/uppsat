@@ -34,9 +34,7 @@ import uppsat.approximation.Approximation
 object globalOptions {
   // FLAGS
   var REACHED_MAX_PRECISON = false
-  
   val VERSION = "0.5"
-
   var RANDOM_SEED = 0
   var VERBOSE = false
   var STATS = false
@@ -48,6 +46,21 @@ object globalOptions {
   var PARANOID = false
   var SURRENDER = false
   var NO_RUN = false
+
+  def reset() = {
+    REACHED_MAX_PRECISON = false
+    RANDOM_SEED = 0
+    VERBOSE = false
+    STATS = false
+    MODEL = false
+    FORMULAS = false
+    DEBUG = false
+    DEADLINE = None
+    STARTTIME = None
+    PARANOID = false
+    SURRENDER = false
+    NO_RUN = false
+  }
 
   
   def registeredSolvers(str : String) = {
@@ -131,7 +144,7 @@ object globalOptions {
 }
 
 
-object main {
+object UppSAT {
   
   def printUsage() = {
     println("UppSAT version " + globalOptions.VERSION)
@@ -242,7 +255,8 @@ object main {
     import java.io._
     import scala.collection.JavaConversions._
     
-    
+
+    globalOptions.reset()
     globalOptions.STARTTIME = Some(System.currentTimeMillis())
     
     for (a <- args) yield {
