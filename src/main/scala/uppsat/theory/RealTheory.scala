@@ -116,10 +116,10 @@ object RealTheory extends Theory {
     val negativeEnumDenom = """\(- ?\(\/ ([+-]?\d+\.0) (\d+\.0)\)\)""".r
     
     lit match {
-      case BIntRegex(num) => RealNumeral(BigDecimal(num).toBigInt())
-      case IntRegex(sgn, num) =>  RealNumeral(BigDecimal(sgn + num).toBigInt())
-      case enumDenom(num, denom) => RealDecimal(BigDecimal(num).toBigInt(), BigDecimal(denom).toBigInt())
-      case negativeEnumDenom(num, denom) => RealDecimal(-BigDecimal(num).toBigInt(), BigDecimal(denom).toBigInt())
+      case BIntRegex(num) => RealNumeral(BigDecimal(num).toBigInt)
+      case IntRegex(sgn, num) =>  RealNumeral(BigDecimal(sgn + num).toBigInt)
+      case enumDenom(num, denom) => RealDecimal(BigDecimal(num).toBigInt, BigDecimal(denom).toBigInt)
+      case negativeEnumDenom(num, denom) => RealDecimal(-BigDecimal(num).toBigInt, BigDecimal(denom).toBigInt)
       case DecRegex(i) => throw new Exception("Big decimal?" + i) //BigDecimal(i)
       case _ => throw new Exception("Failed to match _"+lit+"_")
     }
