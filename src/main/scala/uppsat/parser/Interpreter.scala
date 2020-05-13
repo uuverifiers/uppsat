@@ -17,9 +17,8 @@ import ap.parser.smtlib
 import ap.parser.smtlib._
 import ap.parser.smtlib.Absyn._
 import java.io._
-import scala.collection.JavaConversions._
-// import scala.jdk.CollectionConverters._
-
+import scala.jdk.CollectionConverters._
+import scala.collection.JavaConverters._
 
 import uppsat.theory.IntegerTheory
 
@@ -65,6 +64,7 @@ def hexToBitList(hex : String) = {
         list.flatten.toList
       }    
   
+
   
   class SMTParser extends smtlib.Absyn.ScriptC.Visitor[Int, Object] {
     def visit(t : smtlib.Absyn.Script, o : Object) : Int = {
@@ -72,7 +72,9 @@ def hexToBitList(hex : String) = {
       //   val c = t.listcommand_(i)        
       //   parse(c)
       // }
-      for (c <- t.listcommand_.iterator()) {
+
+
+      for (c <- asScalaIterator(t.listcommand_.iterator())) {
         parse(c)
       }
       0
@@ -92,7 +94,7 @@ def hexToBitList(hex : String) = {
   }
   
   private def parse(script : Script) : Unit =
-    for (cmd <- script.listcommand_.iterator()) parse(cmd)
+    for (cmd <- asScalaIterator(script.listcommand_.iterator())) parse(cmd)
 
      
   protected def checkArgs(op : String, expected : Int, args : Seq[Term]) : Unit =
@@ -122,7 +124,7 @@ def hexToBitList(hex : String) = {
       asString(id.symbol_)
     case id : IndexIdent =>
       asString(id.symbol_) + "_" +
-      ((id.listindexc_.iterator().map(_.asInstanceOf[Index].numeral_)) mkString "_")
+      ((asScalaIterator(id.listindexc_.iterator()).map(_.asInstanceOf[Index].numeral_)).mkString("_"))
   }
   
   def asString(s : Symbol) : String = s match {
@@ -149,11 +151,11 @@ def hexToBitList(hex : String) = {
       case t : smtlib.Absyn.ConstantTerm =>
         translateSpecConstant(t.specconstant_)
       case t : FunctionTerm =>    
-        symApp(t.symbolref_, t.listterm_)
+          symApp(t.symbolref_, asScalaIterator(t.listterm_.iterator()).toList)
       case t : NullaryTerm =>
         symApp(t.symbolref_, List())
       case t : LetTerm =>
-        val bindings = (for (b <- t.listbindingc_.iterator()) yield {
+        val bindings = (for (b <- asScalaIterator(t.listbindingc_.iterator())) yield {
           val binding = b.asInstanceOf[Binding]
           val boundTerm = translateTerm(binding.term_)
           val fullname = asString(binding.symbol_)

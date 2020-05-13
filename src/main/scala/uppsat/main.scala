@@ -17,7 +17,7 @@ import uppsat.precision.PrecisionMap.Path
 //import uppsat.Encoder.PathMap
 import uppsat.ModelEvaluator.Model
 import uppsat.globalOptions._
-
+import scala.jdk.CollectionConverters._
 import uppsat.ApproximationSolver.Answer
 import uppsat.ApproximationSolver.Unknown
 import uppsat.ApproximationSolver.Unsat
@@ -240,9 +240,7 @@ object main {
   
   def main_aux(args : Array[String]) : Answer = {
     import java.io._
-    import scala.collection.JavaConversions._
-      // import scala.jdk.CollectionConverters._
-    
+
     
     globalOptions.STARTTIME = Some(System.currentTimeMillis())
     

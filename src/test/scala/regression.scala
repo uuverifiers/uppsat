@@ -9,7 +9,6 @@ import uppsat.globalOptions
 import uppsat.globalOptions._
 
 class Regression extends FunSpec {
-  // tests go here...
   
   def getListOfFiles(dir: File, extensions: List[String]): List[File] = {
     dir.listFiles.filter(_.isFile).toList.filter { file =>
