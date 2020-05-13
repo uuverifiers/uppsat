@@ -65,7 +65,7 @@ class SMTTranslator(theory : Theory) {
     IdToPaths.clear()
     astSymbols.clear()
     symbolAssertions = List()
-    smtDefs.clear()    
+    smtDefs = List()
     translateASTaux(ast)
   }
   
@@ -74,7 +74,7 @@ class SMTTranslator(theory : Theory) {
       s.theory.declarationToSMTLib(s)).filter(_ != "").mkString("\n")
   }
 
-  var smtDefs : scala.collection.mutable.MutableList[String] = scala.collection.mutable.MutableList()
+  var smtDefs : List[String] = List()
   
   
   def symDecs =

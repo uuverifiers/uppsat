@@ -413,7 +413,7 @@ def symbolToSMTLib(symbol : ConcreteFunctionSymbol)(implicit translator : Option
               val FXSort(d, f) = fxFunSym.sort
               
               if (!translator.get.smtDefs.contains(genFxMul(d, f)))
-                translator.get.smtDefs += genFxMul(d, f)
+                translator.get.smtDefs = genFxMul(d, f) :: translator.get.smtDefs
               genFxMulName(d, f)                
             } else {
               "fxmul"
@@ -425,7 +425,7 @@ def symbolToSMTLib(symbol : ConcreteFunctionSymbol)(implicit translator : Option
               val FXSort(d, f) = fxFunSym.sort
               
               if (!translator.get.smtDefs.contains(genFxDiv(d, f)))
-                translator.get.smtDefs += genFxDiv(d, f)
+                translator.get.smtDefs = genFxDiv(d, f) :: translator.get.smtDefs
               genFxDivName(d, f)                
             } else {
               "fxdiv"
@@ -440,7 +440,7 @@ def symbolToSMTLib(symbol : ConcreteFunctionSymbol)(implicit translator : Option
               val FXSort(td, tf) = fxFunSym.sort
               
               if (!translator.get.smtDefs.contains(genFxToFx(sd, sf, td, tf)))
-                translator.get.smtDefs += genFxToFx(sd, sf, td, tf) 
+                translator.get.smtDefs = genFxToFx(sd, sf, td, tf) :: translator.get.smtDefs
               genFxToFxName(sd, sf, td, tf)                
             } else {
               "fx-to-fx"

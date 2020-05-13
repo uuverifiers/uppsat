@@ -1,11 +1,11 @@
+
 package uppsat.parser
 
 import uppsat.ast._
-import scala.collection.mutable.Stack
 import uppsat.theory.BooleanTheory._
 import uppsat.theory._
 
-import scala.collection.mutable.{Map => MMap, MutableList}
+import scala.collection.mutable.{Stack, Map => MMap}
 import uppsat.theory._
 // We should not be adding || afterwards?
 
@@ -19,7 +19,7 @@ class Environment {
   var theoryGuess : Option[Theory] = None
   
   var letBindings : Stack[Map[String, ConcreteFunctionSymbol]] = new Stack()
-  var letEquations : MutableList[AST] = MutableList()
+  var letEquations : List[AST] = List()
   var letSuffix : Int = 0
   
 
