@@ -241,6 +241,7 @@ object main {
   def main_aux(args : Array[String]) : Answer = {
     import java.io._
     import scala.collection.JavaConversions._
+      // import scala.jdk.CollectionConverters._
     
     
     globalOptions.STARTTIME = Some(System.currentTimeMillis())
@@ -306,7 +307,7 @@ object main {
       }
       case e : Exception => {
         println("Unhandled error: " + e)
-        println(e.getStackTraceString)
+        e.printStackTrace()
         println("terminating")
       }
     }
