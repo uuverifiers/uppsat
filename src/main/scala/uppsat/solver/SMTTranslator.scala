@@ -1,6 +1,6 @@
 package uppsat.solver
 
-import scala.collection.mutable.{Set, Map => MMap, MutableList}
+import scala.collection.mutable.{Set, Map => MMap}
 import uppsat.precision.PrecisionMap.Path
 import uppsat.ModelEvaluator.Model
 import scala.collection.mutable.{Map => MMap}
@@ -11,7 +11,7 @@ class SMTTranslator(theory : Theory) {
   var nextAST = 0 // Counter to make node-names unique
   val IdToPaths = MMap() : MMap[String, List[Path]]
   val astSymbols = Set() : Set[(String, String)]
-  val symbolAssertions = MutableList() : MutableList[String]
+  var symbolAssertions = List() : List[String]
 
   implicit val translator = Some(this)
   
@@ -43,7 +43,7 @@ class SMTTranslator(theory : Theory) {
            nextAST += 1             
            
            astSymbols += ((newSymbol, smtSort))
-           symbolAssertions += "(= " + newSymbol + " " + smtAST + ")"
+           symbolAssertions = "(= " + newSymbol + " " + smtAST + ")" :: symbolAssertions
            
            smtAST
        }
@@ -64,7 +64,7 @@ class SMTTranslator(theory : Theory) {
     nextAST = 0
     IdToPaths.clear()
     astSymbols.clear()
-    symbolAssertions.clear()    
+    symbolAssertions = List()
     smtDefs.clear()    
     translateASTaux(ast)
   }
@@ -120,7 +120,7 @@ class SMTTranslator(theory : Theory) {
     footer +  "\n" +
     "(eval " + answer.symbol + ")"
   }
-  
+
   def evaluate(ast : AST) : String = {
     val astFormula = translateAST(ast)
     "(eval " + astFormula + ")" 
