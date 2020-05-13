@@ -68,13 +68,13 @@ object FloatingPointTheory extends Theory {
   
   case class FPPredicateSymbol( val argSort : ConcreteSort, val getFactory : FPPredicateSymbolFactory) extends FloatingPointPredicateSymbol {   
     val theory = FloatingPointTheory    
-    val name = getFactory symbolName
+    val name = getFactory.symbolName
     val sort = BooleanSort
-    val args = List.fill(getFactory fpArity)(argSort)
+    val args = List.fill(getFactory.fpArity)(argSort)
   }
   case class FPToNonFPFunctionSymbol( val args : Seq[ConcreteSort], _sort : ConcreteSort, val getFactory : FPToNonFPFunctionSymbolFactory) extends FloatingPointNonFPSymbol(_sort) {
     val theory = FloatingPointTheory
-    val name = getFactory symbolName
+    val name = getFactory.symbolName
     
     
   }

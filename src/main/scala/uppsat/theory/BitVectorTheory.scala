@@ -65,9 +65,9 @@ object BitVectorLiteral {
   
   case class BVPredicateSymbol( val argSort : ConcreteSort, val getFactory : BVPredicateSymbolFactory) extends BitVectorPredicateSymbol {   
     val theory = BitVectorTheory    
-    val name = getFactory symbolName
+    val name = getFactory.symbolName
     val sort = BooleanSort
-    val args = List.fill(getFactory bvArity)(argSort)
+    val args = List.fill(getFactory.bvArity)(argSort)
   }
   
   case class BVFunctionSymbolFactory(symbolName : String, fpArity : Int) extends IndexedFunctionSymbolFactory {

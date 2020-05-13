@@ -59,14 +59,14 @@ object FixPointTheory extends Theory {
   case class FXFunctionSymbol(val args : Seq[ConcreteSort], _sort : FXSort, val getFactory : FXFunctionSymbolFactory) 
              extends FixPointFunctionSymbol(_sort) {   
     val theory = FixPointTheory
-    val name = getFactory symbolName
+    val name = getFactory.symbolName
   }
   
   case class FXPredicateSymbol( val argSort : ConcreteSort, val getFactory : FXPredicateSymbolFactory) extends FixPointPredicateSymbol {   
     val theory = FixPointTheory    
-    val name = getFactory symbolName
+    val name = getFactory.symbolName
     val sort = BooleanSort
-    val args = List.fill(getFactory FXArity)(argSort)
+    val args = List.fill(getFactory.FXArity)(argSort)
   }
   
   case class FXFunctionSymbolFactory(symbolName : String, fpArity : Int) extends IndexedFunctionSymbolFactory {
