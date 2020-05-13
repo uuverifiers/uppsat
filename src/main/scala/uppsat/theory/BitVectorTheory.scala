@@ -60,7 +60,7 @@ object BitVectorLiteral {
   case class BVFunctionSymbol(val args : Seq[ConcreteSort], _sort : BVSort, val getFactory : BVFunctionSymbolFactory) 
              extends BitVectorFunctionSymbol(_sort) {   
     val theory = BitVectorTheory
-    val name = getFactory symbolName
+    val name = getFactory.symbolName
   }
   
   case class BVPredicateSymbol( val argSort : ConcreteSort, val getFactory : BVPredicateSymbolFactory) extends BitVectorPredicateSymbol {   

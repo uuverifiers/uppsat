@@ -18,6 +18,8 @@ import ap.parser.smtlib._
 import ap.parser.smtlib.Absyn._
 import java.io._
 import scala.collection.JavaConversions._
+// import scala.jdk.CollectionConverters._
+
 
 import uppsat.theory.IntegerTheory
 
@@ -66,8 +68,11 @@ def hexToBitList(hex : String) = {
   
   class SMTParser extends smtlib.Absyn.ScriptC.Visitor[Int, Object] {
     def visit(t : smtlib.Absyn.Script, o : Object) : Int = {
-      for (i <- 0 until t.listcommand_.iterator.length) { 
-        val c = t.listcommand_(i)        
+      // for (i <- 0 until t.listcommand_.iterator.length) { 
+      //   val c = t.listcommand_(i)        
+      //   parse(c)
+      // }
+      for (c <- t.listcommand_.iterator()) {
         parse(c)
       }
       0
@@ -87,7 +92,7 @@ def hexToBitList(hex : String) = {
   }
   
   private def parse(script : Script) : Unit =
-    for (cmd <- script.listcommand_) parse(cmd)
+    for (cmd <- script.listcommand_.iterator()) parse(cmd)
 
      
   protected def checkArgs(op : String, expected : Int, args : Seq[Term]) : Unit =
@@ -117,7 +122,7 @@ def hexToBitList(hex : String) = {
       asString(id.symbol_)
     case id : IndexIdent =>
       asString(id.symbol_) + "_" +
-      ((id.listindexc_ map (_.asInstanceOf[Index].numeral_)) mkString "_")
+      ((id.listindexc_.iterator().map(_.asInstanceOf[Index].numeral_)) mkString "_")
   }
   
   def asString(s : Symbol) : String = s match {
@@ -146,9 +151,9 @@ def hexToBitList(hex : String) = {
       case t : FunctionTerm =>    
         symApp(t.symbolref_, t.listterm_)
       case t : NullaryTerm =>
-        symApp(t.symbolref_, List())    
+        symApp(t.symbolref_, List())
       case t : LetTerm =>
-        val bindings = (for (b <- t.listbindingc_) yield {
+        val bindings = (for (b <- t.listbindingc_.iterator()) yield {
           val binding = b.asInstanceOf[Binding]
           val boundTerm = translateTerm(binding.term_)
           val fullname = asString(binding.symbol_)
