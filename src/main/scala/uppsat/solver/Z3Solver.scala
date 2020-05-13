@@ -14,6 +14,7 @@ import java.io.InputStreamReader;
 class Z3Exception(msg : String) extends Exception("Z3 error: " + msg)
 
 class Z3Solver(name : String = "Z3", val checkSatCmd : String = "(check-sat)") extends SMTSolver {
+
   var silent = true
   
   def setSilent(b : Boolean) = {
@@ -40,43 +41,47 @@ class Z3Solver(name : String = "Z3", val checkSatCmd : String = "(check-sat)") e
           
     
     println(cmd)
-    val process = Runtime.getRuntime().exec(cmd)
-    z3print("[Started process: " + process)
-    val stdin = process.getOutputStream ()
-    val stderr = process.getErrorStream ()
-    val stdout = process.getInputStream ()
+    try {
+	val process = Runtime.getRuntime().exec(cmd)
+	z3print("[Started process: " + process)
+	val stdin = process.getOutputStream ()
+	val stderr = process.getErrorStream ()
+	val stdout = process.getInputStream ()
     
-    stdin.write((formula + "\n(exit)\n").getBytes("UTF-8"));    
-    stdin.close();
+	stdin.write((formula + "\n(exit)\n").getBytes("UTF-8"));    
+	stdin.close();
     
-    val outReader = new BufferedReader(new InputStreamReader (stdout))
-    var result = List() : List[String] 
-    val toPattern = ".*timeout.*".r
-    // TODO: Maybe restore the errorPattern but excluding model calls
+	val outReader = new BufferedReader(new InputStreamReader (stdout))
+	var result = List() : List[String] 
+	val toPattern = ".*timeout.*".r
+	// TODO: Maybe restore the errorPattern but excluding model calls
     
     
-    var line = outReader.readLine()
-    while (line != null) {
-      line match { 
-//        case errorPattern() =>  {
-//          import java.io._
-//          val pw = new PrintWriter(new File("error.smt2"))
-//          pw.write(formula)
-//          pw.close
-//          throw new Z3Exception(line)
-//        }
-        case toPattern() => throw new TimeoutException("Z3Solver.evaluate")
-        case other => result = result ++ List(other)        
-      }
-      line = outReader.readLine()
+	var line = outReader.readLine()
+	while (line != null) {
+	    line match { 
+		//        case errorPattern() =>  {
+		//          import java.io._
+		//          val pw = new PrintWriter(new File("error.smt2"))
+		//          pw.write(formula)
+		//          pw.close
+		//          throw new Z3Exception(line)
+		//        }
+		case toPattern() => throw new TimeoutException("Z3Solver.evaluate")
+		case other => result = result ++ List(other)        
+	    }
+	    line = outReader.readLine()
+	}
+	process.waitFor();
+	val exitValue = process.exitValue()
+	//    if (exitValue != 0) {
+	//      println(result.mkString("\n"))
+	//      throw new Exception("[" + name + "] Exited with a non-zero value")
+	//    }
+	result.mkString("\n")
+    } catch {
+	case e : java.io.IOException => throw new Z3Exception("(probably) z3 binary not found")
     }
-    process.waitFor();
-    val exitValue = process.exitValue()
-//    if (exitValue != 0) {
-//      println(result.mkString("\n"))
-//      throw new Exception("[" + name + "] Exited with a non-zero value")
-//    }
-    result.mkString("\n")
   }
  
   
