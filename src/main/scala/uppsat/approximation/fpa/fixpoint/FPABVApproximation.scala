@@ -2,14 +2,12 @@
 
 package uppsat.approximation.fpa.fixpoint
 
-
 import uppsat.approximation._
 import uppsat.approximation.components._
 import uppsat.approximation.codec._
-import uppsat.theory.BitVectorTheory._
 import uppsat.theory.RealTheory._
-import uppsat.theory.RealTheory.RealConstant
-import uppsat.theory.RealTheory.RealSort
+import uppsat.theory.BitVectorTheory._
+import uppsat.theory.BitVectorTheory.BVSortFactory.BVSort
 import uppsat.theory.BooleanTheory
 import uppsat.theory.BooleanTheory._
 import uppsat.theory.FixPointTheory
@@ -34,18 +32,19 @@ import uppsat.approximation.reconstruction.EmptyReconstruction
 import uppsat.approximation.reconstruction.PostOrderReconstruction
 
 
-
 /**
  * FPABVContext - FloatingPoint Arithmetic by BitVector approximations
- * 
- * The approximation works by replacing FloatingPoint numbers by fixed point numbers (represented by BitVectors).
- * 
- * The precision is a Integer tuple (i, j), where i corresponds to the number of integral bits and j the number of 
- * fractional bits in the fixed point numbers. 
- * 
- * An important invariant is that the precision must be upwards closed, i.e., if a node has precision (i, j), 
- * all ancestor nodes must have precisions which are greater or equal to (i, j).
- * 
+ *
+ * The approximation works by replacing FloatingPoint numbers by fixed point
+ * numbers (represented by BitVectors).
+ *
+ * The precision is a Integer tuple (i, j), where i corresponds to the number of
+ * integral bits and j the number of fractional bits in the fixed point numbers.
+ *
+ * An important invariant is that the precision must be upwards closed, i.e., if
+ * a node has precision (i, j), all ancestor nodes must have precisions which
+ * are greater or equal to (i, j).
+ *
  */
 trait FPABVContext extends ApproximationContext {
    type Precision = (Int, Int) // (integralBits, FractionalBits)
@@ -57,11 +56,10 @@ trait FPABVContext extends ApproximationContext {
 trait FPABVCodec extends FPABVContext with PostOrderCodec {
   var fpToFXMap = Map[ConcreteFunctionSymbol, ConcreteFunctionSymbol]()
 
-  
-  // 
+  //
   //  Casting/Convertion
   //
-  
+
   def cast(ast : AST, target : ConcreteSort) : AST = {
     (ast.symbol.sort, target) match {
       case (RealNegation.sort, FXSort(decW, fracW)) => {
@@ -69,18 +67,22 @@ trait FPABVCodec extends FPABVContext with PostOrderCodec {
         child.symbol.asInstanceOf[IndexedFunctionSymbol].getFactory match {
           case FXConstantFactory(iBits, fBits) => {
             val newBits = twosComplement(iBits ++ fBits)
-              // TODO: (Aleks) Dropping bit at overflow?        
-            val nextBits = 
+              // TODO: (Aleks) Dropping bit at overflow?
+            val nextBits =
               if (newBits.length > iBits.length + fBits.length) {
                 newBits.drop(newBits.length - (iBits.length + fBits.length))
               } else {
                 newBits
               }
-            
-            Leaf(FX(nextBits.take(iBits.length), nextBits.drop(iBits.length))(FXSort(decW, fracW)), ast.label)
+
+            Leaf(
+              FX(nextBits.take(iBits.length),nextBits.drop(iBits.length))(FXSort(decW, fracW)),
+              ast.label
+            )
           }
         }
       }
+
       case (RealSort, FXSort(decW, fracW)) => {
         ast.symbol match {
           case realValue : RealNumeral => {
@@ -88,30 +90,30 @@ trait FPABVCodec extends FPABVContext with PostOrderCodec {
           }
           case realValue : RealDecimal => {
             val (sign, eBits, sBits) = floatToBits((realValue.num / realValue.denom).toFloat)
-            
-           val bits = sBits
-           val (integralWidth, fractionalWidth) = (decW, fracW)
-           val integralBits = 
-             if (bits.length < integralWidth)
-               List.fill(integralWidth - bits.length)(0) ++ bits
-             else if (bits.length > integralWidth)
-               bits.drop(bits.length - integralWidth)
-             else
-               bits
-             bits.take(integralWidth) 
-           val fractionalBits = List.fill(fractionalWidth)(0)
-           
-           val sort = FXSort(integralWidth, fractionalWidth)
-           val symbol = FX(integralBits, fractionalBits)(sort)
-           
-           Leaf(symbol, ast.label)
-            
-            
+            val bits = sBits
+            val (integralWidth, fractionalWidth) = (decW, fracW)
+            val integralBits =
+              if (bits.length < integralWidth)
+                List.fill(integralWidth - bits.length)(0) ++ bits
+              else if (bits.length > integralWidth)
+                bits.drop(bits.length - integralWidth)
+              else
+                bits
+            bits.take(integralWidth)
+            val fractionalBits = List.fill(fractionalWidth)(0)
+
+            val sort = FXSort(integralWidth, fractionalWidth)
+            val symbol = FX(integralBits, fractionalBits)(sort)
+
+            Leaf(symbol, ast.label)
           }
         }
       }
-        
-      case (FXSort(sourceintegralBits, sourceFractionalBits), FXSort(targetintegralBits, targetFractionalBits)) => {
+
+      case (
+        FXSort(sourceintegralBits, sourceFractionalBits),
+        FXSort(targetintegralBits, targetFractionalBits)
+      ) => {
         if (sourceintegralBits != targetintegralBits ||
             sourceFractionalBits != targetFractionalBits) {
             val c = FXToFXFactory(ast.symbol.sort)
@@ -120,15 +122,18 @@ trait FPABVCodec extends FPABVContext with PostOrderCodec {
           ast
         }
       }
+
+        // Fix BV Literals
+      case (BVSort(bits), _) => {
+        ast
+      }
       case sym => {
-        println("cast(" + ast + ", " + target + ")")
-        throw new Exception("don't cast me: " + ast.symbol.sort.getClass + ", " + target)
+        throw new Exception("don't cast me: " + ast.symbol.sort.getClass + " ---> " + target)
       }
     }
   }
 
-  
-  
+
   /**
    * Converts given floating-point number to a fixed point number of fxsort
    * 
@@ -176,43 +181,44 @@ trait FPABVCodec extends FPABVContext with PostOrderCodec {
           } else {
             newBits
           }
-            
+
         (nextBits.take(iBits.length), nextBits.drop(iBits.length))
       } else {
         (iBits, fBits)
       }
-    FixPointLiteral(newiBits, newfBits, fxsort)    
-    
+    FixPointLiteral(newiBits, newfBits, fxsort)
+
   }
-   
 
   /**
    * Converts given fixed point number to a floating point number of fpsort
-   * 
+   *
    * @param integralBits Integral bits of fixed point number
-   * @param fractionalBits Fractional bits of fixed point number 
+   * @param fractionalBits Fractional bits of fixed point number
    * @param fpsort The sort to which the fixed point number should be converted
-   * 
+   *
    * @return Fixed point number (integralBits.fractionalBits) as a fixed point number of sort fpsort
 
    */
-  
-  def fixPointToFloat(integralBits : List[Int], fractionalBits : List[Int], fpsort : FPSort) : ConcreteFunctionSymbol = {
+
+  def fixPointToFloat(
+    integralBits : List[Int],
+    fractionalBits : List[Int],
+    fpsort : FPSort) : ConcreteFunctionSymbol = {
     val signBit = integralBits.head
-    
+
     val FPSort(eBits, sBits) = fpsort
-    
+
     val position = integralBits.length
 
     val aBits = integralBits ++ fractionalBits
-    val allBits = 
+    val allBits =
       if (signBit == 1) {
         twosComplement(aBits)
       } else {
         aBits
       }
-    
-    
+
     // Remove the return
     val leadingZeroes = allBits.takeWhile(_ == 0).length
     if (allBits.dropWhile(_ == 0).isEmpty) {
@@ -221,18 +227,17 @@ trait FPABVCodec extends FPABVContext with PostOrderCodec {
       else
         return FPNegativeZero(fpsort)
     }
-    
+
     val actualBits = allBits.dropWhile(_ == 0).tail // Dropping implicit one
     val newPosition = position - leadingZeroes - 1
-    
+
     val exp = position - leadingZeroes - 1
-            
+
     // BIAS
     import scala.BigInt._
     val biasedExp = exp + 2.pow(eBits - 1).toInt - 1
     val expBits = biasedExp.toBinaryString.map(_ - 48).toList
-    
-    
+
     // BIAS: Ask Christoph
     val exponent =
       if (expBits.length < eBits) {
@@ -243,30 +248,33 @@ trait FPABVCodec extends FPABVContext with PostOrderCodec {
       } else {
         expBits
       }
-    
+
     // -1 for implicit one
-    val mantissa =  
+    val mantissa =
       if (actualBits.length < sBits - 1) {
-        actualBits ++ List.fill(sBits - 1 - actualBits.length)(0) 
+        actualBits ++ List.fill(sBits - 1 - actualBits.length)(0)
       } else if (actualBits.length > sBits - 1) {
         actualBits.take(sBits - 1)
       } else {
         actualBits
       }
-    
-    fp(signBit, exponent, mantissa)(fpsort)   
+
+    fp(signBit, exponent, mantissa)(fpsort)
   }
-  
-  
-  def encodeNode(symbol : ConcreteFunctionSymbol, label : Label, children : List[AST], precision : (Int, Int)) : AST = {
+
+  def encodeNode(
+    symbol : ConcreteFunctionSymbol,
+    label : Label,
+    children : List[AST],
+    precision : (Int, Int)) : AST = {
     val newSort = FXSortFactory(List(precision._1, precision._2))
       symbol match {
-      
-      case fpVar : FPVar => {        
+
+      case fpVar : FPVar => {
         fpToFXMap += (fpVar ->  new FXVar(fpVar.name, newSort))
         Leaf(fpToFXMap(fpVar), label)
       }
-      
+
       case fpLit : FloatingPointLiteral => {
         fpLit.getFactory match {
            case FPConstantFactory(sign, eBits,  sBits) => {
@@ -284,20 +292,21 @@ trait FPABVCodec extends FPABVContext with PostOrderCodec {
            }
            case FPMinusInfinity => {
              Leaf(FixPointLiteral(1 :: List.fill(newSort.integralWidth - 1)(0), List.fill(newSort.fractionalWidth - 1)(0) ++ List(1),  newSort))
-           }           
+           }
         }
       }
-      
-      
+
+
       case fpSym : FloatingPointFunctionSymbol => {
-        
-        var newChildren = 
-          for (c <- children if c.symbol.sort != RoundingModeSort) yield
+        var newChildren =
+          for (c <- children if c.symbol.sort != RoundingModeSort) yield {
             cast(c, newSort)
+          }
         var newLabel = label
         if (fpSym.getFactory == FPNegateFactory) {
           val notNode = AST(FXNotFactory(newSort), newChildren)
-          val oneNode = Leaf(FX(List.fill(newSort.integralWidth)(0), List.fill(newSort.fractionalWidth - 1)(0) ++ List(1))(newSort))
+          val oneNode =
+            Leaf(FX(List.fill(newSort.integralWidth)(0), List.fill(newSort.fractionalWidth - 1)(0) ++ List(1))(newSort))
           AST(FXAddFactory(newSort), label, List(notNode, oneNode))
         } else {
           val newSymbol = fpSym.getFactory match {
@@ -306,20 +315,37 @@ trait FPABVCodec extends FPABVContext with PostOrderCodec {
             case FPSubstractionFactory => FXSubFactory(newSort)
             case FPMultiplicationFactory => FXMulFactory(newSort)
             case FPDivisionFactory => FXDivFactory(newSort)
-            
-            case FPToFPFactory => val r = newChildren(0).symbol
-                                  newLabel = newChildren(0).label
-                                  newChildren = newChildren(0).children
-                                  r
-                                  
+
+            case FPToFPFactory => {
+              newChildren match {
+                case List(AST(symbol : BitVectorLiteral , _, _)) => {
+                  assert(symbol.bits.length == 32)
+                  val sign = symbol.bits(0)
+                  val eBits = symbol.bits.drop(1).take(8)
+                  val sBits = symbol.bits.drop(9).take(23)
+                  val fxSymbol = floatToFixPoint(sign, eBits, sBits, newSort)
+                  val newLeaf = Leaf(fxSymbol, newChildren(0).label)
+                  // TODO: Restructure so this return disappears
+                  return newLeaf
+                }
+
+                case c => {
+                  val r = newChildren(0).symbol
+                  newLabel = newChildren(0).label
+                  newChildren = newChildren(0).children
+                  r
+                }
+              }
+            }
+
             case _ => throw new Exception(fpSym + " unsupported")
           }
-          
-          
+
+
           AST(newSymbol, newLabel, newChildren)
         }
       }
-      
+
       case fpPred : FloatingPointPredicateSymbol => {
         val newChildren =
           for (c <- children if c.symbol.sort != RoundingModeSort) yield
@@ -337,34 +363,34 @@ trait FPABVCodec extends FPABVContext with PostOrderCodec {
 
         AST(newSymbol, label, newChildren)
       }
-      
+
       case rm : RoundingMode => rm
-      
+
       case realValue : RealNumeral => {
         val (sign, eBits, sBits) = floatToBits(realValue.num.toFloat)
         val fxSymbol = floatToFixPoint(sign, eBits, sBits, newSort)
-        
-        Leaf(fxSymbol, label)        
+
+        Leaf(fxSymbol, label)
       }
       case rv : RealDecimal => {
         val (sign, eBits, sBits) = floatToBits((rv.num.toFloat / rv.denom.toFloat).toFloat)
         val fxSymbol = floatToFixPoint(sign, eBits, sBits, newSort)
-       Leaf(fxSymbol, label)        
-        
+        Leaf(fxSymbol, label)
+
       }
-      
+
       case rSym : RealFunctionSymbol => {
         Leaf(rSym, label)
       }
-      
-      case _ => AST(symbol, label, children) 
+
+        case _ => AST(symbol, label, children)
     }
   }
 
   def twosComplement(bits : List[Int]) = {
     // invert bits
     val invBits = bits.map(x => if (x == 0) 1 else 0)
-    
+
     def addOne(bits : List[Int]) : List[Int] = {
       bits match {
         case Nil => List(1)
@@ -378,11 +404,11 @@ trait FPABVCodec extends FPABVContext with PostOrderCodec {
     }
     addOne(invBits.reverse).reverse
   }
-  
+
   // float -> smt-float
-  
+
   def decodeSymbolValue(symbol : ConcreteFunctionSymbol, value : AST, p : (Int, Int)) = {
-    (symbol.sort, value.symbol) match {      
+    (symbol.sort, value.symbol) match {
       case (FPSort(e, s), bvl : BitVectorLiteral) => {
         val (integralWidth, fractionalWidth) = p
         if (bvl.bits.length != integralWidth + fractionalWidth) {
@@ -395,10 +421,10 @@ trait FPABVCodec extends FPABVContext with PostOrderCodec {
         val fractionalBits = bvl.bits.drop(integralWidth)
         Leaf(fixPointToFloat(integralBits, fractionalBits, FPSort(e, s)))
       }
-      
+
       case (FPSort(e, s), fxl : FixPointLiteral) => {
         // TODO: (Aleks) How do we know that the float value here is correctly representing something of sort FPSort(e,s)
-        Leaf(fixPointToFloat(fxl.integralBits, fxl.fractionalBits, FPSort(e, s)))      
+        Leaf(fixPointToFloat(fxl.integralBits, fxl.fractionalBits, FPSort(e, s)))
       }
       
       case (BooleanSort, _) => value
@@ -409,7 +435,7 @@ trait FPABVCodec extends FPABVContext with PostOrderCodec {
 
       case (RealSort, rv : RealDecimal) => value
       case (RealSort, rv : RealNumeral) => value
-      
+      case (BVSort(_), _) => value
       case _ => {
         println(symbol.sort)
         println(value.symbol)

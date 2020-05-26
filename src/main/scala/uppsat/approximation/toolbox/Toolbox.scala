@@ -203,8 +203,8 @@ object Toolbox {
     // Let's begin by creating a partial order over variables
     
    
-    for (eq <- allEquations)
-      eq.prettyPrint
+    // for (eq <- allEquations)
+      // eq.prettyPrint
       
       
     val simpleEqualities = MSet() : MSet[AST]
@@ -319,7 +319,7 @@ object Toolbox {
     
     val eqOrder = ListBuffer() : ListBuffer[AST]
     var remEquations = MSet() ++ allEquations
-    println("varOrder: " + varOrder.mkString(","))
+    // println("varOrder: " + varOrder.mkString(","))
     
     def isDefined(eq : AST) = {
       val vars = eq.iterator.filter(_.isVariable).map(_.symbol).toSet
@@ -338,9 +338,9 @@ object Toolbox {
       //Add all remaining equalities which are now defined
     }
     
-    println("EQOrder: ")
-    for (eq <- eqOrder)
-		  eq.prettyPrint("..")
+    // println("EQOrder: ")
+    // for (eq <- eqOrder)
+		  // eq.prettyPrint("..")
 		  
 		eqOrder.toList
   }     
