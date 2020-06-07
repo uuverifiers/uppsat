@@ -3,33 +3,31 @@
 package uppsat.approximation.fpa.fixpoint
 
 import uppsat.approximation._
-import uppsat.approximation.components._
 import uppsat.approximation.codec._
+import uppsat.approximation.reconstruction.EqualityAsAssignmentReconstruction
+import uppsat.approximation.refinement.UniformRefinementStrategy
+import uppsat.approximation.reconstruction.{EmptyReconstruction, PostOrderReconstruction}
+
+import uppsat.theory.{FixPointTheory, FloatingPointTheory}
 import uppsat.theory.RealTheory._
 import uppsat.theory.BitVectorTheory._
 import uppsat.theory.BitVectorTheory.BVSortFactory.BVSort
-import uppsat.theory.BooleanTheory
 import uppsat.theory.BooleanTheory._
-import uppsat.theory.FixPointTheory
 import uppsat.theory.FixPointTheory._
 import uppsat.theory.FixPointTheory.FXSortFactory.FXSort
-import uppsat.ModelEvaluator
-import uppsat.ModelEvaluator.Model
-import uppsat.theory.FloatingPointTheory
 import uppsat.theory.FloatingPointTheory._
 import uppsat.theory.FloatingPointTheory.FPSortFactory.FPSort
+
 import uppsat.precision.PrecisionMap
-import uppsat.precision.PrecisionMap.Path
 import uppsat.precision.IntTuplePrecisionOrdering
+
+import uppsat.ModelEvaluator.Model
+
 import uppsat.ast._
-import uppsat.ast.AST
 import uppsat.ast.AST.Label
-import uppsat.solver.Z3Solver
+
 import uppsat.globalOptions
-import uppsat.approximation.reconstruction.EqualityAsAssignmentReconstruction
-import uppsat.approximation.refinement.UniformRefinementStrategy
-import uppsat.approximation.reconstruction.EmptyReconstruction
-import uppsat.approximation.reconstruction.PostOrderReconstruction
+
 
 
 /**
@@ -44,13 +42,21 @@ import uppsat.approximation.reconstruction.PostOrderReconstruction
  * An important invariant is that the precision must be upwards closed, i.e., if
  * a node has precision (i, j), all ancestor nodes must have precisions which
  * are greater or equal to (i, j).
- *
- */
+
+  */
+
+object FPABVContext {
+  val defaultMinPrecision = (1,1)
+  val defaultMaxPrecision = (32,32)
+  val defaultPrecIncrement = (3,3)
+}
+
 trait FPABVContext extends ApproximationContext {
-   type Precision = (Int, Int) // (integralBits, FractionalBits)
-   val precisionOrdering = new IntTuplePrecisionOrdering((5,5), (25,25))
-   val inputTheory = FloatingPointTheory
-   val outputTheory = FixPointTheory
+  type Precision = (Int, Int) // (integralBits, FractionalBits)
+
+  val precisionOrdering = new IntTuplePrecisionOrdering(globalOptions.FX_MIN_PRECISION, globalOptions.FX_MAX_PRECISION)
+  val inputTheory = FloatingPointTheory
+  val outputTheory = FixPointTheory
 }
 
 trait FPABVCodec extends FPABVContext with PostOrderCodec {
@@ -502,7 +508,7 @@ trait FPABVCodec extends FPABVContext with PostOrderCodec {
 //
 trait FPABVRefinementStrategy extends FPABVContext with UniformRefinementStrategy {
   def increasePrecision(p : Precision) = {
-    precisionOrdering.+(p, (4,4))
+    precisionOrdering.+(p, globalOptions.FX_PREC_INC)
   }
 } 
 

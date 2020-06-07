@@ -1,7 +1,5 @@
 package uppsat;
 
-
-
 import uppsat.precision.PrecisionMap
 import uppsat.Timer.TimeoutException
 import uppsat.theory.BooleanTheory._
@@ -14,7 +12,6 @@ import uppsat.theory.IntegerTheory._
 import uppsat.solver._
 import uppsat.approximation.components._
 import uppsat.precision.PrecisionMap.Path
-//import uppsat.Encoder.PathMap
 import uppsat.ModelEvaluator.Model
 import uppsat.globalOptions._
 import scala.jdk.CollectionConverters._
@@ -48,6 +45,11 @@ object globalOptions {
   var PARANOID = false
   var SURRENDER = false
   var NO_RUN = false
+
+ 
+  var FX_MIN_PRECISION = uppsat.approximation.fpa.fixpoint.FPABVContext.defaultMinPrecision
+  var FX_MAX_PRECISION = uppsat.approximation.fpa.fixpoint.FPABVContext.defaultMaxPrecision
+  var FX_PREC_INC = uppsat.approximation.fpa.fixpoint.FPABVContext.defaultPrecIncrement
 
   
   def registeredSolvers(str : String) = {
@@ -92,7 +94,7 @@ object globalOptions {
       case _ => throw new Exception("Unsupported approximation: \"" + str + "\"")
     }
   } 
-                         
+
   var approximation = "ijcar"
   var backend = "z3"
   var validator = "z3"
@@ -188,62 +190,78 @@ object main {
    * @return Returns true if arg was unparseable
    */
   def parseArgument( arg : String) : Boolean = {
-      val timeoutPattern = "-t=([0-9.]+)".r
-      val seedPattern = "-seed=([0-9.]+)".r
-      val appPattern = "-app=(\\S+)".r
-      val backend = "-backend=(\\S+)".r
-      val validator = "-validator=(\\S+)".r
-      val dashPattern = "-.*".r
-      arg match {
-        case "-test" => {
-          globalOptions.STATS = true
-          globalOptions.MODEL = true
-          globalOptions.VERBOSE = true
-          globalOptions.DEBUG = true
-          globalOptions.FORMULAS = true
-        }
-        case "-s" => globalOptions.STATS = true
-        case "-m" => globalOptions.MODEL = true
-        case "-v" => globalOptions.VERBOSE = true
-        case "-d" => globalOptions.DEBUG = true
-        case "-p" => globalOptions.PARANOID =  true
-        case "-h" | "-help" => {
-          printUsage()
-          globalOptions.NO_RUN = true
-        }
-        case "-a" => {
-          printDescriptions()
-          globalOptions.NO_RUN = true          
-        }
-        case "-f" => globalOptions.FORMULAS = true
-        case "-surrender" => globalOptions.SURRENDER = true
-        
-        case backend(solver) => globalOptions.backend = solver
-            
-        case validator(solver) => globalOptions.validator = solver
-        
-        case appPattern(app) => globalOptions.approximation = app
-        
-        case timeoutPattern(t) => {
+    val timeoutPattern = "-t=([0-9.]+)".r
+    val seedPattern = "-seed=([0-9.]+)".r
+    val appPattern = "-app=(\\S+)".r
+    val backend = "-backend=(\\S+)".r
+    val validator = "-validator=(\\S+)".r
+    val fxPrec = "-fxp=([0-9]+)\\.([0-9]+)-([0-9]+)\\.([0-9]+)".r
+    val fxInc = "-fxi=([0-9]+)\\.([0-9]+)".r
+    val asd = "-fxp(.*)".r
+    val dashPattern = "-.*".r
+    arg match {
+      case "-test" => {
+        globalOptions.STATS = true
+        globalOptions.MODEL = true
+        globalOptions.VERBOSE = true
+        globalOptions.DEBUG = true
+        globalOptions.FORMULAS = true
+      }
+      case "-s" => globalOptions.STATS = true
+      case "-m" => globalOptions.MODEL = true
+      case "-v" => globalOptions.VERBOSE = true
+      case "-d" => globalOptions.DEBUG = true
+      case "-p" => globalOptions.PARANOID =  true
+      case "-h" | "-help" => {
+        printUsage()
+        globalOptions.NO_RUN = true
+      }
+      case "-a" => {
+        printDescriptions()
+        globalOptions.NO_RUN = true
+      }
+      case "-f" => globalOptions.FORMULAS = true
+      case "-surrender" => globalOptions.SURRENDER = true
+
+      case backend(solver) => globalOptions.backend = solver
+
+      case validator(solver) => globalOptions.validator = solver
+
+      case appPattern(app) => globalOptions.approximation = app
+
+      case timeoutPattern(t) => {
           globalOptions.DEADLINE = Some(t.toInt * 1000)
         }
-        
-        case seedPattern(s) => {
-          globalOptions.RANDOM_SEED = s.toInt
-        }
-               
-        case dashPattern() => printUsage()
-        case _ => true
+
+      case seedPattern(s) => {
+        globalOptions.RANDOM_SEED = s.toInt
       }
-      false
+
+
+      case fxPrec(minI, minF, maxI, maxF) => {
+        globalOptions.FX_MIN_PRECISION = (minI.toInt, minF.toInt)
+        globalOptions.FX_MAX_PRECISION = (maxI.toInt, maxF.toInt)
+      }
+
+      case fxInc(incI, incF) => {
+        globalOptions.FX_PREC_INC = (incI.toInt, incF.toInt)
+      }
+
+      case dashPattern() => printUsage()
+
+      case _ => {
+        true
+      }
+    }
+    false
   }
   
   def main_aux(args : Array[String]) : Answer = {
     import java.io._
 
-    
+
     globalOptions.STARTTIME = Some(System.currentTimeMillis())
-    
+
     for (a <- args) yield {
       if (parseArgument(a)) {
         println("Unrecognized argument: " + a)
