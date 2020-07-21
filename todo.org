@@ -1,1 +1,20 @@
+* What to do with fixedpoint...
+
+
+* Theoretical:
+** Find inclusion bounds for fixed-point
+** Analyse what sized models are usually needed
+** Ponder about increasing width and maximum width an relation...
+
+
+* Practical:
+** Investigate bounds a bit more.
+** Make cactus plot
+** Pick 2 bit-widths, and for each bit-width 3 increments
+*** Run through (100?) benchmarks
+*** Compare with Z3, MathSAT, CVC4(?)
+
+** What about the theory of fixed-point proposed. Can we use it?
+
+
 
