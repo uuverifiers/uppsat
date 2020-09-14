@@ -142,46 +142,46 @@ trait FPABVCodec extends FPABVContext with PostOrderCodec {
 
   /**
    * Converts given floating-point number to a fixed point number of fxsort
-   * 
+   *
    * @param sign Sign-bit of floating point number
-   * @param eBits Exponent bits of floating point number 
+   * @param eBits Exponent bits of floating point number
    * @param sBits Significand bits of floating point number
    * @param fxsort The sort to which the floating point number should be converted
-   * 
+   *
    * @return Floating point number (sign, eBits, sBits) as a fixed point number of sort fxsort
 
    */
   def floatToFixPoint(sign : Int, eBits : List[Int], sBits : List[Int], fxsort : FXSort) = {
     val exp = unbiasExp(eBits, eBits.length)
     val FXSort(integralWidth, fractionalWidth) = fxsort
-    
-    // Position indicates the number of bits in the integral part of the number 
+
+    // Position indicates the number of bits in the integral part of the number
     val position = exp + 1
-   
-    val (prependedBits, newPosition) = 
+
+    val (prependedBits, newPosition) =
       if (position - integralWidth < 0) {
-       (List.fill(integralWidth - position)(0) ++ (1 :: sBits), integralWidth) 
+        (List.fill(integralWidth - position)(0) ++ (1 :: sBits), integralWidth)
       } else {
         (1 :: sBits, position)
       }
-     
-    
+
+
 
     val appendedBits =
      if (fractionalWidth > prependedBits.length - newPosition)
        prependedBits ++ List.fill(fractionalWidth - (prependedBits.length - newPosition))(0)
      else
        prependedBits
-       
+
     val iBits = appendedBits.drop(newPosition - integralWidth).take(integralWidth)
     val fBits = appendedBits.drop(newPosition).take(fractionalWidth)
 
-    val (newiBits, newfBits) = 
+    val (newiBits, newfBits) =
       if (sign == 1) {
         // Do some 2-complements magic over iBits ++ fBits
         val newBits = twosComplement(iBits ++ fBits)
-          // TODO: (Aleks) Dropping bit at overflow?        
-        val nextBits = 
+        // TODO: (Aleks) Dropping bit at overflow?
+        val nextBits =
           if (newBits.length > iBits.length + fBits.length) {
             newBits.drop(newBits.length - (iBits.length + fBits.length))
           } else {
@@ -432,10 +432,10 @@ trait FPABVCodec extends FPABVContext with PostOrderCodec {
         // TODO: (Aleks) How do we know that the float value here is correctly representing something of sort FPSort(e,s)
         Leaf(fixPointToFloat(fxl.integralBits, fxl.fractionalBits, FPSort(e, s)))
       }
-      
+
       case (BooleanSort, _) => value
       case (RoundingModeSort, _) => value
-      
+
       // TODO: Maybe we might have to cast floating points?
       case (FPSort(_, _), _) => value
 
@@ -454,27 +454,26 @@ trait FPABVCodec extends FPABVContext with PostOrderCodec {
   def retrieveFromAppModel(ast : AST, appModel : Model) = {
     if (appModel.contains(ast)) {
       appModel(ast)
-    } else if (ast.isVariable && fpToFXMap.contains(ast.symbol)) {      
+    } else if (ast.isVariable && fpToFXMap.contains(ast.symbol)) {
       appModel(Leaf(fpToFXMap(ast.symbol), List()))
     }
-    else if ( ast.symbol.isInstanceOf[FPFunctionSymbol] && 
+    else if ( ast.symbol.isInstanceOf[FPFunctionSymbol] &&
               ast.symbol.asInstanceOf[FPFunctionSymbol].getFactory == FPToFPFactory)
       ast
     else
       throw new Exception("Node " + ast + " does not have a value in \n" + appModel.subexprValuation + "\n" + appModel.variableValuation )
-    
+
   }
-//    
-  
+
   // In contrast to cast, this is working on scala-level, not in SMT
   def decodeValue(ast : AST, target : ConcreteSort, p : Precision) = {
     (ast.symbol, target) match {
       case (bvl : BitVectorLiteral, fpsort : FPSort) => {
         val (decWidth, fracWidth) = p
-        Leaf(fixPointToFloat(bvl.bits.take(decWidth), bvl.bits.drop(decWidth), fpsort))        
+        Leaf(fixPointToFloat(bvl.bits.take(decWidth), bvl.bits.drop(decWidth), fpsort))
       }
 
-      
+
 //      case (sort1, sort2) if sort1 == sort2 => ast
       case (sort1, sort2) => {
         println("Could not decode")
@@ -485,18 +484,18 @@ trait FPABVCodec extends FPABVContext with PostOrderCodec {
       }
     }
   }
-  
+
   // decodes values associated with nodes in the formula.
   def decodeNode( args : (Model, PrecisionMap[Precision]), decodedModel : Model, ast : AST) : Model = {
     val (appModel, pmap) = args
-    
-    val appValue = retrieveFromAppModel(ast, appModel) 
-    val decodedValue = decodeSymbolValue(ast.symbol, appValue, pmap(ast.label)) 
-    
+
+    val appValue = retrieveFromAppModel(ast, appModel)
+    val decodedValue = decodeSymbolValue(ast.symbol, appValue, pmap(ast.label))
+
     if (decodedModel.contains(ast)){
-      val existingValue = decodedModel(ast).symbol 
+      val existingValue = decodedModel(ast).symbol
       if ( existingValue != decodedValue.symbol) {
-        ast.prettyPrint("\t") 
+        ast.prettyPrint("\t")
         throw new Exception("Decoding the model results in different values for the same entry : \n" + existingValue + " \n" + decodedValue.symbol)
       }
     } else {
@@ -510,21 +509,21 @@ trait FPABVRefinementStrategy extends FPABVContext with UniformRefinementStrateg
   def increasePrecision(p : Precision) = {
     precisionOrdering.+(p, globalOptions.FX_PREC_INC)
   }
-} 
+}
 
-object FPABVApp extends FPABVContext 
+object FPABVApp extends FPABVContext
                   with FPABVCodec
                   with EqualityAsAssignmentReconstruction
                   with FPABVRefinementStrategy {
 }
 
-object FPABVEmptyApp extends FPABVContext 
+object FPABVEmptyApp extends FPABVContext
                   with FPABVCodec
                   with EmptyReconstruction
                   with FPABVRefinementStrategy {
 }
 
-object FPABVNodeByNodeApp extends FPABVContext 
+object FPABVNodeByNodeApp extends FPABVContext
                   with FPABVCodec
                   with PostOrderReconstruction
                   with FPABVRefinementStrategy {
