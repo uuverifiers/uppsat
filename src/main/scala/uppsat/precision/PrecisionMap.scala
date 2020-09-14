@@ -9,39 +9,41 @@ import uppsat.globalOptions
 
 object PrecisionMap {
   type Path = List[Int]
-    
+
   def apply[T](formula : AST)(implicit precisionOrdering : PrecisionOrdering[T]) = {
     def collectPathVarPairs (a : Map[Path, ConcreteFunctionSymbol], ast : AST) : Map[Path, ConcreteFunctionSymbol] = {
       if (ast.isVariable)
           a + (ast.label -> ast.symbol)
       else
-          a   
+        a
     }
-    
+
     val pathsToVar = AST.postVisit(formula, Map[Path, ConcreteFunctionSymbol](), collectPathVarPairs)
     val varToPaths = pathsToVar.groupBy(_._2).mapValues(_.keySet)
     val allPaths = formula.iterator.map { x => x.label }
     val pathToPathIterator = for (path <- allPaths) yield {
       if (pathsToVar.contains(path)) {
         val variable = pathsToVar(path)
-        
+
         if (!varToPaths.contains(variable))
           throw new Exception("Precision map's variable to path consistency is compromised")
-        
+
         (path, varToPaths(variable).head)
       } else
         (path,  path)
     }
     implicit val pathToPath = pathToPathIterator.toMap[Path, Path]
-    
+
    new PrecisionMap[T](Map.empty[Path, T])
   }
 }
 
 
+class PrecisionMap[T] private (val map : Map[Path, T])(implicit val pathToPath : Map[Path, Path], val precisionOrdering : PrecisionOrdering[T]) {
 
-class PrecisionMap[T] private (val map : Map[Path, T])(implicit val pathToPath : Map[Path, Path], val precisionOrdering : PrecisionOrdering[T]) {  
-  
+  lazy val maximalPrecision = if (map.values.isEmpty) None else Some(map.values.reduce((max, cur) => if (precisionOrdering.lt(max, cur)) cur else max))
+
+
   def characterize = {
     if (globalOptions.VERBOSE) {
       var s = precisionOrdering.minimalPrecision
