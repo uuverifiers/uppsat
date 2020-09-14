@@ -321,16 +321,17 @@ object main {
       Interpreter.myEnv.result
     }
   }
-  
+
   def main(args: Array[String]) = {
-    
     verbose("Args: " + args.mkString("|"))
     try {
-      main_aux(args) match {
-        case Sat(_) => System.exit(10)
-        case Unsat   => System.exit(20)
-        case Unknown => System.exit(30)        
-      }
+      main_aux(args)
+      // TODO: Add option for returning codes upon exit
+      // main_aux(args) match {
+      // case Sat(_) => System.exit(10)
+      // case Unsat   => System.exit(20)
+      // case Unknown => System.exit(30)
+      // }
     } catch {
       case to : TimeoutException => {
         println("timeout")
@@ -341,6 +342,7 @@ object main {
         println("terminating")
       }
     }
-  }   
+    ()
+  }
 }
 
