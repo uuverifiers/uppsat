@@ -325,7 +325,8 @@ def hexToBitList(hex : String) = {
             }
           }
 
-          myEnv.addSymbol(name, symbol)
+
+          myEnv.addDeclaration(name, symbol)
         }
         case _ => throw new SMTParserException("Function Declaration with arguments unsupported")
       }

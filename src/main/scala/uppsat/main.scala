@@ -201,13 +201,14 @@ object main {
     arg match {
       case "-test" => {
         globalOptions.STATS = true
-        globalOptions.MODEL = true
+        globalOptions.FULL_MODEL = true
         globalOptions.VERBOSE = true
         globalOptions.DEBUG = true
         globalOptions.FORMULAS = true
       }
       case "-s" => globalOptions.STATS = true
       case "-m" => globalOptions.MODEL = true
+      case "-fm" => globalOptions.FULL_MODEL = true
       case "-v" => globalOptions.VERBOSE = true
       case "-d" => globalOptions.DEBUG = true
       case "-p" => globalOptions.PARANOID =  true
@@ -289,16 +290,30 @@ object main {
         Interpreter.interpret(script)
       }
 
-      if (globalOptions.MODEL)
+      if (globalOptions.FULL_MODEL) {
+        Interpreter.myEnv.result match {
+          case Sat(model) => {
+            println("<FULLMODEL>")
+            for ((k, v) <- model)
+              println(k + "," + v)
+            println("</FULLMODEL>")
+          }
+          case _ =>
+        }
+      }
+
+      if (globalOptions.MODEL) {
         Interpreter.myEnv.result match {
           case Sat(model) => {
             println("<MODEL>")
-            for ((k, v) <- model)
+            for ((k, v) <- Interpreter.myEnv.restrictedModel().get)
               println(k + "," + v)
             println("</MODEL>")
           }
-          case _ => 
+          case _ =>
         }
+      }
+
       if (globalOptions.STATS) {
         println(Timer.stats)
         println(":max_precision " + globalOptions.REACHED_MAX_PRECISON)

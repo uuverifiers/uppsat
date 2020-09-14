@@ -7,36 +7,61 @@ import uppsat.theory._
 
 import scala.collection.mutable.{Stack, Map => MMap}
 import uppsat.theory._
+
 // We should not be adding || afterwards?
+
+// TODO: Should we distinguish symbols more carefully? Now we are mixing
+// function declarations with constant symbols.
 
 class Environment {
   var symbols : Map[String, ConcreteFunctionSymbol] = Map()
+  var functionDeclarations : Map[String, ConcreteFunctionSymbol] = Map()
   var definitions : Map[String, (ConcreteFunctionSymbol, AST)] = Map()
   var assumptions : List[AST] = List()
   var result : uppsat.ApproximationSolver.Answer = uppsat.ApproximationSolver.Unknown
   var theory : Option[Theory] = None
-  
+
   var theoryGuess : Option[Theory] = None
-  
+
   var letBindings : Stack[Map[String, ConcreteFunctionSymbol]] = new Stack()
   var letEquations : List[AST] = List()
   var letSuffix : Int = 0
-  
+
 
   //var synonyms : Map[ConcreteFunctionSymbol, ConcreteFunctionSymbol] = Map()
-  
+
+  // This returns a model consisting of only the declared symbols
+  def restrictedModel() = {
+    result match {
+      case uppsat.ApproximationSolver.Sat(model) => {
+        Some((for ((name, symbol) <- functionDeclarations) yield {
+          symbol -> model(symbol)
+        }).toMap)
+      }
+      case _ => None
+    }
+  }
+
   def setTheory(t : Theory) = {
     theory = Some(t)
   }
-  
+
   def addSymbol(id : String, symbol : ConcreteFunctionSymbol) = {
     symbols += id -> symbol
   }
-  
+
+
+  def addDeclaration(id : String, symbol : ConcreteFunctionSymbol) = {
+    functionDeclarations += id -> symbol
+    symbols += id -> symbol
+  }
+
+
+
   def addDefinition(id : String, symbol : ConcreteFunctionSymbol, definition : AST) = {
     definitions += id -> (symbol, definition)
   }
-  
+
   // Pushes the bindings and returns a list with new symbols that should be used
   def pushLet(bindings : List[(String, AST)]) = {
     val specialChars = "#:"
