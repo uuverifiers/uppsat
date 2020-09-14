@@ -51,18 +51,18 @@ class PrecisionMap[T] private (val map : Map[Path, T])(implicit val pathToPath :
       verbose("#" + s)
     }
   }
-  
+
   def update(path : Path, newP : T) = {
     if (precisionOrdering.lt(precisionOrdering.maximalPrecision, newP))
         throw new Exception("Trying to set precision larger than maximum precision")
-    else      
+    else
 //        println("Update : " + path)
 //        if (!pathToPath.contains(path))
 //          throw new Exception("Path " + path + " not found in " + pathToPath.mkString("\n"))
-        new PrecisionMap[T](map + (pathToPath(path) -> newP))
-      
+      new PrecisionMap[T](map + (pathToPath(path) -> newP))
+
   }
-  
+
   //TODO: What do we need to make this work?
   //  def increment(path : Path, incr : T) = {
   //    val currentP = map(path)
@@ -72,16 +72,16 @@ class PrecisionMap[T] private (val map : Map[Path, T])(implicit val pathToPath :
   //    else
   //      new PrecisionMap[T](map + (path -> newP))
   //  }
-  
-  
+
+
   def isMaximal = {
     map.values.find(x => precisionOrdering.lt(x, precisionOrdering.maximalPrecision)).isEmpty
   }
-  
+
   def maximal = {
     new PrecisionMap(map.map{ case (k, v) => (k, precisionOrdering.maximalPrecision) })
   }
-  
+
   def map(f : T => T) : PrecisionMap[T] = {
     new PrecisionMap[T](map.map(x => {
       val (k, v) = x

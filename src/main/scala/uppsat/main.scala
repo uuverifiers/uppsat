@@ -31,13 +31,14 @@ import uppsat.approximation.Approximation
 object globalOptions {
   // FLAGS
   var REACHED_MAX_PRECISON = false
-  
+
   val VERSION = "0.5"
 
   var RANDOM_SEED = 0
   var VERBOSE = false
   var STATS = false
   var MODEL = false
+  var FULL_MODEL = false
   var FORMULAS = false
   var DEBUG = false
   var DEADLINE : Option[Long] = None
@@ -46,18 +47,18 @@ object globalOptions {
   var SURRENDER = false
   var NO_RUN = false
 
- 
+
   var FX_MIN_PRECISION = uppsat.approximation.fpa.fixpoint.FPABVContext.defaultMinPrecision
   var FX_MAX_PRECISION = uppsat.approximation.fpa.fixpoint.FPABVContext.defaultMaxPrecision
   var FX_PREC_INC = uppsat.approximation.fpa.fixpoint.FPABVContext.defaultPrecIncrement
 
-  
+
   def registeredSolvers(str : String) = {
     str match {
-      case "z3" => new Z3Solver() 
-      case "mathsat" => new MathSatSolver("Mathsat", "")                         
-      case "acdcl" => new MathSatSolver("ACDCL (Mathsat)", "-theory.fp.mode=2 ") 
-      case "nlsat" => new Z3Solver("NLSAT","(check-sat-using qfnra-nlsat)\n")  
+      case "z3" => new Z3Solver()
+      case "mathsat" => new MathSatSolver("Mathsat", "")
+      case "acdcl" => new MathSatSolver("ACDCL (Mathsat)", "-theory.fp.mode=2 ")
+      case "nlsat" => new Z3Solver("NLSAT","(check-sat-using qfnra-nlsat)\n")
     }
   }
 
@@ -71,7 +72,7 @@ object globalOptions {
     "saturation" -> "Saturation based approximation",
     "smallints" -> "SmallInts approximation",
     "reals" -> "Real approximation of floating points",
-    "reals-node-by-node" -> "Real approximation evaluating by node-by-node", 
+    "reals-node-by-node" -> "Real approximation evaluating by node-by-node",
     "saturation_reals" -> "Real approximation using saturation",
     "fixedpoint" -> "Fixed-point approximation of floating points",
     "fixedpoint-node-by-node" -> "Fixed-point approximation of floating points using node-by-node",
@@ -87,7 +88,7 @@ object globalOptions {
       case "reals-node-by-node" =>  new Approximation(FPARealNodeByNodeApp)
       case "saturation_reals" => new Approximation(FxPntFPARealApp)
       case "fixedpoint" =>  new Approximation(FPABVApp)
-      case "fixedpoint-node-by-node" =>  new Approximation(FPABVNodeByNodeApp)                          
+      case "fixedpoint-node-by-node" =>  new Approximation(FPABVNodeByNodeApp)
       case "fixedpoint-no-reconstruct" =>  new Approximation(FPABVEmptyApp)
       case "ijcar-node-by-node" => new Approximation(IJCARSmallFloatsNodeByNodeApp)
       case "ijcar-no-reconstruct" => new Approximation(IJCARSmallFloatsEmptyapp)
@@ -134,12 +135,12 @@ object globalOptions {
 
 
 object main {
-  
+
   def printUsage() = {
     println("UppSAT version " + globalOptions.VERSION)
     println("Usage: uppsat [-options] input file")
     println("Options:")
-    println("\t-a - print detailed approximation information")    
+    println("\t-a - print detailed approximation information")
     println("\t-v - verbose output")
     println("\t-s - print statistics")
     println("\t-m - print model (debug purposes)")
@@ -148,7 +149,7 @@ object main {
     println("\t-backend= - use one of the following backends:")
     println("\t\t z3 (default)")
     println("\t\t mathsat : MathSat")
-    println("\t\t acdcl : MathSat(ACDCL)")  
+    println("\t\t acdcl : MathSat(ACDCL)")
     println("\t\t nlsat : Z3 using qfnrq-nlsat tactic")
     println("\t-validator= - use one of the following backends:")
     println("\t\t z3 (default)")
@@ -157,15 +158,13 @@ object main {
     println("\t\t nlsat : Z3 using qfnrq-nlsat tactic")
     println("\t -app= - use one of the following approximations:")
     println("\t\t ijcar : Smallfloats (node based reconstruction)")
-    println("\t\t saturation : Smallfloats (fixpoint based reconstruction)")    
+    println("\t\t saturation : Smallfloats (fixpoint based reconstruction)")
     println("\t\t fixedpoint : BitVector (node based reconstruction)")
     println("\t\t reals : Reals (node based reconstruction)")
     println("\t\t empty : Empty Approximation (for debug purposes)")
     println("\t -t=NUM - set a soft timeout in seconds. Soft means that timeout is checked between iterations only.")
-    
-    
   }
-  
+
   def printHelpInfo() = {
     println("Input file missing. Call uppsat -h or uppsat -help for usage help.")
   }
@@ -182,10 +181,10 @@ object main {
       println(app + " "*(maxLength - app.length) + desc)
     }
   }
-  
+
   /**
    * Parses argument and sets globalOptions accordingly.
-   * 
+    * 
    * @param arg Argument to be parsed
    * @return Returns true if arg was unparseable
    */
@@ -255,7 +254,7 @@ object main {
     }
     false
   }
-  
+
   def main_aux(args : Array[String]) : Answer = {
     import java.io._
 
@@ -268,10 +267,10 @@ object main {
         printUsage()
         return Unknown
       }
-        
+
     }
-      
-    val files = args.filterNot(_.startsWith("-")).toList  
+
+    val files = args.filterNot(_.startsWith("-")).toList
 
     if (globalOptions.NO_RUN) {
       // Do nothing
@@ -280,7 +279,7 @@ object main {
        printHelpInfo()
        Unknown
     } else {
-      val reader = () => new java.io.BufferedReader (new java.io.FileReader(new java.io.File(files.head)))            
+      val reader = () => new java.io.BufferedReader (new java.io.FileReader(new java.io.File(files.head)))
       val l = new smtlib.Yylex(reader())
       val p = new smtlib.parser(l)
       val script = p.pScriptC

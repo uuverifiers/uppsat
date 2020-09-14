@@ -54,18 +54,18 @@ def hexToBitList(hex : String) = {
             case '9' => List(1,0,0,1)
             case 'a' | 'A' => List(1,0,1,0)
             case 'b' | 'B' => List(1,0,1,1)
-            
+
             case 'c' | 'C' => List(1,1,0,0)
             case 'd' | 'D' => List(1,1,0,1)
             case 'e' | 'E' => List(1,1,1,0)
-            case 'f' | 'F' => List(1,1,1,1)        
+            case 'f' | 'F' => List(1,1,1,1)
           }
         }
         list.flatten.toList
-      }    
-  
+}
 
-  
+
+
   class SMTParser extends smtlib.Absyn.ScriptC.Visitor[Int, Object] {
     def visit(t : smtlib.Absyn.Script, o : Object) : Int = {
       // for (i <- 0 until t.listcommand_.iterator.length) { 
@@ -351,7 +351,7 @@ def hexToBitList(hex : String) = {
 
   //     //////////////////////////////////////////////////////////////////////////
 
-     case cmd : FunctionDefCommand => {       
+    case cmd : FunctionDefCommand => {
        val fullname = asString(cmd.symbol_)
        val name = fixName(fullname)
        if (!cmd.listesortedvarc_.isEmpty) {
@@ -365,7 +365,7 @@ def hexToBitList(hex : String) = {
              case BooleanSort => new uppsat.theory.BooleanTheory.BoolVar(name)
              case fp : FPSort => new uppsat.theory.FloatingPointTheory.FPVar(name, fp)
              case RoundingModeSort => new uppsat.theory.FloatingPointTheory.RMVar(name)
-           }         
+           }
          myEnv.addDefinition(name, symbol, body)
        }
      }
@@ -817,8 +817,8 @@ def hexToBitList(hex : String) = {
           val q = n / 2
           toBinary(q, r::bin)
         }
-      }      
-      
+      }
+
       val p = "bv(\\d+)_(\\d+)".r
       checkArgs("bv", 0, args)
       asString(sym) match {
@@ -826,13 +826,13 @@ def hexToBitList(hex : String) = {
           val sort = BVSort(bits.toInt)
           val constantBitList = toBinary(constant.toInt)
           val padding = List.fill(bits.toInt - constantBitList.length)(0)
-              
-          uppsat.ast.Leaf(uppsat.theory.BitVectorTheory.BitVectorLiteral(padding ++ constantBitList, sort))          
+
+          uppsat.ast.Leaf(uppsat.theory.BitVectorTheory.BitVectorLiteral(padding ++ constantBitList, sort))
         }
       }
-    }      
-    
-    
+    }
+
+
     // TODO: (Peter) This should be done more properly, probably with a val-defined pattern.
     // TODO: (Aleks) Should it be "sign_extend_1" or "sign_extend 1" (notice the underscore)
     case _ if ("sign_extend".r.findFirstIn(asString(sym)).isDefined) => {
@@ -846,7 +846,7 @@ def hexToBitList(hex : String) = {
           uppsat.ast.AST(value, List(arg))
         }
       }
-    }      
+    }
 
     // TODO: (Aleks) Should it be "sign_extend_1" or "sign_extend 1" (notice the underscore)
     case _ if ("zero_extend".r.findFirstIn(asString(sym)).isDefined) => {
@@ -860,9 +860,9 @@ def hexToBitList(hex : String) = {
           uppsat.ast.AST(value, List(arg))
         }
       }
-    }      
-    
-    
+    }
+
+
     // TODO: Do we want to check that argumentsort >= end-start > 0?
     case _ if ("extract".r.findFirstIn(asString(sym)).isDefined) => {
        val p = "extract_(\\d+)_(\\d+)".r
@@ -880,18 +880,18 @@ def hexToBitList(hex : String) = {
     case PlainSymbol("bvnot") => {
       checkArgs("bvnot", 1, args)
       bvNot(translateTerm(args(0)))
-    }    
+    }
 
     case PlainSymbol("bvmul") => {
       checkArgs("bvand", 2, args)
       bvMul(translateTerm(args(0)), translateTerm(args(1)))
     }
-    
+
     case PlainSymbol("bvashr") => {
       checkArgs("bvashr", 2, args)
       bvAshr(translateTerm(args(0)), translateTerm(args(1)))
-    }    
-    
+    }
+
     case PlainSymbol("bvand") => {
       checkArgs("bvand", 2, args)
       bvAnd(translateTerm(args(0)), translateTerm(args(1)))
@@ -900,19 +900,19 @@ def hexToBitList(hex : String) = {
     case PlainSymbol("bvor") => {
       checkArgs("bvor", 2, args)
       bvOr(translateTerm(args(0)), translateTerm(args(1)))
-    }    
-    
+    }
+
     case PlainSymbol("bvxor") => {
       checkArgs("bvxor", 2, args)
       bvXor(translateTerm(args(0)), translateTerm(args(1)))
-    }    
-    
+    }
+
 
     case PlainSymbol("bvslt") => {
       checkArgs("bvslt", 2, args)
       bvLessThan(translateTerm(args(0)), translateTerm(args(1)))
     }
-    
+
     case PlainSymbol("concat") => {
       checkArgs("concat", 2, args)
       val l = translateTerm(args(0))
@@ -924,10 +924,10 @@ def hexToBitList(hex : String) = {
           uppsat.ast.AST(value, List(l, r))
         }
       }
-    }    
-    
+    }
 
-   
+
+
     ////////////////////////////////////////////////////////////////////////////
     // Declared symbols from the environment
     case id => {

@@ -17,11 +17,11 @@ class Approximation(val context : ApproximationContext
   val precisionOrdering : PrecisionOrdering[P] = context.precisionOrdering
   val inputTheory : Theory = context.inputTheory
   val outputTheory : Theory = context.outputTheory
-  
+
   // General framework primitives
   def satRefine(ast : AST, decodedModel : Model, failedModel : Model, pmap : PrecisionMap[P]) : PrecisionMap[P] =
     context.satRefine(ast, decodedModel, failedModel, pmap)
-  
+
   def unsatRefine(ast : AST, unsatCore : List[AST], pmap : PrecisionMap[P]) : PrecisionMap[P] =
     context.unsatRefine(ast, unsatCore, pmap)
 

@@ -55,28 +55,28 @@ class Environment {
           else
             letName
         letSuffix += 1
-        
-        val newVar = 
+
+        val newVar =
           ast.symbol.sort match {
             // TODO: (Peter) There should be some unified procedure for this
             case uppsat.theory.IntegerTheory.IntegerSort => new uppsat.theory.IntegerTheory.IntVar(newVarName)
             case BooleanSort => new uppsat.theory.BooleanTheory.BoolVar(newVarName)
             case fp : uppsat.theory.FloatingPointTheory.FPSortFactory.FPSort => new uppsat.theory.FloatingPointTheory.FPVar(newVarName, fp)
             case uppsat.theory.FloatingPointTheory.RoundingModeSort => new uppsat.theory.FloatingPointTheory.RMVar(newVarName)
-         }
-        (name, ast, newVar)      
+          }
+        (name, ast, newVar)
       }
     val newBindings = tmp.map(t => (t._1, t._3)).toMap
     letBindings.push(newBindings)
-    
+
     val newEquations = tmp.map(t => t._2 === Leaf(t._3))
     letEquations = letEquations ++ (newEquations)
   }
-  
+
   def popLet() = {
     letBindings.pop()
   }
-  
+
   // TODO: (Peter) There is probably a more proper way of doing this
   def letContains(name : String) : Option[ConcreteFunctionSymbol] = {
     for (stack <- letBindings) {
@@ -86,7 +86,7 @@ class Environment {
     }
     None
   }
-  
+
   //  def addSynonym( alias : ConcreteFunctionSymbol, original : ConcreteFunctionSymbol) = {
   //    synonyms += alias -> original
   //  }
@@ -94,9 +94,9 @@ class Environment {
   def addAssumption(ass : AST) = {
     assumptions = ass :: assumptions
   }
-  
-  
-  
+
+
+
   def findSymbol(id : String) : Option[ConcreteFunctionSymbol] = {
     if (symbols contains id) {
       Some(symbols(id))
@@ -104,24 +104,24 @@ class Environment {
       letContains(id) 
     }
   }
-  
+
   def findDefinition(id : String) : Option[AST] = {
     if (definitions contains id)
       Some(Leaf(definitions(id)._1))
     else
       None 
-  }  
+  }
 
   def lookup(id : String) = {
     symbols.find(_._1 == id).get._2
   }
-  
+
   def getFormula = {
-    val defAssertions = 
+    val defAssertions =
       (for ((name, (symbol, definition)) <- definitions) yield {
         (Leaf(symbol) === definition)
       }).toList
-    
+
     AST(naryConjunction(assumptions.length + defAssertions.length + letEquations.length), assumptions.toList ++ defAssertions ++ letEquations)
   }
 
@@ -133,19 +133,19 @@ class Environment {
     for (ass <- assumptions) {
       println("\tASSUMPTION: " + ass)
     }
-    
+
     for ((name, (symbol, definition)) <- definitions) yield {
        println("\tDEFINITION: " + symbol + " : " + definition)
     }
-    
+
     for (letStack <- letBindings) {
       println("LETSTACK: ")
       println(letStack.mkString("\n"))
     }
-    
+
     for (le <- letEquations) {
       println("LET-EQUATION: " + le)
     }
-      
+
   }
 }

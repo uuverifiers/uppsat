@@ -57,32 +57,29 @@ object ApproximationSolver {
     }
     retVal
   }
-  
-  
-  
+
+
+
   def loop(formula : AST, translator : SMTTranslator, approximation : Approximation) : Answer = {  
     var pmap = PrecisionMap[approximation.P](formula)(approximation.precisionOrdering)
     pmap = pmap.cascadingUpdate(formula, approximation.precisionOrdering.minimalPrecision)
-    var iterations = 0     
-    
+    var iterations = 0
+
     val smtSolver = globalOptions.getBackendSolver
-    
+
     def tryReconstruct(encodedFormula : AST, stringModel : Map[String, String]) : (Option[ExtModel], Option[PrecisionMap[approximation.P]]) = Timer.measure("tryReconstruct") {
       // MAJORTODO : getstringmodel called?
       val appModel = translator.getModel(encodedFormula, stringModel)
-      
-      println("appModel")
-      println(appModel)
-      
+
       verbose("Decoding model ... ")
       val decodedModel = approximation.decodeModel(formula, appModel, pmap)
 
       verbose("Reconstructing model ...")
 
       val reconstructedModel = approximation.reconstruct(formula, decodedModel)
-            
+
       val assignments = reconstructedModel.variableAssignments(formula).toList
-      
+
       verbose("Validating model ...")
 
       if (ModelEvaluator.valAST(formula, assignments.toList, approximation.inputTheory, smtSolver)) {
@@ -96,7 +93,7 @@ object ApproximationSolver {
           verbose("Model reconstruction failed: maximal precision reached")
           return (None, None)
         } else {
-          verbose("Model reconstruction failed: refining precision")       
+          verbose("Model reconstruction failed: refining precision")
           if (globalOptions.VERBOSE) {
             println("Comparing decoded Model with reconstructed Model:")
             formula.ppWithModels("->", decodedModel, reconstructedModel)
@@ -105,66 +102,67 @@ object ApproximationSolver {
           newPmap.characterize
           (None, Some(newPmap))
         }
-      }      
-    }    
-       
-   
+      }
+    }
+
+
     while (true) {
       Timer.newIteration
       iterations += 1
       verbose("-----------------------------------------------")
-      val tString = 
+      val tString =
         if (globalOptions.DEADLINE.isDefined)
           " (" + ((globalOptions.remainingTime.get) / 1000.0).ceil.toInt + " seconds left)"
         else
           ""
       verbose("Starting iteration " + iterations + tString)
       verbose("-----------------------------------------------")
+      verbose("Maximal Precision: " + pmap.maximalPrecision)
       checkTimeout("iteration " + iterations)
       val encodedFormula = if (!pmap.isMaximal) 
                               approximation.encodeFormula(formula, pmap)
                            else
                               formula
-                              
+
       val encodedSMT = translator.translate(encodedFormula)
 
       if (globalOptions.FORMULAS)
         println(encodedSMT)
-      
+
       val maybeModel = smtSolver.getStringModel(encodedSMT, translator.getDefinedSymbols.toList)
       if (maybeModel.isDefined) {
         val (extModel, newPMap) = tryReconstruct(encodedFormula, maybeModel.get)
         (extModel, newPMap) match {
           case (Some(model), _) => return Sat(model)
           case (_, Some(p)) => pmap = pmap.merge(p)
-          case (None, None) => verbose("Approximate model not found: maximal precision reached.")          
+          case (None, None) => verbose("Approximate model not found: maximal precision reached.")
                                return Unsat
           case (_, None) => verbose("Reconstruction yielded unknown results")
                             pmap = approximation.unsatRefine(formula, List(), pmap)
-        }          
+        }
       } else {
         if (pmap.isMaximal) {
-          verbose("Approximate model not found: maximal precision reached.")          
+          verbose("Approximate model not found: maximal precision reached.")
           return Unsat
         } else {
-          verbose("Approximate model not found: refining precision.")            
+          verbose("Approximate model not found: refining precision.")
           pmap = approximation.unsatRefine(formula, List(), pmap)
         }
       }
-      
+
       if (pmap.isMaximal) {
         if (globalOptions.SURRENDER) {
           println("Surrendering")
           return Unknown
         }
-        
+
         if (globalOptions.DEADLINE.isDefined)
           println("Full precision search (" + ((globalOptions.remainingTime.get) / 1000.0).ceil.toInt + " seconds left)")
         else
-          println("Full precision search")        
-          
+          println("Full precision search")
+
         globalOptions.REACHED_MAX_PRECISON = true
-        
+
         val validator = globalOptions.getValidator  
         val smtFormula = translator.translate(formula)
         val stringModel = validator.getStringModel(smtFormula, translator.getDefinedSymbols.toList) 
@@ -175,13 +173,13 @@ object ApproximationSolver {
               (symbol, value.symbol.theory.symbolToSMTLib(value.symbol) )
               }
           return Sat(extModel)
-        }          
+        }
         else 
           return Unsat
       }
     }
-    
+
     return Unknown
     //throw new Exception("Main loop exited without return-value.")
-  }    
+  }
 }
