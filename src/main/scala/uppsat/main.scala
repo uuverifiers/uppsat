@@ -47,6 +47,7 @@ object globalOptions {
   var SURRENDER = false
   var NO_RUN = false
 
+  var APPROXIMATION_STATISTICS = ""
 
   var FX_MIN_PRECISION = uppsat.approximation.fpa.fixpoint.FPABVContext.defaultMinPrecision
   var FX_MAX_PRECISION = uppsat.approximation.fpa.fixpoint.FPABVContext.defaultMaxPrecision
@@ -317,6 +318,7 @@ object main {
       if (globalOptions.STATS) {
         println(Timer.stats)
         println(":max_precision " + globalOptions.REACHED_MAX_PRECISON)
+        println(globalOptions.APPROXIMATION_STATISTICS)
       }
       Interpreter.myEnv.result
     }

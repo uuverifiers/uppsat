@@ -39,17 +39,17 @@ object ApproximationSolver {
     checkTimeout("solve")
     if (globalOptions.FORMULAS)
       println(translator.translate(formula))
-    
+
     val startTime = System.currentTimeMillis
     val retVal = loop(formula : AST, translator : SMTTranslator, approximation : Approximation) 
     val stopTime = System.currentTimeMillis
-    
-     
+
+
     verbose("Solving time: " + (stopTime - startTime) + "ms") 
-    
+
     // TODO: (Aleks) Do we need to stop the online solver or not?
     //ModelReconstructor.stopOnlineSolver()
-    
+
     retVal match {
       case Sat(model) => println("sat")
       case Unsat => println("unsat")
@@ -60,7 +60,7 @@ object ApproximationSolver {
 
 
 
-  def loop(formula : AST, translator : SMTTranslator, approximation : Approximation) : Answer = {  
+  def loop(formula : AST, translator : SMTTranslator, approximation : Approximation) : Answer = {
     var pmap = PrecisionMap[approximation.P](formula)(approximation.precisionOrdering)
     pmap = pmap.cascadingUpdate(formula, approximation.precisionOrdering.minimalPrecision)
     var iterations = 0
@@ -118,6 +118,12 @@ object ApproximationSolver {
       verbose("Starting iteration " + iterations + tString)
       verbose("-----------------------------------------------")
       verbose("Maximal Precision: " + pmap.maximalPrecision)
+      // TODO: Make a better way of giving approximation statistics
+      globalOptions.APPROXIMATION_STATISTICS =
+        pmap.maximalPrecision match {
+          case Some(p) => ":maximal_precision " + p
+          case None => ":maximal_precision n/a"
+        }
       checkTimeout("iteration " + iterations)
       val encodedFormula = if (!pmap.isMaximal) 
                               approximation.encodeFormula(formula, pmap)
