@@ -8,7 +8,7 @@ import uppsat.precision._
 import uppsat.approximation.toolbox.Toolbox
 import uppsat.globalOptions._
 
-trait PostOrderRefinement extends RefinementStrategy {
+trait PostOrderRefinement extends ModelGuidedRefinementStrategy {
   def satRefinePrecision( ast : AST, pmap : PrecisionMap[Precision]) : Precision
   
   def satRefine(ast : AST, decodedModel : Model, failedModel : Model, pmap : PrecisionMap[Precision]) : PrecisionMap[Precision] = {
@@ -25,7 +25,9 @@ trait PostOrderRefinement extends RefinementStrategy {
 
     if (changes == 0) { // This could actually happen, that all the nodes where evaluation fails are at full precision. UnsatRefine in that case.
       verbose("No changes, naive precision refinement")
-      newPMap = unsatRefine(ast, List(), pmap)
+      // TODO: unsatRefine should be replaced by some naive increment...
+      throw new Exception("PostOrderRefinement failed...")
+      // newPMap = unsatRefine(ast, List(), pmap)
     }
     newPMap
   }
