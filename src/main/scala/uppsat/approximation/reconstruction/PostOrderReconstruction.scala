@@ -17,18 +17,16 @@ trait PostOrderReconstruction extends ModelReconstruction {
         Toolbox.getCurrentValue(c, decodedModel, candidateModel)
       }
 
-      
       val newAST = AST(symbol, label, newChildren.toList)
       val newValue = ModelEvaluator.evalAST(newAST, inputTheory)
-      verbose(ast.symbol + " " + ast.label + " " + " <- " + newValue.symbol)
-      
-      candidateModel.set(ast, newValue)      
+      verbose(s"${ast.symbol} ${ast.label} <- ${newValue.symbol}")
+
+      candidateModel.set(ast, newValue)
       ast.ppWithModels("", decodedModel, candidateModel, false)
     }
     candidateModel
   }
-  
-  
+
   def reconstruct(ast : AST, decodedModel : Model) : Model = {
     val reconstructedModel = new Model()
     AST.postVisit[Model, Model](ast, reconstructedModel, decodedModel, reconstructNode)

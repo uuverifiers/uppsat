@@ -296,7 +296,7 @@ object main {
           case Sat(model) => {
             println("<FULLMODEL>")
             for ((k, v) <- model)
-              println(k + "," + v)
+              println(s"$k, $v")
             println("</FULLMODEL>")
           }
           case _ =>
@@ -308,7 +308,7 @@ object main {
           case Sat(model) => {
             println("<MODEL>")
             for ((k, v) <- Interpreter.myEnv.restrictedModel().get)
-              println(k + "," + v)
+              println(s"$k, $v")
             println("</MODEL>")
           }
           case _ =>

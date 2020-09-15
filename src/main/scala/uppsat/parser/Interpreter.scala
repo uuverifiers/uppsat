@@ -18,7 +18,8 @@ import ap.parser.smtlib._
 import ap.parser.smtlib.Absyn._
 import java.io._
 import scala.jdk.CollectionConverters._
-import scala.collection.JavaConverters._
+// import scala.collection.JavaConverters._
+
 
 import uppsat.theory.IntegerTheory
 
@@ -73,8 +74,8 @@ def hexToBitList(hex : String) = {
       //   parse(c)
       // }
 
-
-      for (c <- asScalaIterator(t.listcommand_.iterator())) {
+      //
+      for (c <- t.listcommand_.iterator().asScala) {
         parse(c)
       }
       0
@@ -94,7 +95,7 @@ def hexToBitList(hex : String) = {
   }
   
   private def parse(script : Script) : Unit =
-    for (cmd <- asScalaIterator(script.listcommand_.iterator())) parse(cmd)
+    for (cmd <- script.listcommand_.iterator().asScala) parse(cmd)
 
      
   protected def checkArgs(op : String, expected : Int, args : Seq[Term]) : Unit =
@@ -124,7 +125,7 @@ def hexToBitList(hex : String) = {
       asString(id.symbol_)
     case id : IndexIdent =>
       asString(id.symbol_) + "_" +
-      ((asScalaIterator(id.listindexc_.iterator()).map(_.asInstanceOf[Index].numeral_)).mkString("_"))
+      ((id.listindexc_.iterator().asScala.map(_.asInstanceOf[Index].numeral_)).mkString("_"))
   }
   
   def asString(s : Symbol) : String = s match {
@@ -151,11 +152,11 @@ def hexToBitList(hex : String) = {
       case t : smtlib.Absyn.ConstantTerm =>
         translateSpecConstant(t.specconstant_)
       case t : FunctionTerm =>    
-          symApp(t.symbolref_, asScalaIterator(t.listterm_.iterator()).toList)
+          symApp(t.symbolref_, t.listterm_.iterator().asScala.toList)
       case t : NullaryTerm =>
         symApp(t.symbolref_, List())
       case t : LetTerm =>
-        val bindings = (for (b <- asScalaIterator(t.listbindingc_.iterator())) yield {
+        val bindings = (for (b <- t.listbindingc_.iterator().asScala) yield {
           val binding = b.asInstanceOf[Binding]
           val boundTerm = translateTerm(binding.term_)
           val fullname = asString(binding.symbol_)
@@ -176,6 +177,7 @@ def hexToBitList(hex : String) = {
         myEnv.theory match {
           case Some(uppsat.theory.FloatingPointTheory) => uppsat.ast.Leaf(uppsat.theory.RealTheory.RealNumeral(BigInt(c.numeral_.toString))) 
           case Some(uppsat.theory.IntegerTheory) => uppsat.ast.Leaf(uppsat.theory.IntegerTheory.IntLiteral(BigInt(c.numeral_.toString)))
+          case _ => throw new Exception(s"NumConstant which is not of FloatingPoint or Integer theory: ${myEnv.theory}")
         }
       }
       case c : RatConstant if myEnv.theory ==  Some(FloatingPointTheory) => 
@@ -924,6 +926,7 @@ def hexToBitList(hex : String) = {
           val value = BitVectorTheory.BVConcatFactory(sort)
           uppsat.ast.AST(value, List(l, r))
         }
+        case (lsort, rsort) => throw new Exception(s"concat with non-BVSort: ${lsort}, ${rsort}")
       }
     }
 

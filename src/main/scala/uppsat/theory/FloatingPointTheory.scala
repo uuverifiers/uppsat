@@ -5,6 +5,8 @@ import scala.math.BigInt.int2bigInt
 import uppsat.ast._
 import uppsat.theory.FloatingPointTheory.FPSortFactory.FPSort
 import scala.collection.mutable.WrappedArray
+import scala.language.implicitConversions
+
 
 case class FloatingPointTheoryException(msg : String) extends Exception("Floating Point Theory Exception: " + msg)
 
@@ -120,9 +122,7 @@ object FloatingPointTheory extends Theory {
     val thisFactory = this
 
     def getName(sort : FPSort) = {
-      sign + " " +
-      eBits.take(sort.eBitWidth).mkString("") + " " +
-      sBits.take(sort.sBitWidth - 1).mkString("")
+      s"""$sign ${eBits.take(sort.eBitWidth).mkString("")} ${sBits.take(sort.sBitWidth - 1).mkString("")}"""
     }
     
     val arity = 1 // Refers to the sorts
@@ -417,7 +417,7 @@ case class FPSpecialValuesFactory(symbolName : String) extends FPGenConstantFact
       } 
     }
   }
-  
+
   implicit def fpToAST(double : Double, sort : FPSort = FPSort(8,24)) = {
     sort match {
       case FPSort(11,53) => {
@@ -426,12 +426,15 @@ case class FPSpecialValuesFactory(symbolName : String) extends FPGenConstantFact
       }
       case FPSort(8,24) => {
         val (sign, ebits, sbits) = floatToBits(double.toFloat)
-        Leaf(fp(sign, ebits, sbits)(sort))  
+        Leaf(fp(sign, ebits, sbits)(sort))
+      }
+
+      case _ => {
+        throw new Exception(s"Non-standard fp-sort: ${sort}")
       }
     }
-        
   }
-  
+
   implicit def FPVarToAST(floatVar : FPVar) = Leaf(floatVar)
   implicit def RoundingModeToAST(rm : RoundingMode) = Leaf(rm)
 

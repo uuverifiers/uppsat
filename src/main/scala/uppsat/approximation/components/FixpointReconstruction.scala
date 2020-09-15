@@ -1,5 +1,7 @@
 package uppsat.approximation.components
 
+// TODO: Test fixpoint reconstruction!
+// TODO: Replace multimap with multidict. Needs test case.
 
 import uppsat.theory.Theory
 import uppsat.approximation.toolbox.Toolbox
@@ -52,25 +54,27 @@ import uppsat.theory.FloatingPointTheory.FloatingPointLiteral
 import uppsat.solver.Z3OnlineSolver
 import uppsat.approximation._
 
+import scala.collection.mutable.MultiDict
+
 
 trait FixpointReconstruction extends ModelReconstruction {
 
 class FixpointException(msg : String) extends Exception("FixpointException: " + msg)
 
-  // Precondition : number of undefined arguments it exactly one. 
+  // Precondition : number of undefined arguments it exactly one.
   // Some we have a value
   // None means unsat
 	/** Returns the assignment of one implied variable in ast (w.r.t. to candidateModel)
 	 *
 	 *  Assuming that ast w.r.t. candidateModel has exactly one undefined variable,
-	 *  getImplication isolates this variable and by calling the back-end solver 
+	 *  getImplication isolates this variable and by calling the back-end solver
 	 *  retrieves a value and returns Some(variable, value) for this pair. If no value
 	 *  is found None is returned (thus the candidateModel is *not* a model for ast).
 	 *
 	 *  @param candidateModel Assignments of some values in ast.
 	 *  @param ast The AST with exactly one undefined variable.
 	 *
-	 *  @return An assignment to the undefined variable in ast s.t. it is compatible with candidateModel.  
+	 *  @return An assignment to the undefined variable in ast s.t. it is compatible with candidateModel.
  	 *
  	 */
   def getImplication(candidateModel : Model, ast : AST) : Option[(AST, AST)] = {
@@ -80,16 +84,16 @@ class FixpointException(msg : String) extends Exception("FixpointException: " + 
     unknown.toList match {
       case List((unknownSymbol, unknownAST)) => {
         verbose("Implication of  " +  unknownSymbol + "\n\t" + ast.simpleString())
-        val assertions = 
-          for ( v <- vars if(candidateModel.contains(v))) yield 
+        val assertions =
+          for ( v <- vars if(candidateModel.contains(v))) yield
             (v.symbol, candidateModel(v))
 
         ModelEvaluator.evalAST(ast, unknownSymbol, assertions, inputTheory) match {
-          case Some(res) => Some ((unknownAST, res)) 
+          case Some(res) => Some ((unknownAST, res))
           case None => None
         }
       }
-      case _ => throw new FixpointException("getImplication assumes at most one unknown" + unknown.mkString(", ")) 
+      case _ => throw new FixpointException("getImplication assumes at most one unknown" + unknown.mkString(", "))
     }
   }
 
@@ -109,7 +113,7 @@ class FixpointException(msg : String) extends Exception("FixpointException: " + 
       if (a.symbol.sort != BooleanSort)
         throw new FixpointException("Non-boolean critical literal" + a)
 
-      if (!candidateModel.contains(a)) 
+      if (!candidateModel.contains(a))
         candidateModel.set(a, decodedModel(a))
       else if (candidateModel(a) != decodedModel(a))
         throw new Exception("Inconsistent values during model initialization")
@@ -122,17 +126,17 @@ class FixpointException(msg : String) extends Exception("FixpointException: " + 
   }
 
   /** True if ast is a definition
-   *  
+   *
    *  An ast is a definition if it is an equation where one (or both) sides is a variable.
-   *  
+   *
    *  @param ast True if ast is a definition
-   * 
+   *
    */
-  // TODO: make meta equality  
+  // TODO: make meta equality
 
   def isDefinition(ast : AST) : Boolean = {
     ast.symbol match {
-      case pred : FloatingPointPredicateSymbol 
+      case pred : FloatingPointPredicateSymbol
         if (pred.getFactory == FPEqualityFactory)  => ast.children(0).isVariable || ast.children(1).isVariable
       case BoolEquality
       |    RoundingModeEquality =>
@@ -142,14 +146,14 @@ class FixpointException(msg : String) extends Exception("FixpointException: " + 
   }
 
   // TODO: make legible
-  def isAtom(ast : AST) : Boolean = { 
+  def isAtom(ast : AST) : Boolean = {
      ast.symbol.sort == BooleanSort && (ast.isVariable || !ast.children.map(_.symbol.sort).filterNot(_ == BooleanSort).isEmpty)
   }
 
   // TODO: refactor
   def getBoolDefinitions(ast : AST, polarity : Boolean) : Option[(AST,AST)] = {
     (ast.symbol, polarity) match {
-      case (BoolEquality, true) | (RoundingModeEquality, true) | (FPEqualityFactory(_), true) => { 
+      case (BoolEquality, true) | (RoundingModeEquality, true) | (FPEqualityFactory(_), true) => {
         (if (ast.children(0).isVariable) Some((ast.children(0), ast)) else  None) orElse
         (if (ast.children(1).isVariable) Some((ast.children(1), ast)) else  None)
       }
@@ -217,8 +221,9 @@ class FixpointException(msg : String) extends Exception("FixpointException: " + 
     //TODO:  Cycle-breaking
 
     val varsToCritical = new HashMap[ConcreteFunctionSymbol, Set[AST]] with MultiMap[ConcreteFunctionSymbol, AST]
+
     (for (c <- critical.iterator;
-          v <- c.iterator.filter(_.isVariable)) 
+          v <- c.iterator.filter(_.isVariable))
           yield (v.symbol, c)).foldLeft(varsToCritical){(acc, pair) => acc.addBinding(pair._1, pair._2)}
 
     //Fix-point computation
@@ -254,7 +259,7 @@ class FixpointException(msg : String) extends Exception("FixpointException: " + 
     verbose("Migrating special values")
 
     for (v <- independentVars if v.sort.isInstanceOf[FPSort]) {
-      decodedModel(varToNode(v)).symbol.asInstanceOf[IndexedFunctionSymbol].getFactory match { 
+      decodedModel(varToNode(v)).symbol.asInstanceOf[IndexedFunctionSymbol].getFactory match {
         case FPSpecialValuesFactory(_) => verbose("Migrating special value " + decodedModel(varToNode(v)))
                                           candidateModel.set(varToNode(v), decodedModel(varToNode(v)))
         case _ => ()//verbose("Ignoring: " + decodedModel(varToNode(v)).symbol)
@@ -282,17 +287,17 @@ class FixpointException(msg : String) extends Exception("FixpointException: " + 
 
       // TODO: (Aleks) Some implications might become fully set? x = y*y?
       for (i <- implications if numUndefValues(candidateModel, i) == 1 )  {
-        val imp = getImplication(candidateModel, i) 
+        val imp = getImplication(candidateModel, i)
 
         imp match {
           case Some((node, value)) => {
             verbose("Inserting " + node.getSMT() + " -> " + value.getSMT())
             candidateModel.set(node, value)
 
-            for ( crit <-  varsToCritical(node.symbol) 
-                if !candidateModel.contains(crit) 
+            for ( crit <-  varsToCritical(node.symbol)
+                if !candidateModel.contains(crit)
                 && numUndefValues(candidateModel, crit) == 0) {
-              // We will set the values only of the literals that 
+              // We will set the values only of the literals that
               // have not been evaluated yet and have no unknowns
               // Consider cascading expressions, do we need to watch all of them
               //evaluateNode(decodedModel, candidateModel, crit)
@@ -301,7 +306,7 @@ class FixpointException(msg : String) extends Exception("FixpointException: " + 
               AST.postVisit(crit, candidateModel, candidateModel, evaluateNode)
               if (crit.symbol.sort == BooleanSort && candidateModel(crit) != decodedModel(crit)) {
                 println("Reconstruction fails for : \n " + node.symbol + "->" + value +
-                        "\n Implied by : " + i.simpleString() + 
+                        "\n Implied by : " + i.simpleString() +
                         "\n on literal \n" + crit.simpleString() +
                         "\nDecodedModel ===================== " + decodedModel(crit) + "\n\t" +
                         decodedModel.variableAssignments(crit).mkString("\n\t") +
@@ -316,7 +321,7 @@ class FixpointException(msg : String) extends Exception("FixpointException: " + 
         }
       }
 
-      // order 
+      // order
       if (!changed) {
          verbose("No implications ... ")
          val undefVars = vars.filterNot(candidateModel.containsVariable(_)).toList
@@ -324,7 +329,7 @@ class FixpointException(msg : String) extends Exception("FixpointException: " + 
            verbose("No undefined variables ...\n Done supporting critical atoms.")
 
            // TODO: (Aleks) Do we actually care if the decoded model has extra values?
-           for ( (variable, value) <- decodedModel.variableValuation 
+           for ( (variable, value) <- decodedModel.variableValuation
                  if (!candidateModel.contains(varToNode(variable)))) {
              //  println("candidate")
              //  println(candidateModel)
@@ -342,7 +347,7 @@ class FixpointException(msg : String) extends Exception("FixpointException: " + 
            // }
            done = true
          } else {
-           val chosen = undefVars.head // TODO: Call the method 
+           val chosen = undefVars.head // TODO: Call the method
            val node = varToNode(chosen)
            verbose("Copying from decoded model " + chosen + " -> " + decodedModel(node).getSMT())
 
@@ -356,10 +361,10 @@ class FixpointException(msg : String) extends Exception("FixpointException: " + 
              candidateModel.overwrite(node, value)
              //TODO:  Construct one huge mega query to find this value?
              violated = List()
-             for ( crit <-  varsToCritical(node.symbol) 
-                  if !candidateModel.contains(crit) 
+             for ( crit <-  varsToCritical(node.symbol)
+                  if !candidateModel.contains(crit)
                   && numUndefValues(candidateModel, crit) == 0) {
-                // We will set the values only of the literals that 
+                // We will set the values only of the literals that
                 // have not been evaluated yet and have no unknowns
                 // Consider cascading expressions, do we need to watch all of them
                 //evaluateNode(decodedModel, candidateModel, crit)
@@ -403,25 +408,25 @@ class FixpointException(msg : String) extends Exception("FixpointException: " + 
   // TODO: (Aleks) Better name
   def violatedConstraint(decodedModel : Model, node : AST, candidateModel : Model, violated : List[AST]) = {
     val eps = uppsat.ast.Leaf(FloatingPointTheory.getULP(decodedModel(node).symbol.asInstanceOf[FloatingPointLiteral]))
-    val lessThan = node <= (decodedModel(node) + eps) 
+    val lessThan = node <= (decodedModel(node) + eps)
     val greaterThan = node >= (decodedModel(node) - eps)
     val newConjuncts = lessThan :: greaterThan :: violated
-    val combinedConstraint = AST(NaryConjunction(newConjuncts.length), List(), newConjuncts)                  
+    val combinedConstraint = AST(NaryConjunction(newConjuncts.length), List(), newConjuncts)
 
     //    TODO: (Aleks) Eclipse says that v != unknown will *almost* never happen.
-    // 
+    //
     //    val vars = ast.iterator.toList.filter(_.isVariable)
-    //    
-    //   val assertions : List[(ConcreteFunctionSymbol, AST)] = 
-    //      for ( v <- vars if( v != unknown && candidateModel.contains(v))) yield {        
+    //
+    //   val assertions : List[(ConcreteFunctionSymbol, AST)] =
+    //      for ( v <- vars if( v != unknown && candidateModel.contains(v))) yield {
     //          (v.symbol, candidateModel(v))
     //      }
-        
+
     val assertions = List()
     ModelEvaluator.evalAST(combinedConstraint, node.symbol, assertions, inputTheory)
   }
-    
-   
+
+
   // TODO: (Aleks) Should this only update the candidateModel if ast has children?
   def evaluateNode( decodedModel  : Model, candidateModel : Model, ast : AST) : Model = {
     ast match {
@@ -433,16 +438,16 @@ class FixpointException(msg : String) extends Exception("FixpointException: " + 
         candidateModel.set(ast, newValue)
       }
     }
-    candidateModel  
+    candidateModel
   }
-    
+
   def getCurrentValue(ast : AST, decodedModel : Model, candidateModel : Model) : AST = {
     if (! candidateModel.contains(ast)) {
           candidateModel.set(ast, decodedModel(ast))
-    } 
+    }
     candidateModel(ast)
   }
-  
+
   def copyFromDecodedModelIfNotSet (decodedModel : Model, candidateModel : Model, ast : AST) = {
     if (! candidateModel.contains(ast)) {
           candidateModel.set(ast, decodedModel(ast))

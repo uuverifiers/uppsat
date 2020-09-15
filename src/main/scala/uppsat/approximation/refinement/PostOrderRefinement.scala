@@ -10,7 +10,7 @@ import uppsat.globalOptions._
 
 trait PostOrderRefinement extends ModelGuidedRefinementStrategy {
   def satRefinePrecision( ast : AST, pmap : PrecisionMap[Precision]) : Precision
-  
+
   def satRefine(ast : AST, decodedModel : Model, failedModel : Model, pmap : PrecisionMap[Precision]) : PrecisionMap[Precision] = {
     val critical = Toolbox.retrieveCriticalAtoms(decodedModel)(ast).map(_.iterator).flatten.toList
     val nodesToRefine = critical.filter( x => decodedModel(x) != failedModel(x))
