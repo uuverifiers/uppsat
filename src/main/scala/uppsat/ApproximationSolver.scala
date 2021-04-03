@@ -81,7 +81,6 @@ object ApproximationSolver {
 
       val reconstructedModel = approximation.reconstruct(formula, decodedModel)
 
-      // val assignments = reconstructedModel.variableAssignments(formula).toList
       val assignments = reconstructedModel.toMap
 
       verbose("Validating model ...")

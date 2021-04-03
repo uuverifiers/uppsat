@@ -30,7 +30,7 @@ object ModelEvaluator {
     def toMap : Map[ConcreteFunctionSymbol, AST] = variableValuation
 
     /** Returns the assignments of all variables in ast.
-      * 
+      *
   		* @param ast The assignment of all variables in ast are extracted
   		* @param incomplete If incomplete is set to true, unassigned variables
   		* found in @param ast are ignored (default false)
@@ -47,19 +47,19 @@ object ModelEvaluator {
     }
 
     /** Replaces the assignment of ast with value.
-      *  
+      *
       *  Replaces, in the model, the assignment of ast to instead be equal to
       *  value. If ast was previously unassigned it is just added.
-      *  
+      *
   		* @param ast The key to which value is assigned
   		* @param value The value which is assigned to key
-      * 
+      *
       * @throws ModelReconstructorException if {@code ast} and {code value} have
       * different sorts
-      */      
+      */
     def overwrite(ast : AST, value : AST) : Unit = {
       if (ast.symbol.sort != value.symbol.sort) {
-        val msg = "Incorrectly typed model: " + ast.symbol + "/" + value.symbol 
+        val msg = "Incorrectly typed model: " + ast.symbol + "/" + value.symbol
         throw new ModelReconstructorException(msg)
       }
 
@@ -69,21 +69,20 @@ object ModelEvaluator {
               variableValuation += symbol -> value
           else if (children.length == 0)
             ()
-          else 
+          else
             subexprValuation += path -> value
         }
       }
     }
-    
+
     /** Assigns ast with value.
-      *    
+      *
   		* @param ast The key to which value is assigned
   		* @param value The value which is assigned to key
-      * 
+      *
       * @throws ModelReconstructorException if {@code ast} is already assigned
-      * @throws ModelReconstructorException if {@code ast} and {code value}
-      * have different sorts
-      */      
+      * or if {@code ast} and {code value} have different sorts
+      */
     def set(ast : AST, value : AST) : Unit = {
       if (contains(ast)) {
         val msg = "Model value " + ast + " already assigned"
@@ -93,12 +92,12 @@ object ModelEvaluator {
     }
 
     /** Checks whether model contains variable.
-      *    
+      *
   		* @param variable Variable to check
-  		* @return True if model contains variable otherwise false 
+  		* @return True if model contains variable otherwise false
       * @throws ModelReconstructorException if {@code variable} is not a
       * variable
-      */      
+      */
     def containsVariable(variable : ConcreteFunctionSymbol) = {
       if (!variable.theory.isVariable(variable)) {
         val msg = "Variable is not a variable: " + variable
@@ -109,22 +108,21 @@ object ModelEvaluator {
     }
 
     /** Checks whether model contains subexpression
-      *    
-  		* @param path Path of subexpression 
-  		* @return True if model contains subexpression otherwise false 
+      *
+  		* @param path Path of subexpression
+  		* @return True if model contains subexpression otherwise false
       * variable
-      */      
-    def containsSubexpr(path : Path) : Boolean = 
+      */
+    def containsSubexpr(path : Path) : Boolean =
       subexprValuation.contains(path)
- 
 
 
     /** Checks whether model contains variable or subexpression.
-      *    
+      *
   		* @param ast AST to check
   		* @return True if model contains ast otherwise false
       * @throws ModelReconstructorException if ast is non-AST model value
-      */      
+      */
     def contains(ast : AST) : Boolean = {
       ast match {
         case AST(symbol, path, children) => {
@@ -144,12 +142,12 @@ object ModelEvaluator {
         }
       }
     }
-    
+
     /** Assigned value of ast.
-      *    
+      *
   		* @param ast Key of desired value.
       * @throws ModelReconstructorException if model doesn't contain ast
-      */       
+      */
     def apply(ast : AST) : AST = {
       if (!contains(ast)) {
         val msg = "Model doesn't contain value: " + ast
@@ -169,7 +167,7 @@ object ModelEvaluator {
         }
       }
     }
-    
+
     override def toString() = {
       variableValuation.mkString("\n")
     }
@@ -199,7 +197,7 @@ object ModelEvaluator {
       throw new  ModelReconstructorException(msg)
     }
 
-    getz3().stopSolver()    
+    getz3().stopSolver()
   }
 
   /** Resets state of the online solver.
@@ -223,7 +221,7 @@ object ModelEvaluator {
     *
     * @param ast Formula to be evaluated
     * @param assignments Assignments to variables
-    * @param theory Theory to be used 
+    * @param theory Theory to be used
     * @param solver SMT solver to use
     * @return True if formula is satisfiable otherwise false
     */
@@ -241,12 +239,11 @@ object ModelEvaluator {
       for ((symbol, value) <- assignments) yield {
         (symbol.toString(), value.symbol.theory.symbolToSMTLib(value.symbol))
       }
- 
 
     val smtFormula = translator.translate(ast, false, stringAssignments)
     solver.checkSat(smtFormula)
   }
-  
+
   /** Compute the value of an ast.
     *
     * Compute the value of the formula in {@code ast} with {@code theory} using
@@ -293,24 +290,23 @@ object ModelEvaluator {
       startOnlineSolver()
     else
       resetOnlineSolver()
-    
+
     val translator = new SMTTranslator(theory)
     val formula = translator.evaluateSubformula(ast, answer, assignments)
-     
+
     val res =
       getz3().evaluate(formula, List(answer))
     if (!res.isEmpty)
       Some (answer.sort.theory.parseLiteral(res.head.trim()))
     else
-      None        
+      None
   }
-  
-  
+
   // Reconstruction patterns
   def reconstructNodeByNode(ast : AST,
                             decodedModel : Model,
                             hook : (Model, Model, AST) => Model) : Model = {
-    val reconstructedModel = new Model()    
+    val reconstructedModel = new Model()
     AST.postVisit[Model, Model](ast, reconstructedModel, decodedModel, hook)
     reconstructedModel
   }
