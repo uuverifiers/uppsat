@@ -41,7 +41,7 @@ trait ErrorBasedRefinementStrategy extends PostOrderRefinement {
     var changes = 0
     for (node <-
          toRefine.filter(
-           x => precisionOrdering.lt(newPMap(x.label),  pmap.precisionOrdering.maximalPrecision)
+           x => precisionOrdering.lt(newPMap(x.label),  pmap.pOrd.maximalPrecision)
          ).take(k)) {
       newPMap = newPMap.update(node.label, satRefinePrecision(node, newPMap))
       changes += 1

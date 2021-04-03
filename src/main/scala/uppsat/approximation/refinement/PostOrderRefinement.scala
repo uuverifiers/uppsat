@@ -18,7 +18,7 @@ trait PostOrderRefinement extends RefinementStrategy {
     var newPMap = pmap
     var changes = 0
     for (node <- nodesToRefine.filter
-         ( x => precisionOrdering.lt(newPMap(x.label),  pmap.precisionOrdering.maximalPrecision))) {
+         ( x => precisionOrdering.lt(newPMap(x.label),  pmap.pOrd.maximalPrecision))) {
       newPMap = newPMap.update(node.label, satRefinePrecision(node, newPMap))
       changes += 1
     }

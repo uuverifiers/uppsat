@@ -233,7 +233,7 @@ trait SmallFloatsMGRefinementStrategy extends SmallFloatsContext
   def satRefinePrecision( node : AST, pmap : PrecisionMap[Int]) : Int = {
     val p =  pmap(node.label)    
     val newP = (p + precisionIncrement) max p
-    newP min pmap.precisionOrdering.maximalPrecision // TODO:  This check should be in the ordering somewhere?
+    newP min pmap.pOrd.maximalPrecision // TODO:  This check should be in the ordering somewhere?
                                                      // AZ: pMap Already does this check in the map call. We should cut this.
   }
   
