@@ -14,28 +14,28 @@ import uppsat.globalOptions._
 import uppsat.approximation.Approximation
 
 /** Static object which is the main control structure for the approximation framework.
- *
- *  
- */
+  *
+  *
+  */
 object ApproximationSolver {
-  
+
   type ExtModel = Map[ConcreteFunctionSymbol, String]
-  
+
   trait Answer
   case class Sat(model : ExtModel) extends Answer
   case object Unsat extends Answer
   case object Unknown extends Answer
   /** Solves formula by means of approximation.
- 	*
-	* @param formula The formula to be solved.
-	* @param translator SMT-translator translating formulas to SMT and back.
-	* 
-	* @return Sat, Unsat or Unknown depending on the formula.   		
- 	*/
+ 	  *
+	  * @param formula The formula to be solved.
+	  * @param translator SMT-translator translating formulas to SMT and back.
+	  *
+	  * @return Sat, Unsat or Unknown depending on the formula.
+ 	  */
   def solve(formula : AST, translator : SMTTranslator, approximation : Approximation) : Answer = {
     verbose("-----------------------------------------------")
     verbose("Starting Approximation Framework")
-    verbose("-----------------------------------------------")  
+    verbose("-----------------------------------------------")
     checkTimeout("solve")
     if (globalOptions.FORMULAS)
       println(translator.translate(formula))
@@ -80,14 +80,15 @@ object ApproximationSolver {
       verbose("Reconstructing model ...")
 
       val reconstructedModel = approximation.reconstruct(formula, decodedModel)
-            
-      val assignments = reconstructedModel.variableAssignments(formula).toList
-      
+
+      // val assignments = reconstructedModel.variableAssignments(formula).toList
+      val assignments = reconstructedModel.toMap
+
       verbose("Validating model ...")
 
       if (ModelEvaluator.valAST(formula, assignments.toList, approximation.inputTheory, smtSolver)) {
         val extModel =
-          for ((symbol, value) <- reconstructedModel.getModel) yield {
+          for ((symbol, value) <- reconstructedModel.toMap) yield {
           (symbol, value.symbol.theory.symbolToSMTLib(value.symbol) )
         }
         (Some(extModel), None)
@@ -171,7 +172,7 @@ object ApproximationSolver {
         if (stringModel.isDefined) {
           val model = translator.getModel(formula, stringModel.get) 
           val extModel =
-              for ((symbol, value) <- model.getModel) yield {
+              for ((symbol, value) <- model.toMap) yield {
               (symbol, value.symbol.theory.symbolToSMTLib(value.symbol) )
               }
           return Sat(extModel)

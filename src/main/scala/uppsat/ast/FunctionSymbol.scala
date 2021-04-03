@@ -20,13 +20,13 @@ trait ConstructedFunctionSymbol extends ConcreteFunctionSymbol {
 trait ConstructedFunctionSymbolFactory {
   val arity : Int
   def apply(idx : Seq[ConcreteSort]) : ConstructedFunctionSymbol
-  def apply(idx : ConcreteSort) : ConstructedFunctionSymbol = 
+  def apply(idx : ConcreteSort) : ConstructedFunctionSymbol =
     apply(idx)
 }
 
 trait IndexedFunctionSymbol extends ConcreteFunctionSymbol {
   val getFactory : IndexedFunctionSymbolFactory
-  
+
   def apply(sorts : ConcreteSort *) = {
       getFactory(sorts:_*)
     }
