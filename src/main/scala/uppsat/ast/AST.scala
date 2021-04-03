@@ -26,7 +26,10 @@ object Leaf {
 
 object AST {
   type Label = Path
-  def apply(symbol : ConcreteFunctionSymbol, children : List[AST]) = new AST(symbol, List(), children)
+
+  def apply(symbol : ConcreteFunctionSymbol, children : List[AST] = List()) = new AST(symbol, List(), children)
+
+
   
   def postVisit[A]( ast : AST, accumulator : A,  work : (A, AST) => A ) : A = {
     val AST(symbol, label, children) = ast

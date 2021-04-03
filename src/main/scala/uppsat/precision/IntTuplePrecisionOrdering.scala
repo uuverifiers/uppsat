@@ -15,7 +15,6 @@ class IntTuplePrecisionOrdering(val minimalPrecision : (Int, Int),
   type P = (Int, Int)
   val order = IntTupleOrdering
 
-  // TODO: Why do we need partial order?
   /** An ordering of integer tuples.
     *
     * An ordering of integer tuples where (k, l) < (m, n) if k < m or k = m and
