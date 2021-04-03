@@ -405,9 +405,20 @@ object main {
 
     try {
       main_aux(args) match {
-        case Sat(_) => System.exit(10)
-        case Unsat   => System.exit(20)
-        case Unknown => System.exit(30)
+        case Sat(_) => {
+          println("sat")
+          System.exit(10)
+        }
+
+        case Unsat   => {
+          println("unsat")
+          System.exit(20)
+        }
+
+        case Unknown => {
+          println("unknown")
+          System.exit(30)
+        }
       }
     } catch {
       case to : TimeoutException => {
