@@ -1,5 +1,8 @@
 package uppsat.approximation.int
 
+// NOTE: Out of date!
+// TODO (ptr):  partition into the new approximation design
+
 import uppsat.theory.IntegerTheory._
 import uppsat.ModelEvaluator.Model
 import uppsat.precision.PrecisionMap.Path
@@ -11,7 +14,6 @@ import uppsat.theory.IntegerTheory
 import uppsat.precision._
 import uppsat.ast.Leaf
 
-// TODO: partition into the new approximation architecture
 object IntApproximation  {
   type P = Int
   val inputTheory = IntegerTheory

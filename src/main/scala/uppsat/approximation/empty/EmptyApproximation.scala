@@ -1,5 +1,8 @@
 package uppsat.approximation
 
+// NOTE: Out of date!
+// TODO (ptr):  partition into the new approximation design
+
 import uppsat.ModelEvaluator.Model
 import uppsat.ast._
 import uppsat.precision._
@@ -8,7 +11,6 @@ import uppsat.theory.BitVectorTheory
 import uppsat.theory.FloatingPointTheory
 import uppsat.theory.IntegerTheory._
 
-// TODO (ptr):  partition into the new approximation design
 object EmptyApproximation {
   type P = Int
   // TODO: How do we make this dynamic
