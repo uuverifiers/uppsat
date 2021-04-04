@@ -420,7 +420,7 @@ def hexToBitList(hex : String) = {
 //        else throw new SMTParserException("No theory defined")
       val translator = new uppsat.solver.SMTTranslator(usingTheory)
 
-      val approximation = uppsat.globalOptions.getApproximation
+      val approximation = uppsat.globalOptions.instantiateApproximation()
       // TODO:  Hooks to user defined approximation
       myEnv.result = ApproximationSolver.Unknown
       myEnv.result =
