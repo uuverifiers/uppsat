@@ -1,37 +1,19 @@
 package uppsat.solver;
 
-import java.io.ByteArrayInputStream;
-import uppsat.Timer.TimeoutException
-import sys.process._
-import scala.sys.process.stringToProcess
-import uppsat.solver._
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
+
+import java.io.{BufferedReader, InputStreamReader}
 import uppsat.Timer
+import uppsat.Timer.TimeoutException
 import uppsat.ast.ConcreteFunctionSymbol
 
-class Z3OnlineException(msg : String) extends Exception("Z3 error: " + msg)
 
-// Starts process at 
+class Z3OnlineSolver(val name : String = "Z3Online",
+                     checkSatCmd : String = "(check-sat)\n") extends SMTSolver {
 
-class Z3OnlineSolver(checkSatCmd : String = "(check-sat)\n") extends SMTSolver {
-  var silent = true
+  class Z3OnlineException(msg : String) extends Exception("Z3 error: " + msg)
   
-  def toggleSilent = {
-    silent = !silent
-  }
-  
-  def setSilent(b : Boolean) = {
-    silent = b
-  }
-  
-  def z3print(str : String) =
-    if (!silent)
-      println("[Z3] " + str)
-  
-  // Starting solver...
   val process = Runtime.getRuntime().exec("z3 -in")
-  z3print("[Started process: " + process)
+  print("Started process: " + process)
   val stdin = process.getOutputStream ()
   val stderr = process.getErrorStream ()
   val stdout = process.getInputStream () 
@@ -45,13 +27,16 @@ class Z3OnlineSolver(checkSatCmd : String = "(check-sat)\n") extends SMTSolver {
     val r = catchOutput(f) 
     r match { 
       case Some("sat") => ()
-      case _ => throw new Exception("Empty check-sat failed to return sat : " + r)
+      case _ => {
+        val msg = "Empty check-sat failed to return sat : " + r
+        throw new Z3OnlineException(msg)
+      }
     }
     setSilent(oldSilent)
   }
   
   def feedInput(f : String) = {
-    z3print("Sending ... \n" + f)
+    print("Sending ... \n" + f)
     stdin.write((f+"\n").getBytes());
     stdin.flush();
   }
@@ -63,15 +48,14 @@ class Z3OnlineSolver(checkSatCmd : String = "(check-sat)\n") extends SMTSolver {
     val satPattern = "sat".r
     val unsatPattern = "unsat".r
     
-//    /z3print("Collecting output ")
     var line = None : Option[String]
     while (result.isEmpty) {
       line = Option(outReader.readLine())
       line match {
         case Some(errorPattern()) => 
           println(formula)
-          throw new Exception("Z3 error: " + line.get)
-        case Some(other) => z3print("Collected : " + other)
+          throw new Z3OnlineException("Z3 error: " + line.get)
+        case Some(other) => print("Collected : " + other)
                             result = Some(other)
         // If Z3 crashes (e.g., by timeout) without output:
         case None => result = Option("unknown")
@@ -92,25 +76,32 @@ class Z3OnlineSolver(checkSatCmd : String = "(check-sat)\n") extends SMTSolver {
   }
   
   // Evaluation of a an expression, should always result in a value
-  def evaluateExpression(expression : String) = Timer.measure("Z3OnlineSolver.runSolver") {
+  def evaluateExpression(expression : String) =
+    Timer.measure("Z3OnlineSolver.runSolver") {
     init
-    z3print("Evaluating: \n" + expression)    
+    print("Evaluating: \n" + expression)    
     feedInput(expression)
     catchOutput(expression).get 
   }
     
-  def evaluate(formula : String, answers : List[ConcreteFunctionSymbol] = List()) : List[String] = Timer.measure("Z3OnlineSolver.runSolver") {
+  def evaluate(formula : String,
+               answers : List[ConcreteFunctionSymbol] = List())
+      : List[String] = Timer.measure("Z3OnlineSolver.runSolver") {
     reset      
     feedInput(formula + "\n" + checkSatCmd)
     catchOutput(formula) match {
-      case Some("sat") => answers.map(evalSymbol(_)).collect { case Some(x) => x }
-      case Some("unsat") => List()
-      case Some("unknown") => List()
-      case Some(s) => throw new Exception("Solver returned : " + s)
-      case None => throw new Exception("Solver failed to return result")
+      case Some("sat") =>
+        answers.map(evalSymbol(_)).collect { case Some(x) => x }
+      case Some("unsat") =>
+        List()
+      case Some("unknown") =>
+        List()
+      case Some(s) =>
+        throw new Z3OnlineException("Solver returned : " + s)
+      case None =>
+        throw new Z3OnlineException("Solver failed to return result")
     }
   }
-
   
   def reset = {
     val oldSilent = silent
@@ -119,18 +110,24 @@ class Z3OnlineSolver(checkSatCmd : String = "(check-sat)\n") extends SMTSolver {
     setSilent(oldSilent)
   }
   
-  def parseOutput(output : String, extractSymbols : List[String]) : Option[Map[String, String]] = {
+  def parseOutput(output : String,
+                  extractSymbols : List[String])
+      : Option[Map[String, String]] = {
     val lines = output.split("\n")
     lines.head.trim() match {
       case "timeout" => throw new TimeoutException("Z3solver")
       case "sat" => Some((extractSymbols zip lines.tail).toMap)
       case "unsat" => None
-      case result => throw new Exception("Trying to get model from non-sat result (" + result + ")") 
+      case result => {
+        val msg = "Trying to get model from non-sat result (" + result + ")"
+        throw new Z3OnlineException(msg)
+      }
     }
   }
   
   def getStringModel(formula : String, extractSymbols : List[String]) = {
-    val extendedFormula = formula + "\n" + checkSatCmd + (extractSymbols.map("(eval " + _ + ")").mkString("\n", "\n", ""))
+    val extendedFormula = formula + "\n" + checkSatCmd +
+        (extractSymbols.map("(eval " + _ + ")").mkString("\n", "\n", ""))
     val result = evaluate(extendedFormula)
     parseOutput(result, extractSymbols)    
   }
@@ -141,7 +138,10 @@ class Z3OnlineSolver(checkSatCmd : String = "(check-sat)\n") extends SMTSolver {
     retVal match {
       case "sat" => true
       case "unsat" => false
-      case str => throw new Exception("Unexpected result: " + str)
+      case str => {
+        val msg = "Unexpected result: " + str
+        throw new Z3OnlineException(msg)
+      }
     }
   }
 
@@ -151,14 +151,15 @@ class Z3OnlineSolver(checkSatCmd : String = "(check-sat)\n") extends SMTSolver {
     val retVal = result.split("\n")
     retVal.head.trim() match {
       case "sat" => retVal(1).trim()
-      case str => throw new Exception("Unexpected result: " + str)
+      case str => {
+        val msg = "Unexpected result: " + str
+        throw new Z3OnlineException(msg)
+      }
     }
   }
-  
   
   def stopSolver() = {
     process.destroy()
     process.waitFor()
   }
-
 }
