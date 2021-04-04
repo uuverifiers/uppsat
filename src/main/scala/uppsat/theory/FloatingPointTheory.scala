@@ -1,24 +1,28 @@
 package uppsat.theory
 
-import uppsat.theory.BooleanTheory._
-import scala.math.BigInt.int2bigInt
-import uppsat.ast._
-import uppsat.theory.FloatingPointTheory.FPSortFactory.FPSort
 import scala.collection.mutable.WrappedArray
+import scala.math.BigInt.int2bigInt
 
-case class FloatingPointTheoryException(msg : String) extends Exception("Floating Point Theory Exception: " + msg)
+import uppsat.ast._
+import uppsat.solver.SMTTranslator
+import uppsat.theory.BooleanTheory._
+import uppsat.theory.FloatingPointTheory.FPSortFactory.FPSort
 
 object FloatingPointTheory extends Theory {
+
+  case class FloatingPointTheoryException(msg : String) extends
+      Exception("Floating Point Theory Exception: " + msg)
+
   val name = "FPTheory"
-    
-  object FPSortFactory extends IndexedSortFactory { 
+
+  object FPSortFactory extends IndexedSortFactory {
     case class FPSort(eBitWidth : Int, sBitWidth : Int) extends IndexedSort {
       val name = "Floating Point (" + eBitWidth + ", " + sBitWidth + ")"
       val theory = FloatingPointTheory
       val getFactory = FPSortFactory
     }
-  
-    val arity = 2 
+
+    val arity = 2
     def apply(idx : Seq[BigInt]) = {
       val eBits = idx(0).toInt
       val sBits = idx(1).toInt
@@ -26,97 +30,128 @@ object FloatingPointTheory extends Theory {
       FPSort(eBits, sBits)
     }
   }
-  
-  abstract class FloatingPointSymbol extends IndexedFunctionSymbol
-  abstract class FloatingPointFunctionSymbol(val sort : FPSort) extends FloatingPointSymbol
-  abstract class FloatingPointPredicateSymbol extends FloatingPointSymbol
-  abstract class FloatingPointNonFPSymbol(val sort : ConcreteSort) extends FloatingPointSymbol
-  abstract class FloatingPointConstantSymbol(override val sort : FPSort) extends FloatingPointFunctionSymbol(sort)
-  
+
+  abstract class FloatingPointSymbol
+      extends IndexedFunctionSymbol
+  abstract class FloatingPointFunctionSymbol(val sort : FPSort)
+      extends FloatingPointSymbol
+  abstract class FloatingPointPredicateSymbol
+      extends FloatingPointSymbol
+  abstract class FloatingPointNonFPSymbol(val sort : ConcreteSort)
+      extends FloatingPointSymbol
+  abstract class FloatingPointConstantSymbol(override val sort : FPSort)
+      extends FloatingPointFunctionSymbol(sort)
+
 
   abstract class FPGenConstantFactory extends IndexedFunctionSymbolFactory {
     def getName(sort : FPSort) : String
   }
 
   object FloatingPointLiteral {
-    def apply(sign : Int, eBits : List[Int], sBits : List[Int], sort : FPSort) : FloatingPointLiteral = {
-      if (!eBits.contains(1) && !sBits.contains(1))
-        throw new FloatingPointTheoryException("Trying to create 0 with ConstantFactory")
+    def apply(sign : Int,
+              eBits : List[Int],
+              sBits : List[Int],
+              sort : FPSort) : FloatingPointLiteral = {
+      if (!eBits.contains(1) && !sBits.contains(1)) {
+        val msg = "Trying to create 0 with ConstantFactory"
+        throw new FloatingPointTheoryException(msg)
+      }
+
       val newFactory = new FPConstantFactory(sign, eBits, sBits)
       if (sort.eBitWidth != eBits.length || sort.sBitWidth != sBits.length + 1) {
-        throw new Exception("Creating literal with wrong sort? " + sort + ", " + eBits + ", " + sBits)
+        val msg = "Creating literal with wrong sort? " +
+          sort + ", " + eBits + ", " + sBits
+        throw new FloatingPointTheoryException(msg)
       }
       newFactory(sort).asInstanceOf[FloatingPointLiteral]
     }
   }
 
-  case class FloatingPointLiteral(_sort : FPSort, getFactory : FPGenConstantFactory)
+  case class FloatingPointLiteral(_sort : FPSort,
+                                  getFactory : FPGenConstantFactory)
              extends FloatingPointConstantSymbol(_sort) {
     val name = getFactory getName sort
     val theory = FloatingPointTheory
     val args = List()
-    lazy val sign = getFactory.asInstanceOf[FPConstantFactory].sign
-    lazy val eBits = getFactory.asInstanceOf[FPConstantFactory].eBits take sort.eBitWidth
-    lazy val sBits = getFactory.asInstanceOf[FPConstantFactory].sBits take (sort.sBitWidth - 1)
+    lazy val sign =
+      getFactory.asInstanceOf[FPConstantFactory].sign
+    lazy val eBits =
+      getFactory.asInstanceOf[FPConstantFactory].eBits take sort.eBitWidth
+    lazy val sBits =
+      getFactory.asInstanceOf[FPConstantFactory].sBits take (sort.sBitWidth - 1)
   }
-  
-  case class FPFunctionSymbol(val args : Seq[ConcreteSort], _sort : FPSort, val getFactory : FPFunctionSymbolFactory) 
-             extends FloatingPointFunctionSymbol(_sort) {   
+
+  case class FPFunctionSymbol(val args : Seq[ConcreteSort],
+                              _sort : FPSort,
+                              val getFactory : FPFunctionSymbolFactory)
+             extends FloatingPointFunctionSymbol(_sort) {
     val theory = FloatingPointTheory
     val name = getFactory.symbolName
   }
-  
-  case class FPPredicateSymbol( val argSort : ConcreteSort, val getFactory : FPPredicateSymbolFactory) extends FloatingPointPredicateSymbol {   
-    val theory = FloatingPointTheory    
+
+  case class FPPredicateSymbol(val argSort : ConcreteSort,
+                               val getFactory
+                                   : FPPredicateSymbolFactory)
+      extends FloatingPointPredicateSymbol {
+    val theory = FloatingPointTheory
     val name = getFactory.symbolName
     val sort = BooleanSort
     val args = List.fill(getFactory.fpArity)(argSort)
   }
-  case class FPToNonFPFunctionSymbol( val args : Seq[ConcreteSort], _sort : ConcreteSort, val getFactory : FPToNonFPFunctionSymbolFactory) extends FloatingPointNonFPSymbol(_sort) {
+  case class FPToNonFPFunctionSymbol(val args : Seq[ConcreteSort],
+                                     _sort : ConcreteSort,
+                                     val getFactory :
+                                         FPToNonFPFunctionSymbolFactory)
+      extends FloatingPointNonFPSymbol(_sort) {
     val theory = FloatingPointTheory
     val name = getFactory.symbolName
-    
-    
   }
-  
-  case class FPFunctionSymbolFactory(symbolName : String, isRounding : Boolean, fpArity : Int) extends IndexedFunctionSymbolFactory {
+
+  case class FPFunctionSymbolFactory(symbolName : String,
+                                     isRounding : Boolean,
+                                     fpArity : Int)
+      extends IndexedFunctionSymbolFactory {
     val thisFactory = this
-    
+
     val arity = 1 // Refers to the sorts
     def apply(sorts : ConcreteSort*) = {
       sorts.reverse.head match {
-        case fpsort : FPSort => {      
+        case fpsort : FPSort => {
           val argSorts = sorts.take(sorts.length - 1).toList
           val args = if (isRounding) RoundingModeSort :: argSorts else argSorts
           FPFunctionSymbol(args, fpsort, this)
         }
         case _ =>  throw new Exception("Non-FP sort : " + sorts.head)
-      }  
+      }
     }
   }
-  
-  case class FPVarFactory(varName : String) extends IndexedFunctionSymbolFactory {
+
+  case class FPVarFactory(varName : String)
+      extends IndexedFunctionSymbolFactory {
     val thisFactory = this
     val arity = 0
-    
+
     def apply(sort : ConcreteSort*) = {
       sort match {
-        case List(fpsort : FPSort) => 
-          FPVar(varName, fpsort)        
+        case List(fpsort : FPSort) =>
+          FPVar(varName, fpsort)
         case _ =>  throw new Exception("Non-FP sort : " + sorts.head)
-      }  
+      }
     }
   }
-  
-  case class FPPredicateSymbolFactory(symbolName : String, fpArity : Int) extends IndexedFunctionSymbolFactory {
+
+  case class FPPredicateSymbolFactory(symbolName : String, fpArity : Int)
+      extends IndexedFunctionSymbolFactory {
     val arity = 1 // Refers to the sorts
-    override def apply(sort : ConcreteSort*) = {      
-      FPPredicateSymbol(sort.head, this)  
+    override def apply(sort : ConcreteSort*) = {
+      FPPredicateSymbol(sort.head, this)
     }
   }
 
   // TODO: Bitset instead of List[Int]
-  case class FPConstantFactory(sign : Int, eBits: List[Int], sBits : List[Int]) extends FPGenConstantFactory {
+  case class FPConstantFactory(sign : Int,
+                               eBits: List[Int],
+                               sBits : List[Int]) extends FPGenConstantFactory {
     val thisFactory = this
 
     def getName(sort : FPSort) = {
@@ -124,58 +159,68 @@ object FloatingPointTheory extends Theory {
       eBits.take(sort.eBitWidth).mkString("") + " " +
       sBits.take(sort.sBitWidth - 1).mkString("")
     }
-    
+
     val arity = 1 // Refers to the sorts
-    
+
     override def apply(sort : ConcreteSort*) = {
       sort.head match {
         case fpsort : FPSort =>
           FloatingPointLiteral(fpsort, this)
         case _ =>  throw new Exception("Non-FP sort : " + sort.head)
-      }  
-    }    
+      }
+    }
   }
 
-  case class FPToNonFPFunctionSymbolFactory(symbolName : String, isRounding : Boolean, sort : ConcreteSort) extends IndexedFunctionSymbolFactory {
+  case class FPToNonFPFunctionSymbolFactory(symbolName : String,
+                                            isRounding : Boolean,
+                                            sort : ConcreteSort)
+      extends IndexedFunctionSymbolFactory {
     val thisFactory = this
-    
+
     val arity = 1 // Refers to the sorts
-    def apply(argSorts : ConcreteSort*) = { //TODO : Should be FPSort, but this does not seem enforceable atm
-      val args = if (isRounding) RoundingModeSort :: argSorts.toList else argSorts
+
+    // TODO : Should be FPSort, but this does not seem enforceable atm
+
+    def apply(argSorts : ConcreteSort*) = {
+      val args =
+        if (isRounding) RoundingModeSort :: argSorts.toList else argSorts
       FPToNonFPFunctionSymbol(args, sort, this)
     }
   }
-case class FPSpecialValuesFactory(symbolName : String) extends FPGenConstantFactory {
+
+  case class FPSpecialValuesFactory(symbolName : String)
+      extends FPGenConstantFactory {
     val thisFactory = this
 
     def getName(sort : FPSort) = symbolName
-    
+
     val arity = 1 // Refers to the sorts
     override def apply(sort : ConcreteSort*) = {
       // TODO: (Peter) Maybe we can avoid the sort.toList here
       sort.toList match {
-        case List(fpsort : FPSort) => {      
+        case List(fpsort : FPSort) => {
           FloatingPointLiteral(fpsort, this)
         }
-        case _ =>  throw new Exception("Non-FP singleton sort in special values  : " + sort.head)
-      }  
+        case _ => {
+          val msg = "Non-FP singleton sort in special values  : " + sort.head
+          throw new Exception(msg)
+        }
+      }
     }
   }
 
-  
-  /////////////////////////////////////////////  
+  /////////////////////////////////////////////
   // SMT-LIB SUPPORTED SYMBOLS
   /////////////////////////////////////////////
-  
-  
-  // SORTS 
+
+  // SORTS
   object RoundingModeSort extends ConcreteSort {
     val name = "RoundingMode"
     val theory = FloatingPointTheory : Theory
-  } 
-  
+  }
+
   abstract class RoundingMode extends ConcreteFunctionSymbol
-  
+
   case object RoundingModeEquality extends ConcreteFunctionSymbol {
     val sort = BooleanSort
     val args = List(RoundingModeSort, RoundingModeSort)
@@ -184,9 +229,9 @@ case class FPSpecialValuesFactory(symbolName : String) extends FPGenConstantFact
   }
   // Theory constants
   //////////////////////////////////////////////////////////////////////////////
-  
+
   // Rounding modes //
-  
+
   object RoundToZero extends RoundingMode {
     val sort = RoundingModeSort
     val theory = FloatingPointTheory
@@ -207,97 +252,112 @@ case class FPSpecialValuesFactory(symbolName : String) extends FPGenConstantFact
     val args = List()
     val name = "RoundToNegative"
   }
-  
+
   object RoundToNearestTiesToAway extends RoundingMode {
     val sort = RoundingModeSort
     val theory = FloatingPointTheory
     val args = List()
     val name = "RoundToNearestTiesToAway"
   }
-  
+
   object RoundToNearestTiesToEven extends RoundingMode {
     val sort = RoundingModeSort
     val theory = FloatingPointTheory
     val args = List()
     val name = "RoundToNearestTiesToEven"
   }
-  
-  // Special Values // 
-  // TODO:  Keep this in mind (from the SMT-LIB standard: 
-  //  "Semantically, for each eb and sb, there is exactly one +infinity value and 
-  //  exactly one -infinity value in the set denoted by (_ FloatingPoint eb sb), 
-  //  in agreement with the IEEE 754-2008 standard.
-  //  However, +/-infinity can have two representations in this theory. 
-  //  E.g., +infinity for sort (_ FloatingPoint 2 3) is represented equivalently 
-  //  by (_ +oo 2 3) and (fp #b0 #b11 #b00).
-  // "
+
+  // Special Values //
+  // TODO:  Keep this in mind (from the SMT-LIB standard:
+
+  //  "Semantically, for each eb and sb, there is exactly one +infinity value
+  //  and exactly one -infinity value in the set denoted by (_ FloatingPoint eb
+  //  sb), in agreement with the IEEE 754-2008 standard. However, +/-infinity
+  //  can have two representations in this theory. E.g., +infinity for sort (_
+  //  FloatingPoint 2 3) is represented equivalently by (_ +oo 2 3) and (fp #b0
+  //  #b11 #b00). "
+
   val FPPositiveZero = new FPSpecialValuesFactory("+0")
   val FPNegativeZero = new FPSpecialValuesFactory("-0")
   val FPPlusInfinity = new FPSpecialValuesFactory("+00")
   val FPMinusInfinity = new FPSpecialValuesFactory("-00")
   val FPNaN = new FPSpecialValuesFactory("NaN")
-  
-  
+
   // Operations //
-  //     ; absolute value 
+  //     ; absolute value
   //   (fp.abs (_ FloatingPoint eb sb) (_ FloatingPoint eb sb))
   val FPAbsFactory = new FPFunctionSymbolFactory("abs", false, 1)
-  //   ; negation (no rounding needed) 
+  //   ; negation (no rounding needed)
   //   (fp.neg (_ FloatingPoint eb sb) (_ FloatingPoint eb sb))
   val FPNegateFactory = new FPFunctionSymbolFactory("negate", false, 1)
   //   ; addition
   //   (fp.add RoundingMode (_ FloatingPoint eb sb) (_ FloatingPoint eb sb)
-  //     (_ FloatingPoint eb sb)) 
-  val FPAdditionFactory = new FPFunctionSymbolFactory("addition", true, 2)   
+  //     (_ FloatingPoint eb sb))
+  val FPAdditionFactory = new FPFunctionSymbolFactory("addition", true, 2)
   //   ; subtraction
   //   (fp.sub RoundingMode (_ FloatingPoint eb sb) (_ FloatingPoint eb sb)
-  //     (_ FloatingPoint eb sb)) 
-  val FPSubstractionFactory = new FPFunctionSymbolFactory("subtraction", true, 2)   
+  //     (_ FloatingPoint eb sb))
+  val FPSubstractionFactory =
+    new FPFunctionSymbolFactory("subtraction", true, 2)
   //   ; multiplication
   //   (fp.mul RoundingMode (_ FloatingPoint eb sb) (_ FloatingPoint eb sb)
-  //     (_ FloatingPoint eb sb)) 
-  val FPMultiplicationFactory = new FPFunctionSymbolFactory("multiplication", true, 2)     
+  //     (_ FloatingPoint eb sb))
+  val FPMultiplicationFactory =
+    new FPFunctionSymbolFactory("multiplication", true, 2)
   //   ; division
   //   (fp.div RoundingMode (_ FloatingPoint eb sb) (_ FloatingPoint eb sb)
   //     (_ FloatingPoint eb sb))
   val FPDivisionFactory = new FPFunctionSymbolFactory("division", true, 2)
-  //   ; fused multiplication and addition; (x * y) + z 
-  //   (fp.fma RoundingMode (_ FloatingPoint eb sb) (_ FloatingPoint eb sb) (_ FloatingPoint eb sb)
+  //   ; fused multiplication and addition; (x * y) + z
+  //   (fp.fma RoundingMode (_ FloatingPoint eb sb) (_ FloatingPoint eb sb)
+  //    (_ FloatingPoint eb sb)
   //     (_ FloatingPoint eb sb))
-  val FPFusedMultiplyAddFactory = new FPFunctionSymbolFactory("fused multiply add", true, 3)
-  //   ; square root 
+  val FPFusedMultiplyAddFactory =
+    new FPFunctionSymbolFactory("fused multiply add", true, 3)
+  //   ; square root
   //   (fp.sqrt RoundingMode (_ FloatingPoint eb sb) (_ FloatingPoint eb sb))
-  val FPSquareRootFactory = new FPFunctionSymbolFactory("square root", true, 1)
-  //   ; remainder: x - y * n, where n in Z is nearest to x/y 
-  //   (fp.rem (_ FloatingPoint eb sb) (_ FloatingPoint eb sb) (_ FloatingPoint eb sb))
-  val FPRemainderFactory = new FPFunctionSymbolFactory("remainder", false, 2)
+  val FPSquareRootFactory =
+    new FPFunctionSymbolFactory("square root", true, 1)
+  //   ; remainder: x - y * n, where n in Z is nearest to x/y
+  //   (fp.rem (_ FloatingPoint eb sb) (_ FloatingPoint eb sb)
+  //       (_ FloatingPoint eb sb))
+  val FPRemainderFactory =
+    new FPFunctionSymbolFactory("remainder", false, 2)
   //   ; rounding to integral
-  //   (fp.roundToIntegral RoundingMode (_ FloatingPoint eb sb) (_ FloatingPoint eb sb))
-  val FPRoundToIntegralFactory = new FPFunctionSymbolFactory("round to integral", true, 1)
+  //   (fp.roundToIntegral RoundingMode (_ FloatingPoint eb sb)
+  //       (_ FloatingPoint eb sb))
+  val FPRoundToIntegralFactory =
+    new FPFunctionSymbolFactory("round to integral", true, 1)
   //   ; minimum and maximum
-  //   (fp.min (_ FloatingPoint eb sb) (_ FloatingPoint eb sb) (_ FloatingPoint eb sb))
+  //   (fp.min (_ FloatingPoint eb sb) (_ FloatingPoint eb sb)
+  //        (_ FloatingPoint eb sb))
   val FPMinimumFactory = new FPFunctionSymbolFactory("minimum", false, 2)
-  //   (fp.max (_ FloatingPoint eb sb) (_ FloatingPoint eb sb) (_ FloatingPoint eb sb))
+  //   (fp.max (_ FloatingPoint eb sb) (_ FloatingPoint eb sb)
+  //      (_ FloatingPoint eb sb))
   val FPMaximumFactory = new FPFunctionSymbolFactory("maximum", false, 2)
-  
+
   // PREDICATES //
-  
+
   //   ; comparison operators
   //   ; Note that all comparisons evaluate to false if either argument is NaN
   //   (fp.leq (_ FloatingPoint eb sb) (_ FloatingPoint eb sb) Bool :chainable)
-  val FPLessThanOrEqualFactory = new FPPredicateSymbolFactory("less-than-or-equal-to", 2)
+  val FPLessThanOrEqualFactory =
+    new FPPredicateSymbolFactory("less-than-or-equal-to", 2)
   //   (fp.lt  (_ FloatingPoint eb sb) (_ FloatingPoint eb sb) Bool :chainable)
-  val FPLessThanFactory = new FPPredicateSymbolFactory("less-than", 2)
+  val FPLessThanFactory =
+    new FPPredicateSymbolFactory("less-than", 2)
   //   (fp.geq (_ FloatingPoint eb sb) (_ FloatingPoint eb sb) Bool :chainable)
-  val FPGreaterThanOrEqualFactory = new FPPredicateSymbolFactory("greater-or-equal", 2)
+  val FPGreaterThanOrEqualFactory =
+    new FPPredicateSymbolFactory("greater-or-equal", 2)
   //   (fp.gt  (_ FloatingPoint eb sb) (_ FloatingPoint eb sb) Bool :chainable)
-  val FPGreaterThanFactory = new FPPredicateSymbolFactory("greater-than", 2)
+  val FPGreaterThanFactory =
+    new FPPredicateSymbolFactory("greater-than", 2)
   //   ; IEEE 754-2008 equality (as opposed to SMT-LIB =)
   //   (fp.eq (_ FloatingPoint eb sb) (_ FloatingPoint eb sb) Bool :chainable)
   val FPFPEqualityFactory = new FPPredicateSymbolFactory("fp-equal", 2)
   //   ; Classification of numbers
 
-  
+
   val FPEqualityFactory = new FPPredicateSymbolFactory("equal", 2)
   //   ; Classification of numbers
   //   (fp.isNormal (_ FloatingPoint eb sb) Bool)
@@ -315,78 +375,91 @@ case class FPSpecialValuesFactory(symbolName : String) extends FPGenConstantFact
   //   (fp.isPositive (_ FloatingPoint eb sb) Bool)
   val FPIsPositiveFactory = new FPPredicateSymbolFactory("isPositive", 1)
 
-  // CAST FUNCTIONS //  
-  
-  //   :funs_description "All function symbols with declarations of the form below
-  //   where m is a numerals greater than 0 and eb, sb, mb and nb are numerals
-  //   greater than 1.
+  // CAST FUNCTIONS //
+
+  //   :funs_description "All function symbols with declarations of the form
+  //   below where m is a numerals greater than 0 and eb, sb, mb and nb are
+  //   numerals greater than 1.
   //
-  //   ; from single bitstring representation in IEEE 754-2008 interchange format,
-  //   ; with m = eb + sb
+  //   ; from single bitstring representation in IEEE 754-2008 interchange
+  //   format, with m = eb + sb
   //   ((_ to_fp eb sb) (_ BitVec m) (_ FloatingPoint eb sb))
-  val IEEEInterchangeToFPFactory = new FPFunctionSymbolFactory("ieee-to-fp", true, 1) // TODO: This requires Bit-Vectors, so it's not a pure FPOperatorSymbol
+  // TODO: This requires Bit-Vectors, so it's not a pure FPOperatorSymbol
+  val IEEEInterchangeToFPFactory =
+    new FPFunctionSymbolFactory("ieee-to-fp", true, 1)
   //   ; from another floating point sort
-  //   ((_ to_fp eb sb) RoundingMode (_ FloatingPoint mb nb) (_ FloatingPoint eb sb))
+  //   ((_ to_fp eb sb) RoundingMode (_ FloatingPoint mb nb)
+  //       (_ FloatingPoint eb sb))
   val FPToFPFactory = new FPFunctionSymbolFactory("fp-to-fp", true, 1)
   //   ; from real
   //   ((_ to_fp eb sb) RoundingMode Real (_ FloatingPoint eb sb))
-  val RealToFPFactory = new FPFunctionSymbolFactory("real-to-fp", true, 1) // TODO: This requires Reals, so it's not a pure FPOperatorSymbol
+  // TODO: This requires Reals, so it's not a pure FPOperatorSymbol
+  val RealToFPFactory = new FPFunctionSymbolFactory("real-to-fp", true, 1)
   //   ; from signed machine integer, represented as a 2's complement bit vector
   //   ((_ to_fp eb sb) RoundingMode (_ BitVec m) (_ FloatingPoint eb sb))
-  val SBVToFPFactory = new FPFunctionSymbolFactory("sbv-to-fp", true, 1) // TODO: This requires Bit-Vectors, so it's not a pure FPOperatorSymbol
+  // TODO: This requires Bit-Vectors, so it's not a pure FPOperatorSymbol
+  val SBVToFPFactory = new FPFunctionSymbolFactory("sbv-to-fp", true, 1)
   //   ; from unsigned machine integer, represented as bit vector
-  //   ((_ to_fp_unsigned eb sb) RoundingMode (_ BitVec m) (_ FloatingPoint eb sb))
+  //   ((_ to_fp_unsigned eb sb) RoundingMode (_ BitVec m)
+  //       (_ FloatingPoint eb sb))
   // "
-  val UBVToFPFactory = new FPFunctionSymbolFactory("ubv-to-fp", true, 1) // TODO: This requires Bit-Vectors, so it's not a pure FPOperatorSymbol
-  
-  //    :funs_description "All function symbols with declarations of the form below
-  //   where m is a numeral greater than 0 and  eb and sb are numerals greater than 1.
+  // TODO: This requires Bit-Vectors, so it's not a pure FPOperatorSymbol
+  val UBVToFPFactory = new FPFunctionSymbolFactory("ubv-to-fp", true, 1)
+
+  //    :funs_description "All function symbols with declarations of the form
+  //   below where m is a numeral greater than 0 and eb and sb are numerals
+  //   greater than 1.
   //
   //   ; to unsigned machine integer, represented as a bit vector
   //   ((_ fp.to_ubv m) RoundingMode (_ FloatingPoint eb sb) (_ BitVec m))
   //
   //   ; to signed machine integer, represented as a 2's complement bit vector
-  //   ((_ fp.to_sbv m) RoundingMode (_ FloatingPoint eb sb) (_ BitVec m)) 
-  // 
+  //   ((_ fp.to_sbv m) RoundingMode (_ FloatingPoint eb sb) (_ BitVec m))
+  //
   //   ; to real
   //   (fp.to_real (_ FloatingPoint eb sb) Real)
-  val FPToRealFactory = new FPToNonFPFunctionSymbolFactory("fp-to-real", false, RealTheory.RealSort) 
+  val FPToRealFactory =
+    new FPToNonFPFunctionSymbolFactory("fp-to-real", false, RealTheory.RealSort)
   // "
   // :notes
+
   // "All fp.to_* functions are unspecified for NaN and infinity input values.
-  //  In addition, fp.to_ubv and fp.to_sbv are unspecified for finite number inputs
-  //  that are out of range (which includes all negative numbers for fp.to_ubv).
-  // 
+  //  In addition, fp.to_ubv and fp.to_sbv are unspecified for finite number
+  //  inputs that are out of range (which includes all negative numbers for
+  //  fp.to_ubv).
+  //
   //  This means for instance that the formula
   //
-  //    (= (fp.to_real (_ NaN 8 24)) (fp.to_real (fp c1 c2 c3))) 
+  //    (= (fp.to_real (_ NaN 8 24)) (fp.to_real (fp c1 c2 c3)))
   //
   //  is satisfiable in this theory for all binary constants c1, c2, and c3
-  //  (of the proper sort). 
+  //  (of the proper sort).
   // "
 
-  
+
   // case class FPITE(sort : FPSort) extends PolyITE("fp-ite", sort)
-  
-  
+
   // Interface
-  def fp(sign : Int, eBits : List[Int], sBits : List[Int])(implicit sort : FPSort) = {
+  def fp(sign : Int,
+         eBits : List[Int],
+         sBits : List[Int])
+        (implicit sort : FPSort) = {
     val factory = new FPConstantFactory(sign, eBits, sBits)
     factory(sort)
-  } 
-  
+  }
+
   def intToBits(int : Int, bitWidth : Int) = {
     (for ( i <- 0 until bitWidth) yield {
       if ((int & (1 << i )) > 0) 1 else 0
     }).reverse.toList
   }
-  
+
   def longToBits(int : Long, bitWidth : Int) = {
     (for ( i <- 0 until bitWidth) yield {
       if ((int & (1 << i )) > 0) 1 else 0
     }).reverse.toList
   }
-  
+
   def floatToBits(f : Float) = {
     val bits = java.lang.Float.floatToIntBits(f)
     val bitList = intToBits(bits,32)
@@ -395,7 +468,7 @@ case class FPSpecialValuesFactory(symbolName : String) extends FPGenConstantFact
     val sbits = bitList.drop(9)//intToBits(bits & 0x007fffff, 23)
     (sign, ebits, sbits)
   }
-  
+
   def doubleToBits(d : Double) = {
     val bits = java.lang.Double.doubleToLongBits(d)
     val bitList = longToBits(bits,64)
@@ -404,7 +477,7 @@ case class FPSpecialValuesFactory(symbolName : String) extends FPGenConstantFact
     val sbits = bitList.drop(12)
     (sign, ebits, sbits)
   }
-  
+
   def bitsToDouble(fpLit : FloatingPointLiteral) : Double = {
     fpLit.getFactory match {
       case FPNaN => Double.NaN
@@ -413,11 +486,11 @@ case class FPSpecialValuesFactory(symbolName : String) extends FPGenConstantFact
       case FPPlusInfinity => Double.PositiveInfinity
       case FPMinusInfinity => Double.NegativeInfinity
       case FPConstantFactory(sign, eBits, sBits) => {
-        fpToDouble(sign, eBits, sBits)        
-      } 
+        fpToDouble(sign, eBits, sBits)
+      }
     }
   }
-  
+
   implicit def fpToAST(double : Double, sort : FPSort = FPSort(8,24)) = {
     sort match {
       case FPSort(11,53) => {
@@ -426,17 +499,21 @@ case class FPSpecialValuesFactory(symbolName : String) extends FPGenConstantFact
       }
       case FPSort(8,24) => {
         val (sign, ebits, sbits) = floatToBits(double.toFloat)
-        Leaf(fp(sign, ebits, sbits)(sort))  
+        Leaf(fp(sign, ebits, sbits)(sort))
+      }
+      case _ => {
+        throw new Exception("Non-standard FP sort: " + sort)
       }
     }
-        
   }
-  
+
   implicit def FPVarToAST(floatVar : FPVar) = Leaf(floatVar)
   implicit def RoundingModeToAST(rm : RoundingMode) = Leaf(rm)
 
-  
-  def genericOperation(left : AST, right : AST, rm : RoundingMode, factory : FPFunctionSymbolFactory) = {
+  def genericOperation(left : AST,
+                       right : AST,
+                       rm : RoundingMode,
+                       factory : FPFunctionSymbolFactory) = {
     (left.symbol.sort, right.symbol.sort) match {
       case (l : FPSort, r : FPSort) => {
         if (l != r)
@@ -444,32 +521,39 @@ case class FPSpecialValuesFactory(symbolName : String) extends FPGenConstantFact
         val children : List[AST] = List(rm, left, right)
         AST(factory(l, l, l), children)
       }
-      case _ => throw new Exception("FP-Operation of non-floating-point AST: " + left + " and " + right)
-    }  
+      case _ => {
+        val msg =
+          "FP-Operation of non-floating-point AST: " + left + " and " + right
+        throw new Exception(msg)
+      }
+    }
   }
-  
-  def floatNegate(arg : AST) = 
+
+  def floatNegate(arg : AST) =
     arg.symbol.sort match {
       case sort : FPSort => {
         val children : List[AST] = List(arg)
         AST(FPNegateFactory(sort, sort), children)
       }
-      case _ => throw new Exception("FP-Operation of non-floating-point AST: " + arg)
+      case _ =>
+        throw new Exception("FP-Operation of non-floating-point AST: " + arg)
     }
-    
-  def floatAddition(left: AST, right: AST)(implicit rm : RoundingMode) = 
+
+  def floatAddition(left: AST, right: AST)(implicit rm : RoundingMode) =
     genericOperation(left, right, rm, FPAdditionFactory)
 
-  def floatSubtraction(left: AST, right: AST)(implicit rm : RoundingMode) = 
+  def floatSubtraction(left: AST, right: AST)(implicit rm : RoundingMode) =
     genericOperation(left, right, rm, FPSubstractionFactory)
-    
-  def floatMultiplication(left: AST, right: AST)(implicit rm : RoundingMode) = 
+
+  def floatMultiplication(left: AST, right: AST)(implicit rm : RoundingMode) =
     genericOperation(left, right, rm, FPMultiplicationFactory)
-  
-  def floatDivision(left: AST, right: AST)(implicit rm : RoundingMode) = 
+
+  def floatDivision(left: AST, right: AST)(implicit rm : RoundingMode) =
     genericOperation(left, right, rm, FPDivisionFactory)
-    
-  def genericPredicate(left : AST, right : AST, factory : FPPredicateSymbolFactory) = {
+
+  def genericPredicate(left : AST,
+                       right : AST,
+                       factory : FPPredicateSymbolFactory) = {
     (left.symbol.sort, right.symbol.sort) match {
       case (l : FPSort, r : FPSort) => {
         if (l != r)
@@ -478,31 +562,32 @@ case class FPSpecialValuesFactory(symbolName : String) extends FPGenConstantFact
         val fpeq = factory(l)
         AST(fpeq, children)
       }
-      case _ => throw new Exception("FP-Predicate of non-floating-point AST: " + left + " and " + right)
-    }  
+      case _ => {
+        val msg =
+          "FP-Predicate of non-floating-point AST: " + left + " and " + right
+        throw new Exception(msg)
+      }
+    }
   }
-  
-  def rmEquality(left : AST, right : AST) = 
-    AST(RoundingModeEquality, List(), List(left, right))  
-  
-  def floatEquality(left : AST, right : AST) = 
+
+  def rmEquality(left : AST, right : AST) =
+    AST(RoundingModeEquality, List(), List(left, right))
+
+  def floatEquality(left : AST, right : AST) =
     genericPredicate(left, right, FPEqualityFactory)
 
-def floatFPEquality(left : AST, right : AST) = 
+def floatFPEquality(left : AST, right : AST) =
     genericPredicate(left, right, FPFPEqualityFactory)
-    
-    
+
   def floatLessThanOrEqual(left : AST, right : AST) =
     genericPredicate(left, right, FPLessThanOrEqualFactory)
-  
+
   def floatLessThan(left : AST, right : AST) =
     genericPredicate(left, right, FPLessThanFactory)
-  
+
   def floatGreaterThanOrEqual(left : AST, right : AST) =
     genericPredicate(left, right, FPGreaterThanOrEqualFactory)
-    
-  
-  
+
  def floatGreaterThan(left : AST, right : AST) =
     genericPredicate(left, right, FPGreaterThanFactory)
 
@@ -517,7 +602,7 @@ def floatFPEquality(left : AST, right : AST) =
     }
     bti(bits.reverse, 1, 0)
   }
-  
+
   def sbitsToFloat(bits : List[Int]) : Float = {
     def bti(bs : List[Int], exp : Float, ack : Float) : Float = {
       bs match {
@@ -530,38 +615,34 @@ def floatFPEquality(left : AST, right : AST) =
     bti(bits, 0.5f, 0)
   }
 
-  
   def ebitsToInt(bits : List[Int]) : Int = {
     val sum = bitsToInt(bits.tail.reverse)
     sum - 2.pow(bits.length - 1).toInt + 1
    }
-  
-  def fpToDouble(sign : Int, eBits : List[Int], sBits : List[Int]) = {   
+
+  def fpToDouble(sign : Int, eBits : List[Int], sBits : List[Int]) = {
     if( eBits.length + sBits.length + 1 > 64) 
       throw new Exception("Converting to a double fpa with more than 64 bits")
-    
-    val exponent = eBits.head :: List.fill(11 - eBits.length)(1 - eBits.head) ++ eBits.tail
+
+    val exponent =
+      eBits.head :: List.fill(11 - eBits.length)(1 - eBits.head) ++ eBits.tail
     val significand = sBits.tail ++ List.fill(53 - sBits.length)(0)
     val bits = sign :: exponent ++ significand
     java.lang.Double.longBitsToDouble(BigInt(bits.mkString(""), 2).toLong)
-//    // TODO: subnormal numbers
-//    val sign = (signBit == 0)
-//    val exponent = bitsToInt(eBits) - (2.pow(eBits.length - 1).toInt - 1) - sBits.length
-//    val significand = bitsToInt(1 :: sBits) // Adding the implicit leading bit
-//    val magnitude = if (exponent >= 0) (2.pow(exponent).toDouble) else (1.0 / (2.pow(-exponent).toDouble))
-//    
+
+    //    // TODO: subnormal numbers
 //    // If denormal, etc
-//    val absVal = significand * magnitude    
-//    if (sign) absVal else -absVal    
+//    val absVal = significand * magnitude
+//    if (sign) absVal else -absVal
   }
-  
+
   def parseSymbol(sym : String) = {
     val bitPattern = "#b(\\d+)".r
     val hexPattern = "#x([0-9a-f]*)".r
     sym match {
       case bitPattern(b) => b.toList.map(_.toString.toInt)
       case hexPattern(h) => {
-        val bits = 
+        val bits =
           for (d <- h) yield {
             d match {
               case '0' => "0000"
@@ -579,7 +660,7 @@ def floatFPEquality(left : AST, right : AST) =
               case 'c' => "1100"
               case 'd' => "1101"
               case 'e' => "1110"
-              case 'f' => "1111"                
+              case 'f' => "1111"
             }
           }
           bits.map(_.toList).flatten.map(_.toString.toInt)
@@ -587,8 +668,7 @@ def floatFPEquality(left : AST, right : AST) =
       case asd => throw new Exception("parseSymbol: " + asd)
     }
   }
-  
-  
+
   def parseLiteral(lit : String) = {
     val bitPattern = """\(?fp (\S+) (\S+) ([^\s)]+)[)]*""".r
     val zeroPattern = "\\(?_ ([\\+\\-])zero (\\d+) (\\d+)\\)*".r
@@ -596,48 +676,47 @@ def floatFPEquality(left : AST, right : AST) =
     val nanPattern = "\\(?_ NaN (\\d+) (\\d+)\\)*".r
     lit match {
       case "roundNearestTiesToEven" | "RNE" => RoundToNearestTiesToEven
-      case "roundNearestTiesToAway" | "RNA"  => RoundToNearestTiesToAway 
+      case "roundNearestTiesToAway" | "RNA"  => RoundToNearestTiesToAway
       case "roundTowardPositive" | "RTP" => RoundToPositive
       case "roundTowardNegative" | "RTN"  => RoundToNegative
-      case "roundTowardZero" | "RTZ" => RoundToZero      
+      case "roundTowardZero" | "RTZ" => RoundToZero
 
-     
       case zeroPattern(sign, eBits, sBits) => {
         val fpsort = FPSortFactory(List(eBits.toInt, sBits.toInt))
-        if (sign == "+") 
+        if (sign == "+")
           Leaf(FPPositiveZero(fpsort))
-        else  
+        else
           Leaf(FPNegativeZero(fpsort))
       }
-      
+
       case infPattern(sign, eBits, sBits) => {
         val fpsort = FPSortFactory(List(eBits.toInt, sBits.toInt))
         if (sign == "+")
           Leaf(FPPlusInfinity(fpsort))
         else
           Leaf(FPMinusInfinity(fpsort))
-      } 
-   
+      }
+
       case nanPattern(eBits, sBits) => {
         val fpsort = FPSortFactory(List(eBits.toInt, sBits.toInt))
-        Leaf(FPNaN(fpsort))        
+        Leaf(FPNaN(fpsort))
       }
-      
+
       case bitPattern(s1, s2, s3) => {
         val sign = 
           if (s1 == "#b0") 0
           else if (s1 == "#b1") 1
           else throw new Exception("Wrong sign bit: " + s1)
-        
+
         val eBits = parseSymbol(s2).toList
         val sBits = parseSymbol(s3).toList
         val fpsort = FPSortFactory(List(eBits.length, sBits.length + 1))
 
        if (!(eBits contains 1) && !(sBits contains 1)) {
-        if (sign == 0) 
+        if (sign == 0)
           Leaf(FPPositiveZero(fpsort))
-        else  
-          Leaf(FPNegativeZero(fpsort))         
+        else
+          Leaf(FPNegativeZero(fpsort))
        } else if (!(eBits contains 0)) {
          if (!(sBits contains 1)) {
           if (sign == 0)
@@ -645,58 +724,49 @@ def floatFPEquality(left : AST, right : AST) =
           else
             Leaf(FPMinusInfinity(fpsort))
          } else {
-           Leaf(FPNaN(fpsort))        
+           Leaf(FPNaN(fpsort))
          }
        } else {
           val constFactory = new FPConstantFactory(sign, eBits, sBits)
           Leaf(constFactory(fpsort))
        }
-      }      
-      
+      }
+
       case _ => throw new Exception("Unknown FP literal: " + lit)
     }
   }
-  
-//  object FPVar {
-//    def apply(name : String)(implicit sort : FPSort) = {
-//      new FPVar(name, sort)
-//    }
-    
-//    def unapply(symbol : FPVar) : Option[(String, ConcreteSort)] = {
-//        Some((symbol.name, symbol.sort))
-//    }  
-//  }
-  
+
   // Theory shouldn't be here
-  case class FPVar(val name : String, val _sort : FPSort) extends FloatingPointFunctionSymbol(_sort) {
+  case class FPVar(val name : String, val _sort : FPSort)
+      extends FloatingPointFunctionSymbol(_sort) {
     val args = List()
     val theory = FloatingPointTheory
-    
+
     val getFactory = FPVarFactory(name)
   }
-  
+
   object RMVar {
     def apply(name : String) = {
       new RMVar(name)
     }
-    
+
     def unapply(symbol : RMVar) : Option[String] = {
         Some(symbol.name)
-    }  
-  }  
-  
+    }
+  }
+
   class RMVar(val name : String) extends ConcreteFunctionSymbol {
       val args = List()
       val theory = FloatingPointTheory
       val sort = RoundingModeSort
-    }  
+    }
 
   // TODO: What to do with this
   val sorts : List[Sort] = List()
 
   // TODO: How do we do this?
-  val symbols = List() //: List[IndexedFunctionSymbol] = List(FPAdditionFactory.FPFunctionSymbol, FPSubtractionFactory.FPFunctionSymbol, FPEqualityFactory.FPPredicateSymbol, FPFPEqualityFactory.FPPredicateSymbol)
-  
+  val symbols = List()
+
   def isLiteral(symbol : ConcreteFunctionSymbol) = {
     symbol match {
       case l : FloatingPointLiteral => true
@@ -711,7 +781,7 @@ def floatFPEquality(left : AST, right : AST) =
       case _ => true
     }
   }
-  
+
   def isVariable(symbol : ConcreteFunctionSymbol) = {
     symbol match {
       case FPVar(_, _) |
@@ -723,70 +793,80 @@ def floatFPEquality(left : AST, right : AST) =
   def bias(expBitWidth : Int) : Int = {
     (1 << expBitWidth - 1) - 1
   }
-  
+
   def biasExp(exp : Int, expBitWidth : Int) : Int = {
     exp + bias(expBitWidth)
   }
-  
+
   def biasExp(exp : List[Int], expBitWidth : Int) : Int = {
    biasExp(bitsToInt(exp), expBitWidth)
   }
-  
+
   def unbiasExp(exp : Int, expBitWidth : Int) : Int = {
-    exp - bias(expBitWidth) 
+    exp - bias(expBitWidth)
   }
-  
+
    def unbiasExp(exp : List[Int], expBitWidth : Int) : Int = {
    unbiasExp(bitsToInt(exp), expBitWidth)
   }
-  
-  /** Returns a FloatingPointSymbol which corresponds to the ULP of given fpValue
-   *  
-   *  Given a fpValue, getULP will create a new Floating Point Symbol which 
-   *  is equivalent with fpValue but will all significan bits except the last one set to 1.
-   *  This corresponds to the "unit in last place" (ULP) of fpValue.
-   *  
-   *  If fpValue is a subnormal number the return value is undefined.
-   *  
-   *  @param fpValue Floating Point value of which ULP is returned.
-   *  @return ULP of fpValue.
-   * 
-   */
+
+  /** Returns a FloatingPointSymbol which corresponds to the ULP of given
+    * fpValue.
+    *
+    *  Given a fpValue, getULP will create a new Floating Point Symbol which is
+    *  equivalent with fpValue but will all significan bits except the last one
+    *  set to 1. This corresponds to the "unit in last place" (ULP) of fpValue.
+    *
+    *  If fpValue is a subnormal number the return value is undefined.
+    *
+    *  @param fpValue Floating Point value of which ULP is returned.
+    *  @return ULP of fpValue.
+    *
+    */
   def getULP(fpValue : FloatingPointLiteral) = {
-    // TODO :  Distinguish normal and subnormal numbers  
-   
-    val newExp = intToBits(bitsToInt(fpValue.eBits) - fpValue.sort.sBitWidth, fpValue.sort.eBitWidth)
+    // TODO :  Distinguish normal and subnormal numbers
+
+    val newExp = intToBits(bitsToInt(fpValue.eBits) - fpValue.sort.sBitWidth,
+                           fpValue.sort.eBitWidth)
     val newSignificand = List.fill(fpValue._sort.sBitWidth - 1)(0)
-    fp(0, newExp, newSignificand) (fpValue._sort)   
+    fp(0, newExp, newSignificand) (fpValue._sort)
   }
-  
+
   val SMTHeader = {
     "(set-logic QF_FP)"
   }
-  
+
   //TODO: Change to SMTLIB names
-  def symbolToSMTLib(symbol : ConcreteFunctionSymbol)(implicit translator : Option[uppsat.solver.SMTTranslator] = None) = { 
-    symbol match {      
-      case FPVar(name, _) => name       
+  def symbolToSMTLib(symbol : ConcreteFunctionSymbol)
+                    (implicit translator
+                         : Option[uppsat.solver.SMTTranslator] = None) = {
+    symbol match {
+      case FPVar(name, _) => name
       case RoundToZero => "RTZ"
       case RoundToPositive => "RTP"
       case RoundToNegative => "RTN"
       case RoundToNearestTiesToAway => "RNA"
       case RoundToNearestTiesToEven => "RNE"
       case RoundingModeEquality => "="
-      case fpFunSym : FloatingPointFunctionSymbol => {      
+      case fpFunSym : FloatingPointFunctionSymbol => {
         fpFunSym.getFactory match {
-          case FPPositiveZero => "(_ +zero " + fpFunSym.sort.eBitWidth + " " + fpFunSym.sort.sBitWidth + ")"
-          case FPNegativeZero => "(_ -zero " + fpFunSym.sort.eBitWidth + " " + fpFunSym.sort.sBitWidth + ")"
-          case FPPlusInfinity => "(_ +oo " + fpFunSym.sort.eBitWidth + " " + fpFunSym.sort.sBitWidth + ")"
-          case FPMinusInfinity => "(_ -oo " + fpFunSym.sort.eBitWidth + " " + fpFunSym.sort.sBitWidth + ")"
-          case FPNaN => "(_ NaN " + fpFunSym.sort.eBitWidth + " " + fpFunSym.sort.sBitWidth + ")"
+          case FPPositiveZero => "(_ +zero " + fpFunSym.sort.eBitWidth +
+              " " + fpFunSym.sort.sBitWidth + ")"
+          case FPNegativeZero => "(_ -zero " + fpFunSym.sort.eBitWidth +
+              " " + fpFunSym.sort.sBitWidth + ")"
+          case FPPlusInfinity => "(_ +oo " + fpFunSym.sort.eBitWidth +
+              " " + fpFunSym.sort.sBitWidth + ")"
+          case FPMinusInfinity => "(_ -oo " + fpFunSym.sort.eBitWidth +
+              " " + fpFunSym.sort.sBitWidth + ")"
+          case FPNaN => "(_ NaN " + fpFunSym.sort.eBitWidth + " " +
+              fpFunSym.sort.sBitWidth + ")"
           case FPAdditionFactory => "fp.add"
           case FPSubstractionFactory => "fp.sub"
           case FPMultiplicationFactory => "fp.mul"
           case FPDivisionFactory => "fp.div"
           case FPNegateFactory => "fp.neg"
-          case FPToFPFactory => "(_ to_fp " + fpFunSym.sort.eBitWidth + " " + fpFunSym.sort.sBitWidth + ")"         
+          case FPToFPFactory => "(_ to_fp " + fpFunSym.sort.eBitWidth + " " +
+              fpFunSym.sort.sBitWidth + ")"
           case FPConstantFactory(sign, eBits, sBits) => {
             val eDiff = eBits.length - fpFunSym.sort.eBitWidth
             val ebits = if (eDiff >= 0)
@@ -797,9 +877,10 @@ def floatFPEquality(left : AST, right : AST) =
             val sbits = if (sDiff >= 0)
                           sBits.take(fpFunSym.sort.sBitWidth)
                         else
-                          sBits ++ List.fill(-sDiff)(0) 
-            
-            "(fp #b" + sign + " #b" + ebits.mkString("") + " #b" + sbits.mkString("") + ")" 
+                          sBits ++ List.fill(-sDiff)(0)
+
+            "(fp #b" + sign + " #b" + ebits.mkString("") + " #b" +
+              sbits.mkString("") + ")"
           }
           case str => throw new Exception("Unsupported FP symbol: " + str)
         }
@@ -807,7 +888,7 @@ def floatFPEquality(left : AST, right : AST) =
       case fpPredSym : FloatingPointPredicateSymbol => {
         fpPredSym.getFactory match {
           case FPEqualityFactory => "="
-          case FPFPEqualityFactory => "fp.eq"            
+          case FPFPEqualityFactory => "fp.eq"
           case FPLessThanOrEqualFactory => "fp.leq"
           case FPLessThanFactory => "fp.lt"
           case FPGreaterThanOrEqualFactory => "fp.geq"
@@ -817,24 +898,24 @@ def floatFPEquality(left : AST, right : AST) =
         }
       }
       case uppsat.theory.FloatingPointTheory.RMVar(name) => name
-     
+
       case other =>
-        throw new FloatingPointTheoryException("Unknown symbol: " + symbol.sort)     
+        throw new FloatingPointTheoryException("Unknown symbol: " + symbol.sort)
     }
   }
-  
-  
-  
-  def sortToSMTLib(sort : ConcreteSort)(implicit translator : Option[uppsat.solver.SMTTranslator] = None) = {
+
+  def sortToSMTLib(sort : ConcreteSort)
+                  (implicit translator : Option[SMTTranslator] = None) = {
     sort match {
       case FPSort(e, s) => "(_ FloatingPoint " + e + " " + s + ")"
       case RoundingModeSort => "RoundingMode"
     }
   }
-  
+
   def declarationToSMTLib(sym : ConcreteFunctionSymbol) : String = {
     sym match {
-      case FPVar(name, _) => "(declare-fun " + name + " () " + sortToSMTLib(sym.sort) + ")"
+      case FPVar(name, _) =>
+        "(declare-fun " + name + " () " + sortToSMTLib(sym.sort) + ")"
       case _ => throw new Exception("Not instance of FPVar : " + sym.getClass)
     }
   }
