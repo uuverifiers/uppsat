@@ -2,28 +2,14 @@ package uppsat;
 
 
 import ap.parser.smtlib
-import scala.jdk.CollectionConverters._
 
 import uppsat.ApproximationSolver.{Answer, Sat, Unknown, Unsat}
-import uppsat.ModelEvaluator.Model
+import uppsat.RegisteredApproximations.regApproxs
 import uppsat.Timer.TimeoutException
 import uppsat.approximation.Approximation
-import uppsat.approximation.components._
-import uppsat.approximation.fpa.fixpoint._
-import uppsat.approximation.fpa.reals._
-import uppsat.approximation.fpa.smallfloats._
-import uppsat.approximation.smallints.SmallIntsApp
-import uppsat.ast._
 import uppsat.globalOptions._
 import uppsat.parser._
-import uppsat.precision.PrecisionMap
-import uppsat.precision.PrecisionMap.Path
 import uppsat.solver._
-import uppsat.theory._
-import uppsat.theory.BooleanTheory._
-import uppsat.theory.RealTheory._
-import uppsat.theory.FloatingPointTheory._
-import uppsat.theory.IntegerTheory._
 
 /** Stores (for convenience) options which are used by all parts of UppSAT
   *
@@ -77,16 +63,12 @@ object globalOptions {
   var FX_PREC_INC =
     uppsat.approximation.fpa.fixpoint.FPABVContext.defaultPrecIncrement
 
-
-  // TODO (ptr): Investigate whether these are global options or just global
-  // variables in the main file.
-
+  // Choosen approximation/backend/validator
   var approximation = "ijcar"
   var backend = "z3"
   var validator = "z3"
 
-
-
+ 
   /** Instantiates the given solver.
     *
     * @param str Name of solver
@@ -105,61 +87,17 @@ object globalOptions {
   }
 
 
-  // TODO: It would be nice to specify name, command and object as a tuple
-  // TODO: These descriptions could be more clear
-  val approximationDescriptions : Map[String, String] = {
-    Map(
-      "ijcar" -> "The SmallFloats approximation introduced at IJCAR 2014",
-      "ijcar-node-by-node" -> "SmallFloats using node-by-node",
-      "ijcar-no-reconstruct" -> "SmallFloats with no reconstruction",
-      "saturation" -> "Saturation based approximation",
-      "smallints" -> "SmallInts approximation",
-      "reals" -> "Real approximation of floating points",
-      "reals-node-by-node" -> "Real approximation using node-by-node",
-      "saturation_reals" -> "Real approximation using saturation",
-      "fixedpoint" -> "Fixed-point approximation of floating points",
-      "fixedpoint-node-by-node" -> "Fixed-point using node-by-node",
-      "fixedpoint-no-reconstruct" -> "Fixed-point with no reconstruction")
-  }
-
   /** Instantiates the given approximation.
     *
     * @param str Name of approximation
     */
-  def registeredApproximations(str : String) : Approximation = {
-    str match {
-      case "ijcar" =>
-        new Approximation(IJCARSmallFloatsApp)
-      case "saturation" =>
-        new Approximation(FxPntSmallFloatsApp)
-      case "smallints" =>
-        new Approximation(SmallIntsApp)
-      case "reals" =>
-        new Approximation(FPARealApp)
-      case "reals-node-by-node" =>
-        new Approximation(FPARealNodeByNodeApp)
-      case "saturation_reals" =>
-        new Approximation(FxPntFPARealApp)
-      case "fixedpoint" =>
-        new Approximation(FPABVApp)
-      case "fixedpoint-node-by-node" =>
-        new Approximation(FPABVNodeByNodeApp)
-      case "fixedpoint-no-reconstruct" =>
-        new Approximation(FPABVEmptyApp)
-      case "ijcar-node-by-node" =>
-        new Approximation(IJCARSmallFloatsNodeByNodeApp)
-      case "ijcar-no-reconstruct" =>
-        new Approximation(IJCARSmallFloatsEmptyapp)
-      case _ => {
-        val msg = "Unsupported approximation: \"" + str + "\""
-        throw new Exception(msg)
-      }
-    }
+  def instantiateApproximation() : Approximation = {
+    val str = approximation.toLowerCase()
+    if (regApproxs contains str)
+      regApproxs(str)._2()
+    else
+      throw new Exception(s"Unregistered approximation: $str")
   }
-
-  /** Get the active approximation.
-    */
-  def getApproximation = registeredApproximations(approximation.toLowerCase())
 
   // TODO (ptr): Check back-end vs backend
   /** Get the active backend solver.
@@ -192,7 +130,8 @@ object globalOptions {
   def remainingTime : Option[Long] = {
     DEADLINE match {
       case None => None
-      case Some(t) => Some(DEADLINE.get - (System.currentTimeMillis() - STARTTIME.get))
+      case Some(t) =>
+        Some(DEADLINE.get - (System.currentTimeMillis() - STARTTIME.get))
     }
   }
 
@@ -203,11 +142,11 @@ object globalOptions {
     DEADLINE match {
       case None => ()
       case Some(t) =>
-        if (System.currentTimeMillis() - STARTTIME.get >= t) throw new TimeoutException(msg)
+        if (System.currentTimeMillis() - STARTTIME.get >= t)
+          throw new TimeoutException(msg)
     }
   }
 }
-
 
 /** Main object.
   */
@@ -255,11 +194,11 @@ object main {
     * Prints description of approximations.
     */
   def printDescriptions() = {
-    val maxLength = approximationDescriptions.map(_._1.length).max + 3
+    val maxLength = regApproxs.map(_._2._1.length).max + 3
     val title = "Approximation:"
     println(title + " "*(maxLength - title.length) + "Description:")
-    println("-"*(maxLength + approximationDescriptions.map(_._2.length).max))
-    for ((app, desc) <- approximationDescriptions) {
+    println("-"*(maxLength + regApproxs.map(_._2._1.length).max))
+    for ((app, (desc, _)) <- regApproxs) {
       println(app + " "*(maxLength - app.length) + desc)
     }
   }
