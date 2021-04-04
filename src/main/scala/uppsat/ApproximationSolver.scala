@@ -135,12 +135,13 @@ object ApproximationSolver {
       Timer.newIteration
       iterations += 1
       verbose("-----------------------------------------------")
-      val remSeconds = ((globalOptions.remainingTime.get) / 1000.0).ceil.toInt
       val tString = 
-        if (globalOptions.DEADLINE.isDefined)
+        if (globalOptions.DEADLINE.isDefined) {
+          val remSeconds = ((globalOptions.remainingTime.get) / 1000.0).ceil.toInt
           " (" + remSeconds + " seconds left)"
-        else
+        } else {
           ""
+        }
       verbose("Starting iteration " + iterations + tString)
       verbose("-----------------------------------------------")
       checkTimeout("iteration " + iterations)
