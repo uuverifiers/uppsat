@@ -135,14 +135,9 @@ object ApproximationSolver {
       Timer.newIteration
       iterations += 1
       verbose("-----------------------------------------------")
-      val tString = 
-        if (globalOptions.DEADLINE.isDefined) {
-          val remSeconds = ((globalOptions.remainingTime.get) / 1000.0).ceil.toInt
-          " (" + remSeconds + " seconds left)"
-        } else {
-          ""
-        }
-      verbose("Starting iteration " + iterations + tString)
+      verbose("Starting iteration " + iterations)
+      if (globalOptions.DEADLINE.isDefined)
+          verbose(s"\t${globalOptions.remainingSeconds} seconds left")
       verbose("-----------------------------------------------")
       checkTimeout("iteration " + iterations)
       val encodedFormula = if (!pmap.isMaximal)
@@ -188,19 +183,12 @@ object ApproximationSolver {
           println("Surrendering")
           return Unknown
         }
-
-        val tString =
-          if (globalOptions.DEADLINE.isDefined) {
-            val remSeconds =
-              ((globalOptions.remainingTime.get) / 1000.0).ceil.toInt
-            " (" + remSeconds + " seconds left)"
-          } else {
-            ""
-          }
-
-        println("Full precision search" + tString)
-
         globalOptions.REACHED_MAX_PRECISON = true
+
+
+        verbose("Full precision search")
+        if (globalOptions.DEADLINE.isDefined)
+          verbose(s"\t${globalOptions.remainingSeconds} seconds left")
 
         val validator = globalOptions.getValidator
         val smtFormula = translator.translate(formula)

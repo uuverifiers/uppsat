@@ -135,6 +135,21 @@ object globalOptions {
     }
   }
 
+  /** Remaining seconds before deadline is violated
+    *
+    * @return Number of seconds before deadline, -1 if no deadline
+    */
+  def remainingSeconds() : Int = {
+    DEADLINE match {
+      case None => -1
+      case Some(t) => {
+        val remTime =
+          DEADLINE.get - (System.currentTimeMillis() - STARTTIME.get)
+        (remTime/1000.0).ceil.toInt
+      }
+    }
+  }
+
   /** Throw exception if deadline is violated.
     * @throws TimeoutException if deadline is violated
     */
