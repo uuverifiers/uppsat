@@ -185,7 +185,6 @@ object ApproximationSolver {
         }
         globalOptions.REACHED_MAX_PRECISON = true
 
-
         verbose("Full precision search")
         if (globalOptions.DEADLINE.isDefined)
           verbose(s"\t${globalOptions.remainingSeconds} seconds left")

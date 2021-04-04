@@ -274,7 +274,6 @@ object main {
         globalOptions.RANDOM_SEED = s.toInt
       }
 
-
       case fxPrec(minI, minF, maxI, maxF) => {
         globalOptions.FX_MIN_PRECISION = (minI.toInt, minF.toInt)
         globalOptions.FX_MAX_PRECISION = (maxI.toInt, maxF.toInt)
@@ -361,17 +360,14 @@ object main {
       main_aux(args) match {
         case Sat(_) => {
           println("sat")
-          System.exit(10)
         }
 
         case Unsat   => {
           println("unsat")
-          System.exit(20)
         }
 
         case Unknown => {
           println("unknown")
-          System.exit(30)
         }
       }
     } catch {
