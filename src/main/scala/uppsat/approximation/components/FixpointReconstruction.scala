@@ -37,7 +37,7 @@ trait FixpointReconstruction extends ModelReconstruction {
 	 *
 	 *  Assuming that ast w.r.t. candidateModel has exactly one undefined
 	 *  variable, getImplication isolates this variable and by calling the
-	 *  back-end solver retrieves a value and returns Some(variable, value) for
+	 *  backend solver retrieves a value and returns Some(variable, value) for
 	 *  this pair. If no value is found None is returned (thus the candidateModel
 	 *  is *not* a model for ast).
 	 *

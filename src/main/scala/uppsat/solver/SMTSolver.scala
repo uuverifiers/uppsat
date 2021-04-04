@@ -1,6 +1,6 @@
 package uppsat.solver;
 
-/** Interace for a back-end SMT solver. */
+/** Interace for a backend SMT solver. */
 trait SMTSolver {
   def checkSat(formula : String) : Boolean
   def evaluate(formula : String) : String

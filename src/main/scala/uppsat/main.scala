@@ -16,6 +16,7 @@ import uppsat.solver._
   */
 object globalOptions {
   // TODO (ptr): Change version when done with refactoring.
+
   /** Current version of UppSAT */
   val VERSION = "0.5"
 
@@ -68,7 +69,7 @@ object globalOptions {
   var backend = "z3"
   var validator = "z3"
 
- 
+
   /** Instantiates the given solver.
     *
     * @param str Name of solver
@@ -99,7 +100,6 @@ object globalOptions {
       throw new Exception(s"Unregistered approximation: $str")
   }
 
-  // TODO (ptr): Check back-end vs backend
   /** Get the active backend solver.
     */
   def getBackendSolver = registeredSolvers(backend.toLowerCase())
