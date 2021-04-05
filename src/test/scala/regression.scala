@@ -24,17 +24,16 @@ class Regression extends FunSpec {
 
    describe("SAT : " ) {
      for (f <- satFiles) {
-         println("Testing " + f)
          val args =  Array(f.toString(), "-t=60")
          val result = uppsat.main.main_aux(args)
          result match {
-           case _ : Sat => 
+           case _ : Sat =>
              it(f.toPath().toString().split('\\').reverse.head)
              {assert(true)}
            case Unsat =>
              it(f.toPath().toString().split('\\').reverse.head)
              {assert(false)}
-           case Unknown => 
+           case Unknown =>
              ignore(f.toPath().toString().split('\\').reverse.head)
              {assert(false)}
          }
@@ -50,13 +49,13 @@ class Regression extends FunSpec {
    //       val args =  Array(f.toString(), "-t=60")
    //       val result = uppsat.main.main_aux(args)
    //       result match {
-   //         case _ : Sat => 
+   //         case _ : Sat =>
    //           it(f.toPath().toString().split('\\').reverse.head)
    //           {assert(false)}
    //         case Unsat =>
    //           it(f.toPath().toString().split('\\').reverse.head)
    //           {assert(true)}
-   //         case Unknown => 
+   //         case Unknown =>
    //           ignore(f.toPath().toString().split('\\').reverse.head)
    //           {assert(false)}
    //       }

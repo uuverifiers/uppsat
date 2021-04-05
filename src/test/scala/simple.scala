@@ -7,7 +7,6 @@ import uppsat.globalOptions
 import uppsat.globalOptions._
 
 class Simple extends FunSpec {
-
   def simpleFile(i : Int) = {
     getClass.getResource("/simple/simple" + i + ".smt2").getPath()
   }
@@ -17,6 +16,7 @@ class Simple extends FunSpec {
     val f = simpleFile(1)
     val args =  Array(f.toString(), "-t=60")
     val result = uppsat.main.main_aux(args)
+    println("..")
     it("should finish in first iteration") {
       assert(globalOptions.STATS_ITERATIONS == 1)
     }

@@ -8,3 +8,5 @@ scalacOptions += "-Yresolve-term-conflict:package"
 
 libraryDependencies += "org.scalatest" %% "scalatest" % "3.1.1" % "test"
 libraryDependencies += "org.scalactic" %% "scalactic" % "3.1.1"
+
+parallelExecution in Test := false
