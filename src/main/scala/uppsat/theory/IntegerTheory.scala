@@ -2,13 +2,15 @@
 
 package uppsat.theory
 
-case class IntegerTheoryException(msg : String)
-    extends Exception("Integer Theory Exception: " + msg)
+import scala.language.implicitConversions
 
 import uppsat.theory.BooleanTheory._
 import uppsat.theory.PolymorphicTheory.PolyITE
 import scala.math.BigInt.int2bigInt
 import uppsat.ast._
+
+case class IntegerTheoryException(msg : String)
+    extends Exception("Integer Theory Exception: " + msg)
 
 object IntegerTheory extends Theory {
   val name = "IntegerTheory"

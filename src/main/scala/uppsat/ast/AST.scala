@@ -18,9 +18,8 @@ import uppsat.theory.RealTheory._
 object Leaf {
   val height = 0
 
-  def apply(symbol : ConcreteFunctionSymbol) = new AST(symbol, List(), List())
-
-  def apply(d : ConcreteFunctionSymbol, label : Label ) = AST(d, label, List())
+  def apply(d : ConcreteFunctionSymbol,
+            label : Label = List()) = AST(d, label, List())
 
   def unapply(t : AST) : Option[(ConcreteFunctionSymbol, Label)] = t match {
     case AST(d, label, List()) => Some((d, label))
@@ -132,7 +131,7 @@ case class AST(val symbol : ConcreteFunctionSymbol,
     val todo = new ArrayStack[AST]
     todo push (AST.this)
     def hasNext = !todo.isEmpty
-    def next = {
+    def next() = {
       val n = todo.pop()
       todo ++= n.children
       n

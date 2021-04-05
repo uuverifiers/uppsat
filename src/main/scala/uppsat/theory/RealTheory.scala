@@ -3,8 +3,8 @@ package uppsat.theory
 case class RealTheoryException(msg : String)
     extends Exception("Real Theory Exception: " + msg)
 
-
 import scala.math.BigInt.int2bigInt
+import scala.language.implicitConversions
 
 import uppsat.ast._
 import uppsat.theory.BooleanTheory._

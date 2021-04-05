@@ -2,6 +2,7 @@ package uppsat.theory
 
 import scala.collection.mutable.WrappedArray
 import scala.math.BigInt.int2bigInt
+import scala.language.implicitConversions
 
 import uppsat.ast._
 import uppsat.solver.SMTTranslator

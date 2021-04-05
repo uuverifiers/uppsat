@@ -2,6 +2,8 @@
 
 package uppsat.theory
 
+import scala.language.implicitConversions
+
 import uppsat.ast._
 import uppsat.solver.SMTTranslator
 

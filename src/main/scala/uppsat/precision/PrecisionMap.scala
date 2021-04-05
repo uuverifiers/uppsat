@@ -32,7 +32,7 @@ object PrecisionMap {
     val pathsToVar = AST.postVisit(formula,
                                    Map[Path, ConcreteFunctionSymbol](),
                                    collectPathVarPairs)
-    val varToPaths = pathsToVar.groupBy(_._2).mapValues(_.keySet)
+    val varToPaths = pathsToVar.groupBy(_._2).view.mapValues(_.keySet).toMap
     val allPaths = formula.iterator.map { x => x.label }
     val representativeIterator = for (path <- allPaths) yield {
       if (pathsToVar.contains(path)) {
@@ -121,7 +121,7 @@ class PrecisionMap[T] private (val map : Map[Path, T])
   /** Updates each node in {@code ast} with {@code newPrecision}. */
   def cascadingUpdate(ast : AST, newPrecision : T) : PrecisionMap[T]= {
     ast match {
-      case Leaf(_) => update(ast.label, newPrecision)
+      case Leaf(_, _) => update(ast.label, newPrecision)
       case AST(_, _, children) => {
         var pmap = this
         for (c <- children)

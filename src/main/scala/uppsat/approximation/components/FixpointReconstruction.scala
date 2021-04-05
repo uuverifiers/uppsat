@@ -1,3 +1,5 @@
+// TODO (ptr): Replace MultiMap with MultiDict
+
 package uppsat.approximation.components
 
 import scala.collection.mutable.{ArrayBuffer, ArrayStack, HashMap,

@@ -4,7 +4,8 @@ package uppsat.parser
 
 import ap.parser.smtlib
 import ap.parser.smtlib.Absyn._
-import scala.collection.JavaConverters._
+  // import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 import uppsat.ApproximationSolver
 import uppsat.globalOptions.verbose
@@ -59,7 +60,7 @@ def hexToBitList(hex : String) = {
       // }
 
 
-      for (c <- asScalaIterator(t.listcommand_.iterator())) {
+      for (c <- t.listcommand_.iterator().asScala) {
         parse(c)
       }
       0
@@ -79,7 +80,7 @@ def hexToBitList(hex : String) = {
   }
 
   private def parse(script : Script) : Unit =
-    for (cmd <- asScalaIterator(script.listcommand_.iterator())) parse(cmd)
+    for (cmd <- script.listcommand_.iterator().asScala) parse(cmd)
 
 
   protected def checkArgs(op : String,
@@ -111,7 +112,7 @@ def hexToBitList(hex : String) = {
       asString(id.symbol_)
     case id : IndexIdent =>
       asString(id.symbol_) + "_" +
-        ((asScalaIterator(id.listindexc_.iterator()).map{
+        ((id.listindexc_.iterator().asScala.map{
             _.asInstanceOf[Index].numeral_
           }).mkString("_"))
   }
@@ -140,12 +141,12 @@ def hexToBitList(hex : String) = {
       case t : smtlib.Absyn.ConstantTerm =>
         translateSpecConstant(t.specconstant_)
       case t : FunctionTerm =>
-          symApp(t.symbolref_, asScalaIterator(t.listterm_.iterator()).toList)
+          symApp(t.symbolref_, t.listterm_.iterator().asScala.toList)
       case t : NullaryTerm =>
         symApp(t.symbolref_, List())
       case t : LetTerm =>
           val bindings =
-            (for (b <- asScalaIterator(t.listbindingc_.iterator())) yield {
+            (for (b <- t.listbindingc_.iterator().asScala) yield {
                val binding = b.asInstanceOf[Binding]
                val boundTerm = translateTerm(binding.term_)
                val fullname = asString(binding.symbol_)
