@@ -41,25 +41,25 @@ class Regression extends FunSpec {
        }
      }
 
-   val unsatSources = new File(getClass.getResource("/unsat/").toURI())
-   val unsatFiles = getListOfFiles(unsatSources, List(".smt2"))
+   // val unsatSources = new File(getClass.getResource("/unsat/").toURI())
+   // val unsatFiles = getListOfFiles(unsatSources, List(".smt2"))
 
-    describe("UNSAT : " ) {
-     for (f <- unsatFiles) {
-         println("Testing " + f)
-         val args =  Array(f.toString(), "-t=60")
-         val result = uppsat.main.main_aux(args)
-         result match {
-           case _ : Sat => 
-             it(f.toPath().toString().split('\\').reverse.head)
-             {assert(false)}
-           case Unsat =>
-             it(f.toPath().toString().split('\\').reverse.head)
-             {assert(true)}
-           case Unknown => 
-             ignore(f.toPath().toString().split('\\').reverse.head)
-             {assert(false)}
-         }
-     }
-   }
+   //  describe("UNSAT : " ) {
+   //   for (f <- unsatFiles) {
+   //       println("Testing " + f)
+   //       val args =  Array(f.toString(), "-t=60")
+   //       val result = uppsat.main.main_aux(args)
+   //       result match {
+   //         case _ : Sat => 
+   //           it(f.toPath().toString().split('\\').reverse.head)
+   //           {assert(false)}
+   //         case Unsat =>
+   //           it(f.toPath().toString().split('\\').reverse.head)
+   //           {assert(true)}
+   //         case Unknown => 
+   //           ignore(f.toPath().toString().split('\\').reverse.head)
+   //           {assert(false)}
+   //       }
+   //   }
+   // }
 }

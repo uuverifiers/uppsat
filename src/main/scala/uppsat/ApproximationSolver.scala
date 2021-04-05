@@ -69,7 +69,7 @@ object ApproximationSolver {
            approximation : Approximation) : Answer = {
 
     val solver = globalOptions.getBackendSolver
-    var iterations = 0
+    globalOptions.STATS_ITERATIONS = 0
     var pmap =
       PrecisionMap[approximation.P](formula)(approximation.precisionOrdering)
     pmap =
@@ -133,13 +133,13 @@ object ApproximationSolver {
     // Main solving loop
     while (true) {
       Timer.newIteration
-      iterations += 1
+      globalOptions.STATS_ITERATIONS += 1
       verbose("-----------------------------------------------")
-      verbose("Starting iteration " + iterations)
+      verbose("Starting iteration " + globalOptions.STATS_ITERATIONS)
       if (globalOptions.DEADLINE.isDefined)
           verbose(s"\t${globalOptions.remainingSeconds} seconds left")
       verbose("-----------------------------------------------")
-      checkTimeout("iteration " + iterations)
+      checkTimeout("iteration " + globalOptions.STATS_ITERATIONS)
       val encodedFormula = if (!pmap.isMaximal)
                               approximation.encodeFormula(formula, pmap)
                            else

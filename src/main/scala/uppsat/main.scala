@@ -69,6 +69,10 @@ object globalOptions {
   var backend = "z3"
   var validator = "z3"
 
+  // Storing statistics
+  // TODO (ptr): Put in separate object?
+  var STATS_ITERATIONS = 0
+
 
   /** Instantiates the given solver.
     *
