@@ -130,7 +130,7 @@ trait FPARealCodec extends FPARealContext with PostOrderCodec {
                   nLabel = nChildren(0).label
                   nChildren = nChildren(0).children
                   r
-                case _ => throw new Exception(fpSym + " unsupported")
+                case _ => throw new Exception(s"$fpSym unsupported")
               }
               (newSymbol, nLabel, nChildren)
             }
@@ -142,7 +142,7 @@ trait FPARealCodec extends FPARealContext with PostOrderCodec {
                 case FPLessThanOrEqualFactory => RealLEQ
                 case FPGreaterThanFactory => RealGT
                 case FPGreaterThanOrEqualFactory => RealGEQ
-                case _ => throw new Exception(fpPred + " unsupported")
+                case _ => throw new Exception(s"$fpPred unsupported")
               }
               (newSymbol, label, children)
             }

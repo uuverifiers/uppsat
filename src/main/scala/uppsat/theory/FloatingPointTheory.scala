@@ -155,9 +155,9 @@ object FloatingPointTheory extends Theory {
     val thisFactory = this
 
     def getName(sort : FPSort) = {
-      sign + " " +
-      eBits.take(sort.eBitWidth).mkString("") + " " +
-      sBits.take(sort.sBitWidth - 1).mkString("")
+      val estr = eBits.take(sort.eBitWidth).mkString("")
+      val sstr = sBits.take(sort.sBitWidth - 1).mkString("")
+      s"$sign $estr $sstr"
     }
 
     val arity = 1 // Refers to the sorts

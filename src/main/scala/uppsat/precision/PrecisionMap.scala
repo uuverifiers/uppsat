@@ -152,7 +152,7 @@ class PrecisionMap[T] private (val map : Map[Path, T])
 
   override def toString() = {
     map.toList.map(x => x match {
-                     case (k, v) => k + " => " + v
+                     case (k, v) => s"$k => $v"
                    }).mkString("\n")
   }
 }

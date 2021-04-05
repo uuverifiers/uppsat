@@ -444,6 +444,9 @@ CandidateModel
         val newValue = ModelEvaluator.evalAST(newAST, inputTheory)
         candidateModel.set(ast, newValue)
       }
+      case _ => {
+        throw new Exception("Value occurring twice in model...")
+      }
     }
     candidateModel
   }

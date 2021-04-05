@@ -120,8 +120,7 @@ object Toolbox {
                       decodedModel : Model,
                       candidateModel : Model) : AST = {
     if (! candidateModel.contains(ast)) {
-      verbose(ast.symbol + " " + ast.label + " " + " <- " +
-                decodedModel(ast).symbol)
+      verbose(s"${ast.symbol} ${ast.label} <- ${decodedModel(ast).symbol}")
       candidateModel.set(ast, decodedModel(ast))
     }
     candidateModel(ast)

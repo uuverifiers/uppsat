@@ -2,7 +2,7 @@ name := "uppsat"
 
 version := "0.01"
 
-scalaVersion := "2.13.1"
+scalaVersion := "2.13.5"
 
 scalacOptions += "-Yresolve-term-conflict:package"
 

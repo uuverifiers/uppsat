@@ -78,3 +78,5 @@ reduced\.smt2
 *.out
 
 *.jar
+
+.metals/

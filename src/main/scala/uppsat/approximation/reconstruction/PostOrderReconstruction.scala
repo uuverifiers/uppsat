@@ -21,7 +21,7 @@ trait PostOrderReconstruction extends ModelReconstruction {
 
       val newAST = AST(symbol, label, newChildren.toList)
       val newValue = ModelEvaluator.evalAST(newAST, inputTheory)
-      verbose(ast.symbol + " " + ast.label + " " + " <- " + newValue.symbol)
+      verbose(s"${ast.symbol} ${ast.label} <- ${newValue.symbol}")
 
       candidateModel.set(ast, newValue)
       if (globalOptions.MODEL)

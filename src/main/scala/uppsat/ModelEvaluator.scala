@@ -184,7 +184,7 @@ object ModelEvaluator {
     */
   def startOnlineSolver() = {
     onlineSolver = Some(new Z3OnlineSolver)
-    getz3().init
+    getz3().init()
   }
 
   /** Stops the online solver.

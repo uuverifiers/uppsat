@@ -112,7 +112,6 @@ object globalOptions {
     */
   def getValidator = registeredSolvers(validator.toLowerCase())
 
-  // TODO (ptr): Replace this with some kind of logger system
   /** Prints str if verbose mode is active.
     */
   def verbose(str : String) = {
@@ -340,7 +339,7 @@ object main {
           case Sat(model) => {
             println("<MODEL>")
             for ((k, v) <- model)
-              println(k + "," + v)
+              println(s"$k, $v")
             println("</MODEL>")
           }
           case _ => ()

@@ -136,7 +136,7 @@ trait FPABVCodec extends FPABVContext with PostOrderCodec {
         ast
       }
       case sym => {
-        throw new Exception("don't cast me: " + ast.symbol.sort.getClass + " ---> " + target)
+        throw new Exception(s"don't cast me: ${ast.symbol.sort.getClass} ---> $target")
       }
     }
   }
@@ -346,7 +346,7 @@ trait FPABVCodec extends FPABVContext with PostOrderCodec {
               }
             }
 
-            case _ => throw new Exception(fpSym + " unsupported")
+            case _ => throw new Exception(s"$fpSym unsupported")
           }
 
 
@@ -366,7 +366,7 @@ trait FPABVCodec extends FPABVContext with PostOrderCodec {
           case FPGreaterThanFactory => FXGreaterThanFactory(newSort)
           case FPGreaterThanOrEqualFactory => FXGreaterThanOrEqualFactory(newSort)
           case FPFPEqualityFactory => FXEqualityFactory(newSort)
-          case _ => throw new Exception(fpPred + " unsupported")
+          case _ => throw new Exception(s"$fpPred unsupported")
         }
 
         AST(newSymbol, label, newChildren)

@@ -133,7 +133,7 @@ case class AST(val symbol : ConcreteFunctionSymbol,
     todo push (AST.this)
     def hasNext = !todo.isEmpty
     def next = {
-      val n = todo.pop
+      val n = todo.pop()
       todo ++= n.children
       n
     }

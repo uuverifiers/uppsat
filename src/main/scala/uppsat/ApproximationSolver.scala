@@ -137,7 +137,7 @@ object ApproximationSolver {
       verbose("-----------------------------------------------")
       verbose("Starting iteration " + globalOptions.STATS_ITERATIONS)
       if (globalOptions.DEADLINE.isDefined)
-          verbose(s"\t${globalOptions.remainingSeconds} seconds left")
+          verbose(s"\t${globalOptions.remainingSeconds()} seconds left")
       verbose("-----------------------------------------------")
       checkTimeout("iteration " + globalOptions.STATS_ITERATIONS)
       val encodedFormula = if (!pmap.isMaximal)
@@ -187,7 +187,7 @@ object ApproximationSolver {
 
         verbose("Full precision search")
         if (globalOptions.DEADLINE.isDefined)
-          verbose(s"\t${globalOptions.remainingSeconds} seconds left")
+          verbose(s"\t${globalOptions.remainingSeconds()} seconds left")
 
         val validator = globalOptions.getValidator
         val smtFormula = translator.translate(formula)

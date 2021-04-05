@@ -71,15 +71,15 @@ object Timer {
         comp
       } finally {
         addTime
-        runningOps.pop
+        runningOps.pop()
       }
 
     res
   }
 
   def reset : Unit = {
-    accumulatedTimes.clear
-    callCounters.clear
+    accumulatedTimes.clear()
+    callCounters.clear()
     iterations = 0
   }
 
@@ -96,7 +96,7 @@ object Timer {
     for ((op, time) <- accumulatedTimes)
       resBuf += ((op, callCounters(op), time))
 
-    val resAr = resBuf.result
+    val resAr = resBuf.result()
     Sorting.stableSort(resAr)
 
     val table =
