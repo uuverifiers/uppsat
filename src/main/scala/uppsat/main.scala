@@ -32,8 +32,11 @@ object globalOptions {
   /** Display models */
   var MODEL = false
 
-  /** No solving, only parsing, etc. */
+  /** No solving, etc. */
   var NO_RUN = false
+
+  /** Only parse */
+  var ONLY_PARSE = false
 
   /** Double check many answers */
   var PARANOID = false
@@ -251,6 +254,7 @@ object main {
       case "-m" => globalOptions.MODEL = true
       case "-v" => globalOptions.VERBOSE = true
       case "-d" => globalOptions.DEBUG = true
+      case "-op" => globalOptions.ONLY_PARSE = true
       case "-p" => globalOptions.PARANOID =  true
       case "-h" | "-help" => {
         printUsage()
@@ -377,8 +381,12 @@ object main {
       case to : TimeoutException => {
         println("timeout")
       }
+
+      case e : SMTParserException => {
+        println(s"Parser error: $e")
+      }
       case e : Exception => {
-        println("Unhandled error: " + e)
+        println(s"Unhandled error: $e")
         e.printStackTrace()
       }
     }

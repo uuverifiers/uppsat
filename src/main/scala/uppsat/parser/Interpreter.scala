@@ -8,6 +8,7 @@ import ap.parser.smtlib.Absyn._
 import scala.jdk.CollectionConverters._
 
 import uppsat.ApproximationSolver
+import uppsat.globalOptions
 import uppsat.globalOptions.verbose
 import uppsat.theory.BitVectorTheory
 import uppsat.theory.BitVectorTheory._
@@ -408,6 +409,9 @@ def hexToBitList(hex : String) = {
 
       /////////////////////////////////////////////////////////////////////////
     case cmd : CheckSatCommand => {
+      if (globalOptions.ONLY_PARSE) {
+        println("Skipping check-sat")
+      } else {
       val formula = myEnv.getFormula.labelAST
 
       val usingTheory =
@@ -426,6 +430,7 @@ def hexToBitList(hex : String) = {
       myEnv.result = ApproximationSolver.Unknown
       myEnv.result =
         uppsat.ApproximationSolver.solve(formula, translator, approximation)
+      }
     }
       /////////////////////////////////////////////////////////////////////////
 
