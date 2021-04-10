@@ -80,21 +80,29 @@ object ApproximationSolver {
     // Tries to reconstruct stringModel for encodedFormula Returns (Model,
     // newPrecisionMap) with either being None, or both of them if search has
     // completely ended.
+
+    // TODO (ptr): Instead of checking pmap is maximal, this should be
+    // refactored
     def tryReconstruct(encodedFormula : AST,
                        stringModel : Map[String, String])
         : (Option[ExtModel], Option[PrecisionMap[approximation.P]]) =
       Timer.measure("tryReconstruct") {
         // MAJORTODO : getstringmodel called?
+
         val appModel = translator.getModel(encodedFormula, stringModel)
 
-        verbose("Decoding model ... ")
-        val decodedModel = approximation.decodeModel(formula, appModel, pmap)
+        val finalModel =
+          if (pmap.isMaximal) {
+            appModel
+          } else {
+            verbose("Decoding model ... ")
+            val decodedModel = approximation.decodeModel(formula, appModel, pmap)
 
-        verbose("Reconstructing model ...")
-        val reconstructedModel =
-          approximation.reconstruct(formula, decodedModel)
+            verbose("Reconstructing model ...")
+            approximation.reconstruct(formula, decodedModel)
+          }
 
-        val assignments = reconstructedModel.toMap.toList
+        val assignments = finalModel.toMap.toList
 
         verbose("Validating model ...")
         val isModel =
@@ -104,7 +112,7 @@ object ApproximationSolver {
                                 solver)
         if (isModel) {
           val extModel =
-            for ((symbol, value) <- reconstructedModel.toMap) yield {
+            for ((symbol, value) <- finalModel.toMap) yield {
               (symbol, value.symbol.theory.symbolToSMTLib(value.symbol) )
             }
           (Some(extModel), None)
@@ -116,13 +124,17 @@ object ApproximationSolver {
             verbose("Model reconstruction failed: refining precision")
             if (globalOptions.VERBOSE) {
               println("Comparing decoded Model with reconstructed Model:")
-              formula.ppWithModels("->", decodedModel, reconstructedModel)
+              val decodedModel = approximation.decodeModel(formula, appModel, pmap)
+              formula.ppWithModels("->", decodedModel, finalModel)
             }
 
+
+            // TODO (ptr): Refactor, here decodedModel is computed twice.
+            val decodedModel = approximation.decodeModel(formula, appModel, pmap)
             val newPmap =
               approximation.satRefine(formula,
                                       decodedModel,
-                                      reconstructedModel,
+                                      finalModel,
                                       pmap)
             newPmap.characterize
             (None, Some(newPmap))
