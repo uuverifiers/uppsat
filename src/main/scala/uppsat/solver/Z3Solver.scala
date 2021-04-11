@@ -1,6 +1,6 @@
 package uppsat.solver;
 
-import java.io.{BufferedReader, InputStreamReader};
+import java.io.{BufferedReader, FileNotFoundException, InputStreamReader};
 
 import uppsat.globalOptions
 import uppsat.Timer
@@ -55,6 +55,11 @@ class Z3Solver(val name : String = "Z3",
 	    result.mkString("\n")
     } catch {
 	    case e : java.io.IOException => {
+        // Most times we get "broken pipe" because of timeout, so if deadline is
+        // violated, lets throw timeout exception instead.
+        globalOptions.checkTimeout()
+
+        // If it wasn't timeout, probably its because z3 binary is not found
         val msg = "(probably) z3 binary not found"
         throw new Z3Exception(msg)
       }
