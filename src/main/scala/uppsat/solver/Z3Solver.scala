@@ -75,6 +75,8 @@ class Z3Solver(val name : String = "Z3",
       case "sat" => Some((extractSymbols zip lines.tail).toMap)
       case "unsat" => None
       case result => {
+        // Make sure this is not timeout related.
+        globalOptions.checkTimeout()
         val msg = "Trying to get model from non-sat result (" + output + ")"
         throw new Z3Exception(msg)
       }

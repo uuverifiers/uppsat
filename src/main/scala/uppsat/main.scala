@@ -14,9 +14,8 @@ import uppsat.solver._
 /** Stores (for convenience) options which are used by all parts of UppSAT
   *
   */
-object globalOptions {
-  // TODO (ptr): Change version when done with refactoring.
 
+object globalOptions {
   /** Current version of UppSAT */
   val VERSION = "0.5"
 
@@ -72,8 +71,9 @@ object globalOptions {
   var backend = "z3"
   var validator = "z3"
 
-  // Storing statistics
-  // TODO (ptr): Put in separate object?
+  // TODO (ptr): Lets instead create a Statistics object which contains a map or
+  // similar wich can be used by any part of the program. And then we print out
+  // everything given the stats-flag.
   var STATS_ITERATIONS = 0
 
 
