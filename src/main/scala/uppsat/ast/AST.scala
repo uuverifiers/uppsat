@@ -105,6 +105,14 @@ case class AST(val symbol : ConcreteFunctionSymbol,
     else
       0) + children.map(_.variableCount).sum
 
+  def variables() : Set[ConcreteFunctionSymbol] = {
+    val childVars = children.map(_.variables()).fold(Set())(_ ++ _)
+    if (symbol.theory.isVariable(symbol))
+      childVars + symbol
+    else
+      childVars
+  }
+
   def getPathOrElse(path : Path) : Option[AST] = {
     val nodes = for (n <- this.iterator.toList if n.label == path) yield n
     nodes.headOption

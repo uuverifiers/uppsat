@@ -169,10 +169,10 @@ object BitVectorLiteral {
   val BVAndFactory = new BVFunctionSymbolFactory("bvAnd", 2)
 
   val BVAddFactory = new BVFunctionSymbolFactory("bvAdd", 2)
+  val BVSubFactory = new BVFunctionSymbolFactory("bvSub", 2)
   val BVMulFactory = new BVFunctionSymbolFactory("bvMul", 2)
   val BVDivFactory = new BVFunctionSymbolFactory("bvDiv", 2)
   val BVAshrFactory = new BVFunctionSymbolFactory("bvAshr", 2)
-
 
   val BVOrFactory = new BVFunctionSymbolFactory("bvOr", 2)
   val BVXorFactory = new BVFunctionSymbolFactory("bvXor", 2)
@@ -416,6 +416,7 @@ object BitVectorLiteral {
               "(_ extract " + bvef.startBit + " "  + bvef.endBit + ")"
             case BVAndFactory => "bvand"
             case BVAddFactory => "bvadd"
+            case BVSubFactory => "bvsub"
             case BVMulFactory => "bvmul"
             case BVDivFactory => "bvdiv"
             case BVAshrFactory => "bvashr"

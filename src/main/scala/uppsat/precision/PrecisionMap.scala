@@ -99,6 +99,9 @@ class PrecisionMap[T] private (val map : Map[Path, T])
   //      new PrecisionMap[T](map + (path -> newP))
   //  }
 
+  lazy val max = map.values.fold(pOrd.minimalPrecision)(pOrd.max(_, _))
+
+
   /** Checks if all precisions in map are maxiaml */
   def isMaximal = {
     map.values.find(x => pOrd.lt(x, pOrd.maximalPrecision)).isEmpty

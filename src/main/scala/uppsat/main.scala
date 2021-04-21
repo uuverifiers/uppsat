@@ -66,6 +66,11 @@ object globalOptions {
   var FX_PREC_INC =
     uppsat.approximation.fpa.fixpoint.FPABVContext.defaultPrecIncrement
 
+
+  /** FixedFloats options */
+  var FF_ENABLED = true
+  var FF_MIDDLE_ZERO = false
+
   // Choosen approximation/backend/validator
   var approximation = "ijcar"
   var backend = "z3"
@@ -256,6 +261,9 @@ object main {
       case "-d" => globalOptions.DEBUG = true
       case "-op" => globalOptions.ONLY_PARSE = true
       case "-p" => globalOptions.PARANOID =  true
+      case "-fft" => globalOptions.FF_ENABLED = true
+      case "-fff" => globalOptions.FF_ENABLED = false
+      case "-ffz" => globalOptions.FF_MIDDLE_ZERO = true
       case "-h" | "-help" => {
         printUsage()
         globalOptions.NO_RUN = true

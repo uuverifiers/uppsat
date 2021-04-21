@@ -7,6 +7,7 @@ import scala.language.implicitConversions
 import uppsat.ast._
 import uppsat.solver.SMTTranslator
 import uppsat.theory.BooleanTheory._
+import uppsat.theory.BitVectorTheory.BVSortFactory.BVSort
 import uppsat.theory.FloatingPointTheory.FPSortFactory.FPSort
 
 object FloatingPointTheory extends Theory {
@@ -126,6 +127,7 @@ object FloatingPointTheory extends Theory {
       }
     }
   }
+
 
   case class FPVarFactory(varName : String)
       extends IndexedFunctionSymbolFactory {
@@ -406,6 +408,16 @@ object FloatingPointTheory extends Theory {
   // "
   // TODO: This requires Bit-Vectors, so it's not a pure FPOperatorSymbol
   val UBVToFPFactory = new FPFunctionSymbolFactory("ubv-to-fp", true, 1)
+
+
+  // ; FP literals as bit string triples, with the leading bit for the significand
+  // ; not represented (hidden bit)
+  //     :funs_description "All function symbols with declaration of the form
+
+  // (fp (_ BitVec 1) (_ BitVec eb) (_ BitVec i) (_ FloatingPoint eb sb))
+
+  // where eb and sb are numerals greater than 1 and i = sb - 1."
+  val BVTripleToFPFactory = FPFunctionSymbolFactory("fp-triple-to-fp", false, 3)
 
   //    :funs_description "All function symbols with declarations of the form
   //   below where m is a numeral greater than 0 and eb and sb are numerals
@@ -791,6 +803,15 @@ def floatFPEquality(left : AST, right : AST) =
     }
   }
 
+  def isFPVariable(symbol : ConcreteFunctionSymbol) = {
+    symbol match {
+      case FPVar(_, _) => true
+      case _ => false
+    }
+  }
+
+
+
   def bias(expBitWidth : Int) : Int = {
     (1 << expBitWidth - 1) - 1
   }
@@ -866,6 +887,8 @@ def floatFPEquality(left : AST, right : AST) =
           case FPMultiplicationFactory => "fp.mul"
           case FPDivisionFactory => "fp.div"
           case FPNegateFactory => "fp.neg"
+            // TODO (FF): Is this z3 specific?
+          case BVTripleToFPFactory => "fp"
           case FPToFPFactory => "(_ to_fp " + fpFunSym.sort.eBitWidth + " " +
               fpFunSym.sort.sBitWidth + ")"
           case FPConstantFactory(sign, eBits, sBits) => {

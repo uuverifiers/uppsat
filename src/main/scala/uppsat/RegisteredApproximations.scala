@@ -2,6 +2,7 @@ package uppsat;
 
 import uppsat.approximation.Approximation
 import uppsat.approximation.smallints.SmallIntsApp
+import uppsat.approximation.fpa.fixedfloats.FixedFloatsApp
 import uppsat.approximation.fpa.fixpoint.
    {FPABVApp,FPABVNodeByNodeApp, FPABVEmptyApp}
 import uppsat.approximation.fpa.reals.
@@ -32,6 +33,10 @@ object RegisteredApproximations {
     ("ijcar-no-reconstruct" ->
        ("SmallFloats with no reconstruction",
         () => new Approximation(IJCARSmallFloatsEmptyapp))),
+
+    ("fixedfloats" ->
+       ("FixedFloats approximation",
+        () => new Approximation(FixedFloatsApp))),
 
     ("smallints" ->
        ("SmallInts approximation",

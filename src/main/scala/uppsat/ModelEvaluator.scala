@@ -75,6 +75,29 @@ object ModelEvaluator {
       }
     }
 
+
+    /** Checks and assigns ast with value.
+      *
+  		* @param ast The key to which value is assigned
+  		* @param value The value which is assigned to key
+      *
+      * @throws ModelReconstructorException if {@code ast} is already assigned
+      * to a different value or if {@code ast} and {code value} have different
+      * sorts
+      */
+    def checkSet(ast : AST, value : AST) : Unit = {
+      if (contains(ast)) {
+        if (this(ast) != value) {
+          val msg = "Model value " + ast + " already assigned"
+          throw new ModelReconstructorException(msg)
+        }
+      } else {
+        overwrite(ast, value)
+      }
+    }
+
+
+
     /** Assigns ast with value.
       *
   		* @param ast The key to which value is assigned
@@ -214,23 +237,33 @@ object ModelEvaluator {
   }
 
 
-  /** Check satisfiability of a formula.
+  /** Validates an assignment of a formula.
     *
     * Evaluates the formula in {@code ast}, under {@code assignments} with
     * {@code theory} using {@code solver}.
     *
     * @param ast Formula to be evaluated
-    * @param assignments Assignments to variables
+    * @param assignments Assignments to variables. All variables in {@code ast}
+    * must be assigned.
     * @param theory Theory to be used
     * @param solver SMT solver to use
+    * @throws ModelReconstructorException if there are variables in {@code ast}
+    * which are not in {@code assignment}
     * @return True if formula is satisfiable otherwise false
     */
-  def valAST(ast: AST,
+  def validateModel(ast: AST,
              // assignments: List[(String, String)],
               assignments : List[(ConcreteFunctionSymbol, AST)],
              theory : Theory,
              solver : SMTSolver) : Boolean = {
     val translator = new SMTTranslator(theory)
+
+    if (!ast.variables().forall(assignments.map(_._1) contains _)) {
+      val missing =
+        ast.variables().find(x => !(assignments.map(_._1) contains x)).get
+      val msg = s"Trying to validate incomplete model: $missing"
+      throw new ModelReconstructorException(msg)
+    }
 
     // TODO (ptr): We should lift out this assignments thing and create a proper
     // datatype (maybe we have)? Which could have the "stringify" function, I am
@@ -240,7 +273,13 @@ object ModelEvaluator {
         (symbol.toString(), value.symbol.theory.symbolToSMTLib(value.symbol))
       }
 
+    verbose("Validating formula: ")
+    verbose(ast.toString())
+    verbose("Validating assignments")
+    verbose(assignments.mkString("\n"))
+
     val smtFormula = translator.translate(ast, false, stringAssignments)
+
     solver.checkSat(smtFormula)
   }
 

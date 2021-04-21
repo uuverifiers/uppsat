@@ -80,3 +80,5 @@ reduced\.smt2
 *.jar
 
 .metals/
+
+ijcar-pruned/

@@ -180,43 +180,48 @@ def hexToBitList(hex : String) = {
           }
         }
       }
-      case c : RatConstant if myEnv.theory ==  Some(FloatingPointTheory) =>
-        {
-          val double =
-            java.lang.Double.doubleToRawLongBits(c.rational_.toDouble)
-          val bits = java.lang.Long.toBinaryString(double)
-          // TODO: We always store rationals as floats, good? bad? probably we
-          // should use reals.
 
-          // TODO: Is the leading bits dropped
-          val allBits =
-            (("0" * (64 - bits.length)) ++ bits).map(_.toString.toInt)
-          val sign = allBits.head
-          val eBits = allBits.tail.take(11).map(_.toInt).toList
-          val sBits = allBits.tail.drop(11).map(_.toInt).toList
+        // TODO: (ptr): Should we interpret decimal literals as FPs in *any*
+        // scenario?
+      // case c : RatConstant if myEnv.theory ==  Some(FloatingPointTheory) =>
+      //   {
+      //     val double =
+      //       java.lang.Double.doubleToRawLongBits(c.rational_.toDouble)
+      //     val bits = java.lang.Long.toBinaryString(double)
+      //     // TODO: We always store rationals as floats, good? bad? probably we
+      //     // should use reals.
 
-          val fpsort = FPSortFactory(List(11, 53))
+      //     // TODO: Is the leading bits dropped
+      //     val allBits =
+      //       (("0" * (64 - bits.length)) ++ bits).map(_.toString.toInt)
+      //     val sign = allBits.head
+      //     val eBits = allBits.tail.take(11).map(_.toInt).toList
+      //     val sBits = allBits.tail.drop(11).map(_.toInt).toList
 
-          if (!eBits.contains(0))
-            throw new Exception("Special number!")
+      //     val fpsort = FPSortFactory(List(11, 53))
 
-          // MAJORTODO
-          if (!eBits.contains(1) && !sBits.contains(1)) {
-            val value =
-              if (sign == 0)
-                FloatingPointTheory.FPPositiveZero(fpsort)
-              else
-                FloatingPointTheory.FPNegativeZero(fpsort)
-            uppsat.ast.AST(value, List())
-          } else {
-            val symbol =
-              uppsat.theory.FloatingPointTheory.FloatingPointLiteral(sign.toInt,
-                                                                     eBits,
-                                                                     sBits,
-                                                                     fpsort)
-            uppsat.ast.Leaf(symbol)
-          }
-        }
+      //     if (!eBits.contains(0))
+      //       throw new Exception("Special number!")
+
+      //     // MAJORTODO
+      //     if (!eBits.contains(1) && !sBits.contains(1)) {
+      //       val value =
+      //         if (sign == 0)
+      //           FloatingPointTheory.FPPositiveZero(fpsort)
+      //         else
+      //           FloatingPointTheory.FPNegativeZero(fpsort)
+      //       println(s"\t\tCASE 1 $value")
+      //       uppsat.ast.AST(value, List())
+      //     } else {
+      //       val symbol =
+      //         uppsat.theory.FloatingPointTheory.FloatingPointLiteral(sign.toInt,
+      //                                                                eBits,
+      //                                                                sBits,
+      //                                                                fpsort)
+      //       println(s"\t\tCASE 2 $symbol")
+      //       uppsat.ast.Leaf(symbol)
+      //     }
+      //   }
 
       case c : RatConstant => {
         // RatConstant given as decimal number, convert to num/denum
@@ -459,6 +464,8 @@ def hexToBitList(hex : String) = {
 
     //////////////////////////////////////////////////////////////////////////
 
+      // TODO (ptr): Make the output of get-model command to be more in line
+      // with SMT-lib syntax.
      case cmd : GetModelCommand => {
        myEnv.result match {
          case ApproximationSolver.Sat(model) => println(model.mkString("\n"))
@@ -625,6 +632,8 @@ def hexToBitList(hex : String) = {
 
     case PlainSymbol("=") => {
       checkArgs("=", 2, args)
+      val term1 = translateTerm(args(0))
+      val term2 = translateTerm(args(1))
       translateTerm(args(0)) === translateTerm(args(1))
     }
 

@@ -89,7 +89,12 @@ object ApproximationSolver {
       Timer.measure("tryReconstruct") {
         // MAJORTODO : getstringmodel called?
 
+        verbose("stringModel:")
+        verbose("\t" + stringModel.mkString("\n\t"))
+
         val appModel = translator.getModel(encodedFormula, stringModel)
+        verbose("appModel:")
+        verbose(appModel.toString())
 
         val finalModel =
           if (pmap.isMaximal) {
@@ -104,12 +109,13 @@ object ApproximationSolver {
 
         val assignments = finalModel.toMap.toList
 
+
         verbose("Validating model ...")
         val isModel =
-          ModelEvaluator.valAST(formula,
-                                assignments,
-                                approximation.inputTheory,
-                                solver)
+          ModelEvaluator.validateModel(formula,
+                                       assignments,
+                                       approximation.inputTheory,
+                                       solver)
         if (isModel) {
           val extModel =
             for ((symbol, value) <- finalModel.toMap) yield {
