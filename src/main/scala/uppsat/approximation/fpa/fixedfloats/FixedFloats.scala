@@ -1,7 +1,7 @@
 package uppsat.approximation.fpa.fixedfloats
 
 /*
- * FixedFloats version 1
+ * FixedFloats version 1.0
  *
  * Lets try to only do exponential range limiting. I.e., we put a variable "EXP"
  * which is "middle"-value for all exponent values. Then make sure all exponents
@@ -21,9 +21,15 @@ import uppsat.ast.{AST, ConcreteFunctionSymbol, Leaf}
 import uppsat.ast.AST.Label
 import uppsat.precision.{IntPrecisionOrdering, PrecisionMap}
 import uppsat.theory.{BitVectorTheory, FloatingPointTheory}
-import uppsat.theory.BitVectorTheory.{bv, BVEqualityFactory => BVEQ, BVLessThanOrEqualFactory => BVSLE, BVSubFactory => BVSUB, BVSortFactory, BVVar}
+import uppsat.theory.BitVectorTheory.
+  {bv,
+    BVEqualityFactory => BVEQ,
+    BVLessThanOrEqualFactory => BVSLE,
+    BVSubFactory => BVSUB,
+    BVSortFactory, BVVar}
 import uppsat.theory.BooleanTheory.boolNaryAnd
-import uppsat.theory.FloatingPointTheory.{BVTripleToFPFactory => BVT, FPEqualityFactory => FPEQ, isFPVariable}
+import uppsat.theory.FloatingPointTheory.
+  {BVTripleToFPFactory => BVT, FPEqualityFactory => FPEQ, isFPVariable}
 import uppsat.theory.FloatingPointTheory.FPSortFactory.FPSort
 
 /** Empty theory for using backend solver */
@@ -57,7 +63,8 @@ trait FixedFloatsCodec extends Codec {
   /**
     * We need to override since we need a global symbol for exponent
     */
-  override def encodeFormula(ast : AST, pmap : PrecisionMap[Precision]) : AST = {
+  override def encodeFormula(ast : AST,
+                             pmap : PrecisionMap[Precision]) : AST = {
     // TODO (FF): We assume 32-bits or 64-bits standard FP numbers for now
     // TODO (FF): Come up with better names for auxilliary variables
     val PRECISION = pmap.max.asInstanceOf[Int]
@@ -65,8 +72,10 @@ trait FixedFloatsCodec extends Codec {
     val bits = PRECISION.toString().toInt.toBinaryString
     val padded = ("0"*(8 - bits.length)) + bits
 
-    val LIMIT_VALUE32 = (("0"*(8 - bits.length)) + bits).toList.map(_.toInt - 48)
-    val LIMIT_VALUE64 = (("0"*(11 - bits.length)) + bits).toList.map(_.toInt - 48)
+    val LIMIT_VALUE32 =
+      (("0"*(8 - bits.length)) + bits).toList.map(_.toInt - 48)
+    val LIMIT_VALUE64 =
+      (("0"*(11 - bits.length)) + bits).toList.map(_.toInt - 48)
 
     val SIGN_SORT = BVSortFactory(List(1))
 
@@ -94,8 +103,15 @@ trait FixedFloatsCodec extends Codec {
       val sign = BVVar(s"${v}_sign", SIGN_SORT)
       val (exponent, significant, double) =
         v.sort match {
-          case FPSort(8, 24) => (BVVar(s"${v}_exp", EXP_SORT32), BVVar(s"${v}_mant", SIG_SORT32), false)
-          case FPSort(11, 53) => (BVVar(s"${v}_exp", EXP_SORT64), BVVar(s"${v}_mant", SIG_SORT64), true)
+          case FPSort(8, 24) =>
+            (BVVar(s"${v}_exp", EXP_SORT32),
+             BVVar(s"${v}_mant", SIG_SORT32),
+             false)
+
+          case FPSort(11, 53) =>
+            (BVVar(s"${v}_exp", EXP_SORT64),
+             BVVar(s"${v}_mant", SIG_SORT64),
+             true)
           case FPSort(eb, sb) => throw new Exception(s"FPSort: $eb $sb")
           case s => throw new Exception(s"unhandled sort: $s")
         }
@@ -143,22 +159,35 @@ trait FixedFloatsCodec extends Codec {
 
 
     // Constraint LIMIT to some value (Precision?)
-    val limitConstant32 = bv(LIMIT_VALUE32)(LIMIT32.sort)
-    val limitConstraint32 = AST(BVEQ(LIMIT32.sort), List(Leaf(LIMIT32), Leaf(limitConstant32)))
-    val limitConstant64 = bv(LIMIT_VALUE64)(LIMIT64.sort)
-    val limitConstraint64 = AST(BVEQ(LIMIT64.sort), List(Leaf(LIMIT64), Leaf(limitConstant64)))
+    val limitConstant32 =
+      bv(LIMIT_VALUE32)(LIMIT32.sort)
+    val limitConstraint32 =
+      AST(BVEQ(LIMIT32.sort), List(Leaf(LIMIT32), Leaf(limitConstant32)))
+
+    val limitConstant64 =
+      bv(LIMIT_VALUE64)(LIMIT64.sort)
+    val limitConstraint64 =
+      AST(BVEQ(LIMIT64.sort), List(Leaf(LIMIT64), Leaf(limitConstant64)))
 
     // Constrain MIDDLE to some value
-    val middleConstant32 = bv(MIDDLE_VALUE32)(MIDDLE32.sort)
-    val middleConstraint32 = AST(BVEQ(MIDDLE32.sort), List(Leaf(MIDDLE32), Leaf(middleConstant32)))
-    val middleConstant64 = bv(MIDDLE_VALUE64)(MIDDLE64.sort)
-    val middleConstraint64 = AST(BVEQ(MIDDLE64.sort), List(Leaf(MIDDLE64), Leaf(middleConstant64)))
+    val middleConstant32 =
+      bv(MIDDLE_VALUE32)(MIDDLE32.sort)
+    val middleConstraint32 =
+      AST(BVEQ(MIDDLE32.sort), List(Leaf(MIDDLE32), Leaf(middleConstant32)))
+
+    val middleConstant64 =
+      bv(MIDDLE_VALUE64)(MIDDLE64.sort)
+    val middleConstraint64 =
+      AST(BVEQ(MIDDLE64.sort), List(Leaf(MIDDLE64), Leaf(middleConstant64)))
 
     val newAst =
       if (globalOptions.FF_MIDDLE_ZERO)
-        boolNaryAnd(ast :: middleConstraint32 :: middleConstraint64 :: limitConstraint32 :: limitConstraint64 :: (mvConstraints.toList ++ ebConstraints))
+        boolNaryAnd(ast :: middleConstraint32 :: middleConstraint64 ::
+                      limitConstraint32 :: limitConstraint64 ::
+                      (mvConstraints.toList ++ ebConstraints))
       else
-        boolNaryAnd(ast :: limitConstraint32 :: limitConstraint64 :: (mvConstraints.toList ++ ebConstraints))
+        boolNaryAnd(ast :: limitConstraint32 :: limitConstraint64 ::
+                      (mvConstraints.toList ++ ebConstraints))
 
     if (globalOptions.FORMULAS) {
       println("<<Starting formula>>")
