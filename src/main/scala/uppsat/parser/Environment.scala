@@ -12,6 +12,7 @@ class Environment {
   var symbols : Map[String, ConcreteFunctionSymbol] = Map()
   var definitions : Map[String, (ConcreteFunctionSymbol, AST)] = Map()
   var assumptions : List[AST] = List()
+  var info : Map[String, String] = Map()
   var result : uppsat.ApproximationSolver.Answer =
     uppsat.ApproximationSolver.Unknown
   var theory : Option[Theory] = None
@@ -34,6 +35,10 @@ class Environment {
                     symbol : ConcreteFunctionSymbol,
                     definition : AST) = {
     definitions += id -> (symbol, definition)
+  }
+
+  def addInfo(key : String, value : String) ={
+    info += key -> value
   }
 
   // Pushes the bindings and returns a list with new symbols that should be used

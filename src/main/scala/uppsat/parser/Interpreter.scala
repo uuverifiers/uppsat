@@ -305,8 +305,45 @@ def hexToBitList(hex : String) = {
 
       //////////////////////////////////////////////////////////////////////////
 
-     case cmd : SetInfoCommand =>
-       verbose("Ignoring set-info command")
+    case cmd : SetInfoCommand => {
+
+      def handleInfo(key : String, value : String) = {
+        key match {
+          case ":UppSAT-SPED" => myEnv.addInfo("SPED", value)
+          case _ => verbose(s"Ignoring set-info $key")
+        }
+      }
+      cmd.annotation_ match {
+        case attr : AttrAnnotation => {
+          val key = attr.annotattribute_
+          attr.attrparam_ match {
+            case param : SomeAttrParam => {
+              param.sexpr_ match {
+                case c : ConstantSExpr => {
+                  val constant = c.specconstant_
+                  constant match {
+                    case r : RatConstant => handleInfo(key, r.rational_)
+                    case n : NumConstant => handleInfo(key, n.numeral_)
+                    case s : StringConstant => handleInfo(key, s.smtstring_)
+                    case _ => verbose(s"Warning: unparsed set-info $key")
+                  }
+                }
+                case s : SymbolSExpr => {
+                  s.symbol_ match {
+                    case qs : QuotedSymbol => handleInfo(key, qs.quotedsymbolt_)
+                    case ns : NormalSymbol => handleInfo(key, ns.normalsymbolt_)
+                    case _ => verbose(s"Warning: unparsed set-info $key")
+                  }
+                }
+                case _ => verbose(s"Warning: unparsed set-info $key")
+              }
+            }
+            case _ => verbose(s"Warning: unparsed set-info $key")
+          }
+        }
+        case _ => verbose(s"Warning: unparsed set-info")
+      }
+    }
 
       //////////////////////////////////////////////////////////////////////////
 
