@@ -41,6 +41,10 @@ class Environment {
     info += key -> value
   }
 
+  def getInfo() = {
+    info
+  }
+
   // Pushes the bindings and returns a list with new symbols that should be used
   def pushLet(bindings : List[(String, AST)]) = {
     val specialChars = "#:"

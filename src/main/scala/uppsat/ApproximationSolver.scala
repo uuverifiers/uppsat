@@ -168,6 +168,10 @@ object ApproximationSolver {
       if (globalOptions.FORMULAS)
         println(encodedSMT)
 
+      // TODO (ptr): Perhaps only do string-model after we have done just
+      // check-sat? Maybe not an issue, but currently up to thousand evals has
+      // to be evaluated on UNSAT calls.
+
       val maybeModel =
         solver.getStringModel(encodedSMT, translator.getDefinedSymbols.toList)
       if (maybeModel.isDefined) {

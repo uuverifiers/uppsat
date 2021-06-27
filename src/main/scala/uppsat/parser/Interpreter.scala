@@ -468,7 +468,8 @@ def hexToBitList(hex : String) = {
       val translator = new uppsat.solver.SMTTranslator(usingTheory)
 
       val approximation = uppsat.globalOptions.instantiateApproximation()
-      // TODO:  Hooks to user defined approximation
+      globalOptions.INFO_MAP = myEnv.getInfo()
+        // TODO:  Hooks to user defined approximation
       myEnv.result = ApproximationSolver.Unknown
       myEnv.result =
         uppsat.ApproximationSolver.solve(formula, translator, approximation)

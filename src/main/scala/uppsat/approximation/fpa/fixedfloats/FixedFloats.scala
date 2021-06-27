@@ -17,6 +17,7 @@ import uppsat.approximation.ApproximationContext
 import uppsat.approximation.reconstruction.EmptyReconstruction
 import uppsat.approximation.refinement.
   {UniformPGRefinementStrategy, UniformMGRefinementStrategy}
+import uppsat.approximation.toolbox.Toolbox
 import uppsat.ast.{AST, ConcreteFunctionSymbol, Leaf}
 import uppsat.ast.AST.Label
 import uppsat.precision.{IntPrecisionOrdering, PrecisionMap}
@@ -43,6 +44,17 @@ trait FixedFloatsContext extends ApproximationContext {
 }
 
 trait FixedFloatsCodec extends Codec {
+
+  // Useful constants
+  val SIGN_SORT = BVSortFactory(List(1))
+
+  val EXP_SORT32 = BVSortFactory(List(8))
+  val EXP_SORT64 = BVSortFactory(List(11))
+
+  val SIG_SORT32 = BVSortFactory(List(23))
+  val SIG_SORT64 = BVSortFactory(List(52))
+
+
   def decodeNode(args: (Model, PrecisionMap[Precision]),
                  decodedModel : Model,
                  ast : AST) = {
@@ -69,21 +81,18 @@ trait FixedFloatsCodec extends Codec {
     // TODO (FF): Come up with better names for auxilliary variables
     val PRECISION = pmap.max.asInstanceOf[Int]
 
-    val bits = PRECISION.toString().toInt.toBinaryString
-    val padded = ("0"*(8 - bits.length)) + bits
+
+    val bits =
+      if (globalOptions.FF_SPED) {
+        globalOptions.INFO_MAP("SPED").toInt.toBinaryString
+      } else {
+        PRECISION.toString().toInt.toBinaryString
+      }
 
     val LIMIT_VALUE32 =
       (("0"*(8 - bits.length)) + bits).toList.map(_.toInt - 48)
     val LIMIT_VALUE64 =
       (("0"*(11 - bits.length)) + bits).toList.map(_.toInt - 48)
-
-    val SIGN_SORT = BVSortFactory(List(1))
-
-    val EXP_SORT32 = BVSortFactory(List(8))
-    val EXP_SORT64 = BVSortFactory(List(11))
-
-    val SIG_SORT32 = BVSortFactory(List(23))
-    val SIG_SORT64 = BVSortFactory(List(52))
 
     val MIDDLE32 = BVVar("__EXP_MIDDLE32__", EXP_SORT32)
     val MIDDLE64 = BVVar("__EXP_MIDDLE64__", EXP_SORT64)
@@ -100,17 +109,17 @@ trait FixedFloatsCodec extends Codec {
 
     // Each tuple is (FP Var, isDouble, Sign Var, Exponent Var, Mantissa Var)
     val varPairs = for (v <- fpVariables) yield {
-      val sign = BVVar(s"${v}_sign", SIGN_SORT)
+      val sign = BVVar(Toolbox.suffixVariable(v.name, "sign"), SIGN_SORT)
       val (exponent, significant, double) =
         v.sort match {
           case FPSort(8, 24) =>
-            (BVVar(s"${v}_exp", EXP_SORT32),
-             BVVar(s"${v}_mant", SIG_SORT32),
+            (BVVar(Toolbox.suffixVariable(v.name, "exp"), EXP_SORT32),
+             BVVar(Toolbox.suffixVariable(v.name, "mant"), SIG_SORT32),
              false)
 
           case FPSort(11, 53) =>
-            (BVVar(s"${v}_exp", EXP_SORT64),
-             BVVar(s"${v}_mant", SIG_SORT64),
+            (BVVar(Toolbox.suffixVariable(v.name, "exp"), EXP_SORT64),
+             BVVar(Toolbox.suffixVariable(v.name, "mant"), SIG_SORT64),
              true)
           case FPSort(eb, sb) => throw new Exception(s"FPSort: $eb $sb")
           case s => throw new Exception(s"unhandled sort: $s")
@@ -196,14 +205,7 @@ trait FixedFloatsCodec extends Codec {
       newAst.prettyPrint
     }
 
-
-    if (globalOptions.FF_ENABLED) {
-      verbose("FF ENABLED")
-      newAst
-    } else {
-      verbose("FF DISABLED")
-      ast
-    }
+    newAst
   }
 
 

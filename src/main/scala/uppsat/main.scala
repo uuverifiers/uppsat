@@ -58,6 +58,9 @@ object globalOptions {
   /** (Lots of) extra output */
   var VERBOSE = false
 
+  /** Keeping data from set-info commands */
+  var INFO_MAP = Map() : Map[String, String]
+
   /** Precision options for FixedPoint approximation. */
   var FX_MIN_PRECISION =
     uppsat.approximation.fpa.fixpoint.FPABVContext.defaultMinPrecision
@@ -68,8 +71,8 @@ object globalOptions {
 
 
   /** FixedFloats options */
-  var FF_ENABLED = true
   var FF_MIDDLE_ZERO = false
+  var FF_SPED = false
 
   // Choosen approximation/backend/validator
   var approximation = "ijcar"
@@ -261,9 +264,8 @@ object main {
       case "-d" => globalOptions.DEBUG = true
       case "-op" => globalOptions.ONLY_PARSE = true
       case "-p" => globalOptions.PARANOID =  true
-      case "-fft" => globalOptions.FF_ENABLED = true
-      case "-fff" => globalOptions.FF_ENABLED = false
       case "-ffz" => globalOptions.FF_MIDDLE_ZERO = true
+      case "-ffsped" => globalOptions.FF_SPED = true
       case "-h" | "-help" => {
         printUsage()
         globalOptions.NO_RUN = true

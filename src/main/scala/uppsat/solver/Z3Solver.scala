@@ -52,6 +52,7 @@ class Z3Solver(val name : String = "Z3",
 	    }
 	    process.waitFor();
 	    val exitValue = process.exitValue()
+
 	    result.mkString("\n")
     } catch {
 	    case e : java.io.IOException => {
