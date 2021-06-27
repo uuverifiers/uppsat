@@ -75,19 +75,10 @@ trait FixedFloatsCodec extends Codec {
   /**
     * We need to override since we need a global symbol for exponent
     */
-  override def encodeFormula(ast : AST,
-                             pmap : PrecisionMap[Precision]) : AST = {
-    // TODO (FF): We assume 32-bits or 64-bits standard FP numbers for now
-    // TODO (FF): Come up with better names for auxilliary variables
-    val PRECISION = pmap.max.asInstanceOf[Int]
 
 
-    val bits =
-      if (globalOptions.FF_SPED) {
-        globalOptions.INFO_MAP("SPED").toInt.toBinaryString
-      } else {
-        PRECISION.toString().toInt.toBinaryString
-      }
+  def arithmeticBounds(ast : AST, maxDistance : Int) : AST = {
+   val bits = maxDistance.toBinaryString
 
     val LIMIT_VALUE32 =
       (("0"*(8 - bits.length)) + bits).toList.map(_.toInt - 48)
@@ -166,7 +157,6 @@ trait FixedFloatsCodec extends Codec {
       AST(eqSymbol, List(Leaf(fp), fpNode))
     }
 
-
     // Constraint LIMIT to some value (Precision?)
     val limitConstant32 =
       bv(LIMIT_VALUE32)(LIMIT32.sort)
@@ -189,14 +179,30 @@ trait FixedFloatsCodec extends Codec {
     val middleConstraint64 =
       AST(BVEQ(MIDDLE64.sort), List(Leaf(MIDDLE64), Leaf(middleConstant64)))
 
-    val newAst =
-      if (globalOptions.FF_MIDDLE_ZERO)
-        boolNaryAnd(ast :: middleConstraint32 :: middleConstraint64 ::
-                      limitConstraint32 :: limitConstraint64 ::
-                      (mvConstraints.toList ++ ebConstraints))
+
+    if (globalOptions.FF_MIDDLE_ZERO)
+      boolNaryAnd(middleConstraint32 :: middleConstraint64 ::
+                    limitConstraint32 :: limitConstraint64 ::
+                    (mvConstraints.toList ++ ebConstraints))
+    else
+      boolNaryAnd(limitConstraint32 :: limitConstraint64 ::
+                    (mvConstraints.toList ++ ebConstraints))
+  }
+
+  override def encodeFormula(ast : AST,
+                             pmap : PrecisionMap[Precision]) : AST = {
+    // TODO (FF): We assume 32-bits or 64-bits standard FP numbers for now
+    // TODO (FF): Come up with better names for auxilliary variables
+
+    val maxDistance =
+      if (globalOptions.FF_SPED)
+        globalOptions.INFO_MAP("SPED").toInt
       else
-        boolNaryAnd(ast :: limitConstraint32 :: limitConstraint64 ::
-                      (mvConstraints.toList ++ ebConstraints))
+        pmap.max.asInstanceOf[Int]
+
+    val constraints = arithmeticBounds(ast, maxDistance)
+
+    val newAst = ast & constraints
 
     if (globalOptions.FORMULAS) {
       println("<<Starting formula>>")
