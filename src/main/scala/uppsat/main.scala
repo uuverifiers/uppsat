@@ -73,6 +73,7 @@ object globalOptions {
   /** FixedFloats options */
   var FF_MIDDLE_ZERO = false
   var FF_SPED = false
+  var FF_BOUNDS = false
 
   // Choosen approximation/backend/validator
   var approximation = "ijcar"
@@ -266,6 +267,7 @@ object main {
       case "-p" => globalOptions.PARANOID =  true
       case "-ffz" => globalOptions.FF_MIDDLE_ZERO = true
       case "-ffsped" => globalOptions.FF_SPED = true
+      case "-ffbounds" => globalOptions.FF_BOUNDS = true
       case "-h" | "-help" => {
         printUsage()
         globalOptions.NO_RUN = true

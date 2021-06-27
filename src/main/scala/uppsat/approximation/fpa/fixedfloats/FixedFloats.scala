@@ -26,9 +26,10 @@ import uppsat.theory.BitVectorTheory.
   {bv,
     BVEqualityFactory => BVEQ,
     BVLessThanOrEqualFactory => BVSLE,
+    BVAddFactory => BVADD,
     BVSubFactory => BVSUB,
     BVSortFactory, BVVar}
-import uppsat.theory.BooleanTheory.boolNaryAnd
+import uppsat.theory.BooleanTheory.{boolNaryAnd, boolNaryOr}
 import uppsat.theory.FloatingPointTheory.
   {BVTripleToFPFactory => BVT, FPEqualityFactory => FPEQ, isFPVariable}
 import uppsat.theory.FloatingPointTheory.FPSortFactory.FPSort
@@ -54,6 +55,8 @@ trait FixedFloatsCodec extends Codec {
   val SIG_SORT32 = BVSortFactory(List(23))
   val SIG_SORT64 = BVSortFactory(List(52))
 
+  val BV_ONE32 = Leaf(bv(List(0,0,0,0,0,0,0,1))(BVSortFactory.BVSort(8)))
+  val BV_ONE64 = Leaf(bv(List(0,0,0,0,0,0,0,0,0,0,1))(BVSortFactory.BVSort(11)))
 
   def decodeNode(args: (Model, PrecisionMap[Precision]),
                  decodedModel : Model,
@@ -93,6 +96,8 @@ trait FixedFloatsCodec extends Codec {
 
     val LIMIT32 = BVVar("__LIMIT32__", EXP_SORT32)
     val LIMIT64 = BVVar("__LIMIT64__", EXP_SORT64)
+
+
 
 
     // Add a variable corresponding to each floating point exponent bits
@@ -189,6 +194,94 @@ trait FixedFloatsCodec extends Codec {
                     (mvConstraints.toList ++ ebConstraints))
   }
 
+
+  def choiceBounds(ast : AST, maxDistance : Int) : AST = {
+    // Given maxDistance of x, we have 2*x+1 possible values, so we create 2x+1
+    // fp-constants, ensuring that each is one greater than the previous, and
+    // create a disjunction equalizing each exponent with one of them.
+
+    // We need to do this process once for 32-bits and once for 64-bits
+
+    val EXP_SORT32 = BVSortFactory(List(8))
+    // val EXP_SORT64 = BVSortFactory(List(11))
+
+
+
+    // Add a variable corresponding to each floating point exponent bits
+    val fpVariables = ast.variables().filter(isFPVariable)
+
+    // Each tuple is (FP Var, isDouble, Sign Var, Exponent Var, Mantissa Var)
+    val varPairs = for (v <- fpVariables) yield {
+      val sign = BVVar(Toolbox.suffixVariable(v.name, "sign"), SIGN_SORT)
+      val (exponent, significant, double) =
+        v.sort match {
+          case FPSort(8, 24) =>
+            (BVVar(Toolbox.suffixVariable(v.name, "exp"), EXP_SORT32),
+             BVVar(Toolbox.suffixVariable(v.name, "mant"), SIG_SORT32),
+             false)
+
+          case FPSort(11, 53) =>
+            (BVVar(Toolbox.suffixVariable(v.name, "exp"), EXP_SORT64),
+             BVVar(Toolbox.suffixVariable(v.name, "mant"), SIG_SORT64),
+             true)
+          case FPSort(eb, sb) => throw new Exception(s"FPSort: $eb $sb")
+          case s => throw new Exception(s"unhandled sort: $s")
+        }
+      (v, sign, exponent, significant, double)
+    }
+
+
+    // Ensure equality with exponential bits
+    val ebConstraints = for ((fp, sign, eb, mb, double) <- varPairs) yield {
+      val symbol = BVT(fp.sort)
+      val fpNode = AST(symbol, List(Leaf(sign), Leaf(eb), Leaf(mb)))
+      val eqSymbol = FPEQ(fp.sort)
+      AST(eqSymbol, List(Leaf(fp), fpNode))
+    }
+
+    // 32-bits
+    val choices32 =
+      (for (i <- 0 to (2*maxDistance)) yield {
+        BVVar(s"__EXP_CHOICE32_${i}__", EXP_SORT32)
+      }).toList
+
+    val addConstraints32 =
+      (for (i <- 0 until (2*maxDistance)) yield {
+        val bvadd = BVADD(EXP_SORT32)
+        val addNode = AST(bvadd, List(Leaf(choices32(i)), BV_ONE32))
+        addNode === Leaf(choices32(i+1))
+      }).toList
+
+    // Ensure equality with exponential bits
+    val eqConstraints32 =
+      (for ((_, _, eb, _, double) <- varPairs; if !double) yield {
+        boolNaryOr(for (c <- choices32) yield Leaf(eb) === Leaf(c))
+      }).toList
+
+
+    // 64-bits
+    val choices64 =
+      (for (i <- 0 to (2*maxDistance)) yield {
+         BVVar(s"__EXP_CHOICE64_${i}__", EXP_SORT64)
+       }).toList
+
+    val addConstraints64 =
+      (for (i <- 0 until (2*maxDistance)) yield {
+         val bvadd = BVADD(EXP_SORT64)
+         val addNode = AST(bvadd, List(Leaf(choices64(i)), BV_ONE64))
+         addNode === Leaf(choices64(i+1))
+       }).toList
+
+    // Ensure equality with exponential bits
+    val eqConstraints64 =
+      (for ((_, _, eb, _, double) <- varPairs; if double) yield {
+         boolNaryOr(for (c <- choices64) yield Leaf(eb) === Leaf(c))
+       }).toList
+
+    boolNaryAnd(addConstraints32 ++ eqConstraints32 ++ addConstraints64 ++ eqConstraints64)
+  }
+
+
   override def encodeFormula(ast : AST,
                              pmap : PrecisionMap[Precision]) : AST = {
     // TODO (FF): We assume 32-bits or 64-bits standard FP numbers for now
@@ -200,7 +293,14 @@ trait FixedFloatsCodec extends Codec {
       else
         pmap.max.asInstanceOf[Int]
 
-    val constraints = arithmeticBounds(ast, maxDistance)
+    val constraints =
+      if (globalOptions.FF_BOUNDS) {
+        globalOptions.verbose("Using choice bounds")
+        choiceBounds(ast,maxDistance)
+      } else {
+        globalOptions.verbose("Using arithmetic bounds")
+        arithmeticBounds(ast, maxDistance)
+      }
 
     val newAst = ast & constraints
 
