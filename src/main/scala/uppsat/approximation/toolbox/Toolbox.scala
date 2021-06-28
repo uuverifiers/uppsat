@@ -346,4 +346,14 @@ object Toolbox {
     }
 		eqOrder.toList
   }
+
+  // Returns original + "_" + suffix if original is not surrounded by ||.
+  // If it is, the || are removed, suffix added and || replaced.
+  // Example: (|a%%|, asd) yields |a%%_asd|
+  def suffixVariable(original : String, suffix : String) = {
+    if (original(0) == '|' && original.last == '|')
+      "|" + original.take(original.length-1).tail + "_" + suffix + "|"
+    else
+      original + "_" + suffix
+  }
 }

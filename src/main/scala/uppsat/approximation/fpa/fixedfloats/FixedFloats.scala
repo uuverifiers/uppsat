@@ -31,7 +31,7 @@ import uppsat.theory.BitVectorTheory.
     BVSortFactory, BVVar}
 import uppsat.theory.BooleanTheory.{boolNaryAnd, boolNaryOr}
 import uppsat.theory.FloatingPointTheory.
-  {BVTripleToFPFactory => BVT, FPEqualityFactory => FPEQ, isFPVariable}
+  {BVTripleToFPFactory => BVT, FPEqualityFactory => FPEQ, isFPVariable, FPVar}
 import uppsat.theory.FloatingPointTheory.FPSortFactory.FPSort
 
 /** Empty theory for using backend solver */
@@ -57,6 +57,8 @@ trait FixedFloatsCodec extends Codec {
 
   val BV_ONE32 = Leaf(bv(List(0,0,0,0,0,0,0,1))(BVSortFactory.BVSort(8)))
   val BV_ONE64 = Leaf(bv(List(0,0,0,0,0,0,0,0,0,0,1))(BVSortFactory.BVSort(11)))
+
+  var nextSymbol = 0
 
   def decodeNode(args: (Model, PrecisionMap[Precision]),
                  decodedModel : Model,
@@ -282,10 +284,47 @@ trait FixedFloatsCodec extends Codec {
   }
 
 
+  def encodeInternalNodes(ast : AST) : (AST, List[AST]) = {
+    val AST(symbol, label, children) = ast
+    val tmp =
+      for (c <- children) yield {
+        encodeInternalNodes(c)
+      }
+
+    val newChildren = tmp.map(_._1)
+    val childConstraints = tmp.map(_._2).flatten
+
+    val tmpAst = AST(symbol, label, newChildren)
+
+    val (newAst, newConstraints) =
+      symbol.sort match {
+        case fps : FPSort if !symbol.theory.isVariable(symbol) => {
+          val newSymbol = FPVar(s"__INTERNAL_FP__${nextSymbol}_", fps)
+          nextSymbol += 1
+          val eqConstraint = Leaf(newSymbol) === tmpAst
+          (Leaf(newSymbol), List(eqConstraint))
+        }
+
+        case _ => {
+          (tmpAst, List())
+        }
+      }
+
+    (newAst, childConstraints ++ newConstraints)
+  }
+
   override def encodeFormula(ast : AST,
                              pmap : PrecisionMap[Precision]) : AST = {
     // TODO (FF): We assume 32-bits or 64-bits standard FP numbers for now
     // TODO (FF): Come up with better names for auxilliary variables
+
+
+    val (newAst, constraints) =
+      if (globalOptions.FF_INTERNAL) {
+        encodeInternalNodes(ast)
+      } else {
+        (ast, List())
+      }
 
     val maxDistance =
       if (globalOptions.FF_SPED)
@@ -293,29 +332,28 @@ trait FixedFloatsCodec extends Codec {
       else
         pmap.max.asInstanceOf[Int]
 
-    val constraints =
+    val ffConstraints =
       if (globalOptions.FF_BOUNDS) {
         globalOptions.verbose("Using choice bounds")
-        choiceBounds(ast,maxDistance)
+        choiceBounds(newAst,maxDistance)
       } else {
         globalOptions.verbose("Using arithmetic bounds")
-        arithmeticBounds(ast, maxDistance)
+        arithmeticBounds(newAst, maxDistance)
       }
 
-    val newAst = ast & constraints
+
+    val constraintNode = boolNaryAnd(constraints)
+    val finalAst = newAst & constraintNode & ffConstraints
 
     if (globalOptions.FORMULAS) {
       println("<<Starting formula>>")
       ast.prettyPrint
       println("<<New formula>>")
-      newAst.prettyPrint
+      finalAst.prettyPrint
     }
 
-    newAst
+    finalAst
   }
-
-
-
 }
 
 trait FixedFloatsPGRefinementStrategy extends UniformPGRefinementStrategy {

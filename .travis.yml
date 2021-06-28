@@ -6,6 +6,10 @@ scala:
 os:
     - linux
 
+
+before_script:
+    - curl -L -o $HOME/.sbt/launchers/0.13.8/sbt-launch.jar http://dl.bintray.com/typesafe/ivy-releases/org.scala-sbt/sbt-launch/0.13.8/sbt-launch.jar
+
 before_install: 
     - wget http://user.it.uu.se/~petba168/z3-4.5.0
     - mv z3-4.5.0 z3

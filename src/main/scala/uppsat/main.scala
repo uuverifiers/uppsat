@@ -78,6 +78,7 @@ object globalOptions {
   var FF_MIDDLE_ZERO = false
   var FF_SPED = false
   var FF_BOUNDS = false
+  var FF_INTERNAL = false
 
   // Choosen approximation/backend/validator
   var approximation = "ijcar"
@@ -272,6 +273,7 @@ object main {
       case "-ffz" => globalOptions.FF_MIDDLE_ZERO = true
       case "-ffsped" => globalOptions.FF_SPED = true
       case "-ffbounds" => globalOptions.FF_BOUNDS = true
+      case "-ffinternal" => globalOptions.FF_INTERNAL = true
       case "-h" | "-help" => {
         printUsage()
         globalOptions.NO_RUN = true
