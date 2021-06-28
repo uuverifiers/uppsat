@@ -69,6 +69,10 @@ object globalOptions {
   var FX_PREC_INC =
     uppsat.approximation.fpa.fixpoint.FPABVContext.defaultPrecIncrement
 
+  /** SOLVER OPTIONS */
+
+  /** Saves each query to debug.smt2 */
+  var SAVE_INTERAL_QUERY = true
 
   /** FixedFloats options */
   var FF_MIDDLE_ZERO = false

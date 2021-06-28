@@ -26,9 +26,16 @@ class Z3Solver(val name : String = "Z3",
         z3Binary + " -in -smt2"
       }
 
+    if (globalOptions.SAVE_INTERAL_QUERY) {
+      import java.io._
+      val pw = new PrintWriter(new File("debug.smt2"))
+      pw.write(formula)
+      pw.close
+    }
+
+
     try {
 	    val process = Runtime.getRuntime().exec(cmd)
-	    print("Started process: " + process)
 	    val stdin = process.getOutputStream ()
 	    val stderr = process.getErrorStream ()
 	    val stdout = process.getInputStream ()
@@ -36,11 +43,11 @@ class Z3Solver(val name : String = "Z3",
 	    stdin.write((formula + "\n(exit)\n").getBytes("UTF-8"));
 	    stdin.close();
 
+
 	    val outReader = new BufferedReader(new InputStreamReader (stdout))
 	    var result = List() : List[String]
 	    val toPattern = ".*timeout.*".r
 	    // TODO: Maybe restore the errorPattern but excluding model calls
-
 
 	    var line = outReader.readLine()
 	    while (line != null) {
